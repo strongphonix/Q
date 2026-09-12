@@ -2404,6 +2404,197 @@ function buildM716cfg(){
     ma5Notify('MA5 提醒测试', '若看到此通知，说明桌面提醒已可用；买入信号出现时将自动弹窗 + 蜂鸣。');
   };
 }
+/* 持仓板块归属 + 龙头/中军/杂毛 实时分类（三层漏斗，覆盖全部持仓）
+   ① 主通道（覆盖 100%）：东财 ulist 一次批量取全部持仓的「所属行业 f100 + 成交额 f6 + 流通市值 f21」，
+      再叠加本地行业映射 D.indMap（涨停股行业 + 涨幅/成交额榜 Top300 行业）→ 零请求也能归属大部分持仓。
+      旧版只枚举「今日有涨停的板块」，导致消费/医药/公用等无涨停板块的持仓全部落到"未匹配"。
+   ② 兜底通道：仍无归属的持仓，按 7.4/7.7 板块成分股（复用 7.11 的 MLM 缓存）反向匹配，最多 10 个候选板块。
+   ③ 角色口径严格照搬 7.11：龙头=该股今日涨停（含连板高度，最高板标"空间龙头"）；
+      中军=未涨停 + 成交额≥10亿 + 流通市值≥50亿；其余=杂毛（板块内后排跟风）。随每轮刷新实时重算。 */
+var GRADE_RANK = { S:0, A:1, B:2, C:3, D:4, '—':5 };
+var HSI = { key: '', t: 0, v: null };   /* 持仓行业快照缓存（60 秒，避免每轮重复请求） */
+function gradeTag(g){
+  if(g === 'S') return '<span class="tag tag-r">S</span>';
+  if(g === 'A') return '<span class="tag tag-o">A</span>';
+  if(g === 'B') return '<span class="tag tag-y">B</span>';
+  if(g === 'C' || g === 'D') return '<span class="tag" style="background:#3a2f4a;color:#c9b3ff">' + g + '</span>';
+  return '<span class="tag" style="background:#2a3344;color:#9fb3c8">—</span>';
+}
+function roleBadge(role, lbc, maxLbc){
+  if(role === 'lead') return '<span class="badge b-r">龙头</span>' + (lbc >= 2 && lbc === maxLbc ? ' <span class="badge b-r" style="background:#b21f1f">空间龙头</span>' : '');
+  if(role === 'mid') return '<span class="badge b-o">中军</span>';
+  if(role === 'zha') return '<span class="badge b-g">杂毛</span>';
+  return '<span class="badge b-g" style="opacity:.7">未归属</span>';
+}
+function gradeRank(g){ return GRADE_RANK[g] == null ? 5 : GRADE_RANK[g]; }
+function roleRank(r){ return r === 'lead' ? 0 : r === 'mid' ? 1 : r === 'zha' ? 2 : 3; }
+/* 涨停池按代码检索（角色=龙头 的唯一依据） */
+function ztOf(code){
+  var arr = D.zt || [];
+  for(var i = 0; i < arr.length; i++){ if(String(arr[i].c) === String(code)) return arr[i]; }
+  return null;
+}
+/* ① 主通道：东财 ulist 批量取「所属行业 f100 + 成交额 f6 + 流通市值 f21」，一次请求覆盖全部持仓
+   实测口径：f100 返回东财行业名（如 白酒Ⅱ / 银行Ⅱ / 电池 / 乘用车 / 元件），与板块榜 f14 部分带级别后缀
+   （Ⅰ/Ⅱ/Ⅲ），故只用 f100 作行业依据，并由 secAlign 做后缀与互为包含对齐；f127 是涨跌幅类字段，禁用。 */
+function holdStocks(codes){
+  var ks = codes.slice().sort().join(',');
+  if(HSI.key === ks && HSI.v && Date.now() - HSI.t < 60000) return Promise.resolve(HSI.v);
+  var ids = [], i, s;
+  for(i = 0; i < codes.length; i++){ s = emSecid(codes[i]); if(s && ids.indexOf(s) < 0) ids.push(s); }
+  if(!ids.length) return Promise.resolve({});
+  var parts = [];
+  for(i = 0; i < ids.length; i += 50) parts.push(ids.slice(i, i + 50));
+  var out = {};
+  return Promise.all(parts.map(function(p){
+    return jsonp('https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&secids=' + p.join(',') +
+      '&fields=f2,f3,f6,f12,f14,f21,f100', 'cb', 9000).then(function(r){
+      var d = r && r.data && r.data.diff; if(!d) return;
+      Object.keys(d).forEach(function(k){ var x = d[k]; if(x && x.f12) out[x.f12] = x; });
+    }).catch(function(){});
+  })).then(function(){
+    if(Object.keys(out).length){ HSI.key = ks; HSI.t = Date.now(); HSI.v = out; }
+    return out;
+  });
+}
+/* 行业名对齐：f100 与板块榜 f14 口径差异（"白酒Ⅱ"↔"白酒"、"塑料制品"↔"塑料"）逐级降级匹配 */
+function secAlign(ind, GM){
+  if(!ind) return null;
+  if(GM && GM[ind] != null) return ind;
+  if(secAnyExact(ind)) return ind;
+  var keys = Object.keys(GM || {}), i, b;
+  for(i = 0; i < keys.length; i++){ b = keys[i]; if(b && (b.indexOf(ind) >= 0 || ind.indexOf(b) >= 0)) return b; }
+  var U = secList();
+  for(i = 0; i < U.length; i++){ b = String(U[i].f14 || ''); if(b && (b.indexOf(ind) >= 0 || ind.indexOf(b) >= 0)) return b; }
+  /* 末级兜底：剥掉东财行业名的级别后缀 Ⅰ/Ⅱ/Ⅲ 后再匹配一次 */
+  var bare = String(ind).replace(/[ⅠⅡⅢⅣ]+$/, '').replace(/(I{1,3}|IV)$/, '').trim();
+  if(bare && bare !== ind){
+    if(GM && GM[bare] != null) return bare;
+    for(i = 0; i < keys.length; i++){ b = keys[i]; if(b && (b.indexOf(bare) >= 0 || bare.indexOf(b) >= 0)) return b; }
+    for(i = 0; i < U.length; i++){ b = String(U[i].f14 || ''); if(b && (b.indexOf(bare) >= 0 || bare.indexOf(b) >= 0)) return b; }
+    return bare;
+  }
+  return ind;
+}
+/* ③ 角色判定（口径严格照搬 7.11 龙头 / 中军 / 补涨三档） */
+function holdRoleOf(code, x, zt, secName){
+  var f3 = x ? num(x.f3) : null, f6 = x ? num(x.f6) : null, f21 = x ? num(x.f21) : null;
+  if(zt){
+    var arr = D.ztGroup[secName] || D.ztGroup[zt.hybk] || [zt];
+    return { role: 'lead', lbc: zt.lbc || 1, maxLbc: maxLbcOf(arr), f3: f3, f6: f6, f21: f21 };
+  }
+  if(f3 != null && f3 >= 0 && f3 < 9.8 && f6 != null && f6 >= 1e9 && f21 != null && f21 >= 5e9)
+    return { role: 'mid', lbc: 0, maxLbc: 0, f3: f3, f6: f6, f21: f21 };
+  return { role: 'zha', lbc: 0, maxLbc: 0, f3: f3, f6: f6, f21: f21 };
+}
+/* 为全部持仓补齐 r.sec = {name, grade, role, lbc, maxLbc, main, f3, f6, f21, src, why} */
+function enrichHoldsSec(rows){
+  var codes = rows.map(function(r){ return String(r.h.code); });
+  var GM = secGradeMap();
+  return holdStocks(codes).then(function(map){
+    rows.forEach(function(r){
+      var code = String(r.h.code), x = map[code] || null, zt = ztOf(code);
+      var ind = (zt && zt.hybk && zt.hybk !== '其他') ? zt.hybk
+        : ((x && x.f100) || (D.indMap && D.indMap[code]) || '');
+      if(!ind || ind === '-' || ind === '其他' || ind === '未知'){
+        r.sec = { name: '—', grade: '—', role: null, main: false, unmatched: true,
+          nm: x ? x.f14 : null, why: (x ? '行业字段缺失' : '无行情/行业数据') };
+        return;
+      }
+      var name = secAlign(ind, GM) || ind;
+      var grade = GM[name] != null ? GM[name] : (GM[ind] != null ? GM[ind] : '—');
+      var rl = holdRoleOf(code, x, zt, name);
+      r.sec = { name: name, grade: grade, role: rl.role, lbc: rl.lbc, maxLbc: rl.maxLbc,
+        main: (grade === 'S' || grade === 'A'), nm: x ? x.f14 : null, f2: x ? num(x.f2) : null, f3: rl.f3, f6: rl.f6, f21: rl.f21,
+        ind: ind, src: zt ? '涨停池行业' : '行业字段' };
+    });
+    return rows;
+  });
+}
+/* ② 兜底通道：候选板块（三维主线行优先 + 涨停板块，按等级排序，最多 limit 个） */
+function holdSecCandidates(limit){
+  var out = [], seen = {}, cap = limit || 10;
+  function add(name, grade){
+    if(!name || seen[name] || name === '其他' || name === '未知' || out.length >= cap) return;
+    var sec = secAnyExact(name) || secByName(name, true);
+    var bk = sec && /^BK/i.test(String(sec.f12 || '')) ? sec.f12 : '';
+    if(!bk) return;
+    seen[name] = 1; out.push({ name: name, bk: bk, grade: grade || '—' });
+  }
+  if(D.ml && D.ml.rows) D.ml.rows.slice().sort(function(a, b){ return gradeRank(a.grade) - gradeRank(b.grade); })
+    .forEach(function(r){ add(r.name, r.grade); });
+  gradeSectors().forEach(function(g){ add(g.name, g.grade); });
+  return out;
+}
+function classifyHoldsSec(rows){
+  var pend = rows.filter(function(r){ return !r.sec || r.sec.unmatched; });
+  var cands = pend.length ? holdSecCandidates(10) : [];
+  if(!cands.length) return Promise.resolve(rows);
+  return Promise.all(cands.map(function(c){
+    return loadSecMembers(c.name, c.bk).then(function(v){ return { c: c, members: v || [] }; }).catch(function(){ return { c: c, members: [] }; });
+  })).then(function(got){
+    pend.forEach(function(r){
+      var code = String(r.h.code), matches = [];
+      got.forEach(function(g){
+        var mem = null, i;
+        for(i = 0; i < g.members.length; i++){ if(String(g.members[i].f12) === code){ mem = g.members[i]; break; } }
+        if(!mem) return;
+        var ztArr = D.ztGroup[g.c.name] || [], zt = null;
+        for(i = 0; i < ztArr.length; i++){ if(String(ztArr[i].c) === code){ zt = ztArr[i]; break; } }
+        var rl = holdRoleOf(code, mem, zt, g.c.name);
+        matches.push({ name: g.c.name, grade: g.c.grade || '—', role: rl.role, lbc: rl.lbc, maxLbc: rl.maxLbc, f3: rl.f3, f6: rl.f6, f21: rl.f21 });
+      });
+      if(!matches.length) return;
+      matches.sort(function(a, b){
+        return (gradeRank(a.grade) - gradeRank(b.grade)) || (roleRank(a.role) - roleRank(b.role));
+      });
+      var b0 = matches[0];
+      r.sec = { name: b0.name, grade: b0.grade, role: b0.role, lbc: b0.lbc, maxLbc: b0.maxLbc,
+        main: (b0.grade === 'S' || b0.grade === 'A'), f3: b0.f3, f6: b0.f6, f21: b0.f21,
+        src: '成分匹配', multi: matches.length };
+    });
+    return rows;
+  });
+}
+/* 板块归属加载总入口：主通道 → 兜底通道 */
+function loadHoldsSec(rows){ return enrichHoldsSec(rows).then(classifyHoldsSec); }
+function secBoardHtml(rows){
+  var MA5ST = { hold: '持有', over: '超涨', reduce: '减仓', sell: '清仓', watch: '观察' };
+  var main = [], other = [];
+  rows.forEach(function(r){ ((r.sec && r.sec.main) ? main : other).push(r); });
+  function sk(a, b){
+    var sa = a.sec || {}, sb = b.sec || {};
+    return (gradeRank(sa.grade) - gradeRank(sb.grade)) || (roleRank(sa.role) - roleRank(sb.role)) ||
+      (b.pct == null ? -1 : b.pct) - (a.pct == null ? -1 : a.pct);
+  }
+  main.sort(sk); other.sort(sk);
+  var lead = main.filter(function(r){ return r.sec.role === 'lead'; }).length;
+  var mid = main.filter(function(r){ return r.sec.role === 'mid'; }).length;
+  var zha = main.filter(function(r){ return r.sec.role === 'zha'; }).length;
+  var unm = rows.filter(function(r){ return !r.sec || r.sec.unmatched; }).length;
+  var sum = '<div class="note" style="margin-top:6px"><b>板块角色实时（全量 ' + rows.length + ' 只持仓全列出）：</b>' +
+    '<span class="up">' + main.length + '</span> 只属 S/A 主线（龙头 <b class="up">' + lead + '</b> · 中军 <b class="yel">' + mid + '</b> · 杂毛 <b class="flat">' + zha + '</b>）｜ ' +
+    '<span class="flat">' + (other.length - unm) + '</span> 只属 B/C/D 非主线板块｜ <span class="dn">' + unm + '</span> 只无板块归属。' +
+    '<b>角色口径：</b>龙头=该股今日涨停（含连板高度，最高板标"空间龙头"）；中军=未涨停且成交额≥10亿且流通市值≥50亿；杂毛=板块内后排跟风。<b>分级：</b>S/A=主线，B=活口轮动，C=零散脉冲，D=退潮，—=今日无涨停/未进主线判定。' +
+    '归属取「东财所属行业 + 涨停池行业」，成分股反向匹配为兜底；随每轮刷新实时重算。角色与分级仅为板块地位的客观分类，不代表买卖建议。</div>';
+  var tb = '<div style="margin-top:8px"><b style="font-size:12.5px;color:#f0453a">持仓板块角色实时看板（板块分级 · 龙头 / 中军 / 杂毛）</b>' +
+    '<span class="note" style="margin-left:6px">按 分级 → 角色 排序，S/A 主线置顶</span></div>' +
+    '<div class="twrap" style="margin-top:6px;max-height:420px;overflow:auto"><table class="mini-tbl"><thead><tr><th>名称</th><th>代码</th><th>所属板块</th><th>分级</th><th>角色</th><th>当日</th><th>成交额</th><th>MA5状态</th></tr></thead><tbody>' +
+    main.concat(other).map(function(r){
+      var cl = r.cl || {}, s = r.sec || {}, stt = (cl.state ? (MA5ST[cl.state] || cl.state) : '—');
+      var stb = cl.state ? ('b-' + (cl.state === 'hold' ? 'r' : (cl.state === 'over' ? 'o' : (cl.state === 'reduce' ? 'y' : (cl.state === 'sell' ? 'b' : 'g'))))) : 'g';
+      var cell = s.unmatched ? '<span class="note">—</span>'
+        : (esc(s.name) + (s.src === '成分匹配' ? ' <span class="note" style="font-size:10px">成分匹配</span>' : ''));
+      return '<tr><td><b>' + esc(r.name) + '</b></td><td class="mono">' + esc(r.code) + '</td>' +
+        '<td style="font-size:11.5px;white-space:normal">' + cell + '</td>' +
+        '<td>' + gradeTag(s.grade || '—') + '</td>' +
+        '<td>' + roleBadge(s.role, s.lbc, s.maxLbc) + '</td>' +
+        '<td>' + pcts(r.pct) + '</td>' +
+        '<td class="mono">' + (s.f6 != null ? famt(s.f6 / 1e8) : '—') + '</td>' +
+        '<td><span class="badge ' + stb + '">' + esc(stt) + '</span></td></tr>';
+    }).join('') + '</tbody></table></div>';
+  return sum + tb;
+}
 function renderM716(){
   var host = $('m7_16'); if(!host) return;
   if(!$('m7_16_cfg')) buildM716cfg();
@@ -2423,25 +2614,30 @@ function renderM716(){
     return klineBars(h.code).then(function(bars){ return { h: h, tc: txCode(h.code), bars: bars }; });
   })).then(function(rows){
     return qp.then(function(q){ rows.forEach(function(r){ r.q = r.tc ? (q[r.tc] || null) : null; }); return rows; });
-  }).then(function(rows){ renderM716body(rows, exec, st, e); }).catch(function(){
+  }).then(function(rows){ return loadHoldsSec(rows); }).then(function(rows){ renderM716body(rows, exec, st, e); }).catch(function(){
     body.innerHTML = '<div class="concl c-grn" style="margin-top:8px">实时行情获取失败（可能非交易时段或接口受限），下轮刷新自动重试。</div>';
   });
 }
 function renderM716body(rows, exec, st, e){
   var body = $('m7_16_body'); if(!body) return;
   var cats = { buy: [], hold: [], over: [], reduce: [], sell: [], watch: [], noData: [] };
+  var all = [];                       /* 全部持仓（含无数据），供板块角色实时看板全量列出 */
   var alertOn = lsGet('wb_hold_alert', false);
   rows.forEach(function(r){
     var q = r.q, price = (q && q[3] != null) ? num(q[3]) : null;
     var pct = (q && q[32] != null) ? num(q[32]) : null;
+    if(pct == null && r.sec && r.sec.f3 != null) pct = r.sec.f3;              /* 行情缺失时用东财行业快照涨幅兜底 */
+    if(price == null && r.sec && r.sec.f2 != null) price = r.sec.f2;
     var bars = (kCache[r.h.code] && kCache[r.h.code].v) || r.bars;
     var stt = ma5Stats(bars, price);
     var row = {
-      name: r.h.name, code: r.h.code, cost: r.h.cost,
-      pct: pct, price: price,
+      name: (r.h.name && r.h.name !== r.h.code) ? r.h.name : ((r.sec && r.sec.nm) || r.h.name || r.h.code),
+      code: r.h.code, cost: r.h.cost,
+      pct: pct, price: price, sec: r.sec,
       pnl: (r.h.cost != null && price != null) ? (price / r.h.cost - 1) * 100 : null,
       st: stt, cl: stt ? ma5Classify(stt) : null, buy: stt ? ma5Buy(stt) : null
     };
+    all.push(row);
     if(!stt){ cats.noData.push(row); return; }
     if(row.buy.ok) cats.buy.push(row);
     else if(row.cl.state === 'hold') cats.hold.push(row);
@@ -2477,17 +2673,23 @@ function renderM716body(rows, exec, st, e){
   h += '<div class="note" style="margin-top:6px">逐只判定 ' + N + ' 只（数据不足 ' + cats.noData.length + '） —— ' +
     '合法买点 <b class="up">' + cats.buy.length + '</b> · 持有 <b class="up">' + cats.hold.length + '</b> · 超涨警戒 <b class="ora">' + cats.over.length + '</b> · 减仓 <b class="yel">' + cats.reduce.length + '</b> · 清仓 <b class="dn">' + cats.sell.length + '</b> · 观察 <b class="flat">' + cats.watch.length + '</b>。' +
     '盘中实时判定随每轮刷新更新；<b>尾盘 14:45 后以收盘价定局执行</b>。</div>';
+  /* ③b 持仓板块角色实时看板（板块分级 + 龙头/中军/杂毛，全量持仓逐轮刷新实时更新） */
+  h += secBoardHtml(all);
   /* ④ 四状态分类卡片 */
+  var RF_HEAD = '<tr><th>名称</th><th>代码</th><th>板块 / 角色</th><th>当日</th><th>现价/成本</th><th>盈亏</th><th>偏离MA5</th><th>站/破线</th><th>斜率</th><th>判定逻辑</th></tr>';
   function card(title, cls, list, emptyTxt, fn, headTip){
     return '<div class="kpi"><div class="t">' + title + ' <span class="badge ' + cls + '">' + list.length + '只</span></div>' +
       (headTip && list.length ? '<div class="note" style="margin-top:4px">' + headTip + '</div>' : '') +
-      '<div class="twrap" style="margin-top:4px;max-height:360px;overflow-y:auto"><table class="mini-tbl"><tbody>' +
+      '<div class="twrap" style="margin-top:4px;max-height:360px;overflow-y:auto"><table class="mini-tbl">' +
+      (list.length ? '<thead>' + RF_HEAD + '</thead>' : '') + '<tbody>' +
       (list.length ? list.map(fn).join('') : '<tr><td class="loading">' + emptyTxt + '</td></tr>') + '</tbody></table></div></div>';
   }
   function rf(r){
     var s = r.st;
     return '<tr><td><b>' + esc(r.name) + '</b>' + (r.cl.state==='watch'&&s.volYang===0?' <span class="badge b-o">无量·剔除</span>':'') + '</td>' +
-      '<td class="mono">' + esc(r.code) + '</td><td>' + pcts(r.pct) + '</td>' +
+      '<td class="mono">' + esc(r.code) + '</td>' +
+      '<td style="white-space:normal;font-size:11px">' + (r.sec ? (r.sec.unmatched ? '<span class="note">未归属板块' + (r.sec.why ? '·' + esc(r.sec.why) : '') + '</span>' : (esc(r.sec.name) + ' ' + gradeTag(r.sec.grade) + '<br>' + roleBadge(r.sec.role, r.sec.lbc, r.sec.maxLbc))) : '—') + '</td>' +
+      '<td>' + pcts(r.pct) + '</td>' +
       '<td class="mono">' + (r.price!=null?r.price.toFixed(2):'—') + (r.cost!=null?'<br><span class="note" style="font-size:10.5px">成本 '+r.cost.toFixed(2)+'</span>':'') + '</td>' +
       '<td class="mono ' + (r.pnl!=null?(r.pnl>=0?'up':'dn'):'') + '">' + (r.pnl!=null?(r.pnl>0?'+':'')+r.pnl.toFixed(1)+'%':'—') + '</td>' +
       '<td class="mono">' + (s.dev==null?'—':(s.dev>0?'+':'')+s.dev.toFixed(1)+'%') + '</td>' +

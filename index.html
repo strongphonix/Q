@@ -180,6 +180,24 @@ section{scroll-margin-top:70px;}
 .m717-q{color:#9fb3c8;font-size:12px;margin-top:4px}
 .chk{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px dashed #1c2433}
 .chk input{margin-top:3px}
+/* ===== 7.18 竞价定型决策 ===== */
+.m718-card{border:1px solid #1c2433;border-radius:8px;padding:10px 12px;margin-top:8px;background:#0d1117}
+.m718-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 0}
+.m718-row label{font-size:13px;color:#c9d6e3}
+.m718-sel{background:#0d1117;color:#e6edf3;border:1px solid #2a3344;border-radius:6px;padding:4px 8px;font-size:13px}
+.m718-snap{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.m718-snap .kpi{padding:8px 10px}
+.m718-kv{font-size:12px;color:#9fb3c8;margin-top:2px}
+.m718-verdict{border:2px solid #f0453a;border-radius:10px;padding:12px 14px;margin-top:10px;background:#140d10}
+.m718-verdict .big{font-size:22px;font-weight:800;color:#f0453a}
+.m718-verdict .pos{font-size:16px;font-weight:700;color:#f59e0b}
+.m718-act{border:1px solid #1c2433;border-radius:8px;margin-top:6px}
+.m718-act th,.m718-act td{padding:5px 7px;font-size:12px}
+.m718-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:700;margin-right:4px}
+.m718-tag.buy{background:#0f1a10;color:#3fb950;border:1px solid #1f6f3a}
+.m718-tag.sell{background:#1a0f10;color:#f85149;border:1px solid #6f1f23}
+.m718-tag.wait{background:#16130a;color:#f59e0b;border:1px solid #6f531f}
+.m718-tag.low{background:#0f1622;color:#58a6ff;border:1px solid #1f4f6f}
 </style>
 </head>
 <body>
@@ -312,6 +330,8 @@ section{scroll-margin-top:70px;}
 <div id="m7_16"><div class="loading">数据加载中…</div></div>
 <h2 style="font-size:14px;margin-top:18px;border-color:#f0453a;color:#f0453a">7.17 主线交易全流程一体化清单（板块周期·龙头中军·缩量比·仓位·黑名单）</h2>
 <div id="m7_17"><div class="loading">数据加载中…</div></div>
+<h2 style="margin-top:18px;border-left:4px solid #f0453a;padding-left:8px;color:#f0453a">7.18 竞价定型：当日策略决策（09:25 起点）</h2>
+<div id="m7_18"><div class="loading">数据加载中…</div></div>
 <h2 style="font-size:14px;margin-top:18px">7.13 热榜 / 人气榜 TOP20</h2>
 <div id="m7_13"><div class="loading">数据加载中…</div></div>
 <h2 style="font-size:14px;margin-top:18px">7.14 消息面 / 政策催化速览（新浪7×24，自动关联涨停股）</h2>
@@ -2675,6 +2695,8 @@ function renderM716body(rows, exec, st, e){
     '盘中实时判定随每轮刷新更新；<b>尾盘 14:45 后以收盘价定局执行</b>。</div>';
   /* ③b 持仓板块角色实时看板（板块分级 + 龙头/中军/杂毛，全量持仓逐轮刷新实时更新） */
   h += secBoardHtml(all);
+  D.holds = all;   /* 暴露给 7.18 竞价定型：持仓逐只含 sec{grade,role,f3,f6}，供个股动作判定复用 */
+  if($('m7_18')) renderM718();   /* 持仓就绪后刷新 7.18 第六看 */
   /* ④ 四状态分类卡片 */
   var RF_HEAD = '<tr><th>名称</th><th>代码</th><th>板块 / 角色</th><th>当日</th><th>现价/成本</th><th>盈亏</th><th>偏离MA5</th><th>站/破线</th><th>斜率</th><th>判定逻辑</th></tr>';
   function card(title, cls, list, emptyTxt, fn, headTip){
@@ -3141,6 +3163,275 @@ function mlRenderMid(){
   box.innerHTML = mlChecklistHtml('② 主线中军筛选标准（硬性条件全满足才算中军）', hards, vetos, 'm717_mid');
   mlBindCheck('m717_mid', hards.length, vetos.length);
 }
+/* ============ 7.18 竞价定型：当日策略决策（09:25 起点） ============ */
+/* 复用既有引擎：指数 D.idxList / 涨停池 D.zt(+lbc) / 昨日涨停溢价 D.analysis.redRate / 最高标 D.zt / 主线 D.ml / 持仓 D.holds(7.16 暴露) */
+var M718 = { idx: 'auto', zt: 'auto', prev: 'auto', top: 'auto', main: 'auto' };
+
+/* —— 六看派生（纯函数，全部来自既有数据） —— */
+function auctionIdx(){
+  var sh = (D.idxList && D.idxList[0]) ? D.idxList[0] : null;
+  var sz = (D.idxList && D.idxList[1]) ? D.idxList[1] : null;
+  var shPct = sh && sh.pct != null ? sh.pct : null;
+  var szPct = sz && sz.pct != null ? sz.pct : null;
+  var amtR = (D.amtEst && D.amtToday) ? D.amtToday / D.amtEst : null;
+  return { shPct: shPct, szPct: szPct, amtToday: D.amtToday, amtEst: D.amtEst, amtR: amtR };
+}
+function auctionIdxState(a){
+  var p = a.shPct;
+  if(p == null) return 'NA';
+  if(p >= 0.5) return 'strong';
+  if(p <= -1) return 'weak';
+  return 'flat';
+}
+function auctionZt(){ return { zt: (D.zt || []).length, dt: (D.dt || []).length }; }
+function auctionZtState(z){
+  var zt = z.zt, dt = z.dt;
+  if(dt >= 10) return 'ice';
+  if(zt >= 30 && dt <= 0) return 'strong';
+  if(zt >= 10 && dt <= 5) return 'mid';
+  return 'weak';
+}
+function auctionPrev(){
+  var a = D.analysis;
+  if(!a || a.empty) return { NA: true, redRate: null, med: null, again: null };
+  return { NA: false, redRate: a.redRate, med: a.med, again: a.againRate, low: a.lowOpenRate };
+}
+function auctionPrevState(p){
+  if(p.NA || p.redRate == null) return 'NA';
+  if(p.redRate > 0.7) return 'strong';
+  if(p.redRate >= 0.3) return 'mid';
+  return 'weak';
+}
+function auctionTop(){
+  if(!(D.zt || []).length) return { empty: true };
+  var maxL = D.zt.reduce(function(m, x){ return Math.max(m, x.lbc || 1); }, 1);
+  var tops = D.zt.filter(function(x){ return (x.lbc || 1) === maxL; });
+  var rep = tops[0];
+  var p = (rep && rep.zdp != null) ? rep.zdp : ((rep && rep.pct != null) ? rep.pct : null);
+  return { lbc: maxL, name: rep ? rep.n : '—', code: rep ? rep.c : '', pct: p, cnt: tops.length };
+}
+function auctionTopState(t){
+  if(t.empty || t.pct == null) return 'NA';
+  return t.pct >= 0 ? 'safe' : 'hurt';
+}
+function auctionMain(){
+  var rows = (D.ml && D.ml.rows) ? D.ml.rows : [];
+  var sa = rows.filter(function(r){ return r.grade === 'S' || r.grade === 'A'; });
+  var allUp = sa.length && sa.every(function(r){ return (r.f3 || 0) > 0; });
+  var allDn = sa.length && sa.every(function(r){ return (r.f3 || 0) < 0; });
+  return { rows: rows, sa: sa.length, allUp: allUp, allDn: allDn, has: sa.length > 0 };
+}
+function auctionMainState(m){
+  if(!m.has) return 'none';
+  if(m.allUp) return 'cont';
+  if(m.allDn) return 'weak';
+  return 'mix';
+}
+function auctionNewStrong(){
+  var mains = {};
+  if(D.ml && D.ml.main) D.ml.main.forEach(function(r){ mains[r.name] = true; });
+  var up = D.secUp || [];
+  var n = 0;
+  up.slice(0, 15).forEach(function(s){ if(!mains[s.name] && (s.f3 || 0) >= 3) n++; });
+  return n >= 3;
+}
+/* —— 决策树引擎 —— */
+function auctionStrategy(){
+  var ai = auctionIdx(), az = auctionZt(), ap = auctionPrev(), at = auctionTop(), am = auctionMain();
+  var sIdx = M718.idx === 'auto' ? auctionIdxState(ai) : M718.idx;
+  var sZt = M718.zt === 'auto' ? auctionZtState(az) : M718.zt;
+  var sPrev = M718.prev === 'auto' ? auctionPrevState(ap) : M718.prev;
+  var sTop = M718.top === 'auto' ? auctionTopState(at) : M718.top;
+  var sMain = M718.main === 'auto' ? auctionMainState(am) : M718.main;
+  var total, pos;
+  if(sZt === 'ice' || sTop === 'hurt'){ total = '空仓日'; pos = '0 成'; }
+  else if(sIdx === 'strong' && sZt === 'strong' && sPrev === 'strong'){ total = '进攻日'; pos = '6-8 成'; }
+  else if(sIdx === 'weak' && sZt === 'weak' && sPrev === 'weak'){ total = '防守日'; pos = '1-2 成'; }
+  else { total = '平衡日'; pos = '3-5 成'; }
+  var newStrong = auctionNewStrong();
+  var dir;
+  if(sMain === 'cont') dir = '围绕主线做（龙头 + 中军）';
+  else if(sMain === 'weak' && newStrong) dir = '减旧主线，新板块进观察池（高低切）';
+  else if(sMain === 'none') dir = '无主线信号，仅做超跌反抽或不做';
+  else dir = '主线分歧，只做最强（精选个股）';
+  return { ai: ai, az: az, ap: ap, at: at, am: am, sIdx: sIdx, sZt: sZt, sPrev: sPrev, sTop: sTop, sMain: sMain, newStrong: newStrong, total: total, pos: pos, dir: dir };
+}
+/* —— 第三层：持仓个股动作 —— */
+function auctionHoldAction(h, st){
+  var g = h.sec ? (h.sec.grade || '—') : '—';
+  var p = h.sec ? (h.sec.f3 != null ? h.sec.f3 : null) : null;
+  var isMain = (g === 'S' || g === 'A');
+  if(st.total === '空仓日') return { act: 'sell', txt: '空仓日，持仓竞价高开即减仓，不接新票' };
+  if(p != null && p >= 8) return { act: 'wait', txt: '爆量高开≥8%：谨防冲高回落，不追，等 10:00 确认' };
+  if(st.total === '防守日' && p != null && p > 0) return { act: 'sell', txt: '防守日，持仓竞价高开=减仓机会，不接新票' };
+  if(isMain && st.sTop === 'safe' && h.sec && h.sec.role === 'lead') return { act: 'low', txt: '龙头竞价强：分歧低吸，不顶一字' };
+  if(isMain && p != null && p >= 3 && p <= 5) return { act: 'buy', txt: '主线' + g + ' + 高开3-5%：开盘不追，回踩5日线/分时均线低吸' };
+  if(isMain) return { act: 'low', txt: '主线' + g + '：等回踩均线低吸，不追高' };
+  return { act: 'wait', txt: '非主线/数据不足：只观察，不主动开仓' };
+}
+function auctionActTag(a){
+  if(a === 'buy') return '<span class="m718-tag buy">计划买</span>';
+  if(a === 'sell') return '<span class="m718-tag sell">计划卖</span>';
+  if(a === 'low') return '<span class="m718-tag low">低吸</span>';
+  return '<span class="m718-tag wait">等/观察</span>';
+}
+function stLabel(kind, s){
+  var map = {
+    idx: { strong: '高开≥0.5%（偏强）', flat: '±0.5%（中性）', weak: '低开≥1%（偏弱）', NA: '数据不足' },
+    zt: { strong: '涨停≥30·无跌停（强）', mid: '涨停10-30·跌停≤5（中）', weak: '涨停<10·跌停增多（弱）', ice: '跌停≥10（冰点）', NA: '数据不足' },
+    prev: { strong: '高开率>70%（接力强）', mid: '高开率30-70%（分歧）', weak: '高开率<30%（接力弱）', NA: '数据不足' },
+    top: { safe: '顶一字/高开（安全）', hurt: '炸开/低开（受挫）', NA: '数据不足' },
+    main: { cont: '主线续强', weak: '主线走弱', mix: '主线分歧', none: '无主线', NA: '数据不足' }
+  };
+  return (map[kind] && map[kind][s]) ? map[kind][s] : s;
+}
+/* —— 渲染 —— */
+function renderM718(){
+  var box = $('m7_18'); if(!box) return;
+  box.innerHTML = m718Shell();
+  bindM718Sel('idx'); bindM718Sel('zt'); bindM718Sel('prev'); bindM718Sel('top'); bindM718Sel('main');
+  m718Render();
+  m718ChkRender();
+}
+function bindM718Sel(key){
+  var el = $('m718_' + key); if(!el) return;
+  el.value = M718[key];
+  el.onchange = function(){ M718[key] = this.value; m718Render(); };
+}
+function m718Shell(){
+  return '' +
+    '<div class="note">本模块把「09:25 竞价定型」六看清单 + 三层决策树做成可计算/可校正面板。数据来自既有引擎（指数 D.idxList、涨停池 D.zt、昨日涨停溢价 D.analysis.redRate、最高标 D.zt.lbc、主线 D.ml、持仓 D.holds）。<b>注意：平台为开盘后实时快照，近似竞价定型；9:25 实际盘口请以右侧下拉「人工校正」覆盖自动值。</b>⚠️ 仅为交易框架，不构成投资建议。</div>' +
+    '<div class="m718-card"><div class="m718-row"><b>① 指数竞价（大盘基调）：</b>' + sel('idx', [['auto','自动(实时)'],['strong','高开≥0.5%'],['flat','±0.5%'],['weak','低开≥1%']]) + '</div>' +
+      '<div class="m718-row"><b>② 涨停/跌停家数（情绪温度）：</b>' + sel('zt', [['auto','自动(实时)'],['strong','强≥30无跌停'],['mid','中10-30·≤5跌停'],['weak','弱<10·跌停增'],['ice','冰点≥10跌停']]) + '</div>' +
+      '<div class="m718-row"><b>③ 昨涨停高开率（接力意愿）：</b>' + sel('prev', [['auto','自动(实时)'],['strong','强>70%'],['mid','中30-70%'],['weak','弱<30%']]) + '</div>' +
+      '<div class="m718-row"><b>④ 最高标竞价（情绪高度）：</b>' + sel('top', [['auto','自动(实时)'],['safe','顶一字/高开'],['hurt','炸开/低开']]) + '</div>' +
+      '<div class="m718-row"><b>⑤ 主线板块竞价（主线延续）：</b>' + sel('main', [['auto','自动(实时)'],['cont','续强'],['weak','走弱'],['mix','分歧'],['none','无主线']]) + '</div>' +
+    '</div>' +
+    '<div id="m718_snap" class="m718-snap"></div>' +
+    '<div id="m718_verdict"></div>' +
+    '<div id="m718_holds"></div>' +
+    '<div id="m718_chk"></div>' +
+    '<details class="m718-card"><summary>附：竞价时间结构 · 六看清单 · 决策树三层 · 三窗口衔接 · 避坑（静态参考）</summary>' + m718Ref() + '</details>';
+}
+function sel(key, opts){
+  var cur = M718[key];
+  var html = '<select id="m718_' + key + '" class="m718-sel">';
+  for(var i = 0; i < opts.length; i++){
+    html += '<option value="' + opts[i][0] + '"' + (opts[i][0] === cur ? ' selected' : '') + '>' + opts[i][1] + '</option>';
+  }
+  return html + '</select>';
+}
+function m718Render(){
+  var st = auctionStrategy();
+  var snap = $('m718_snap');
+  if(snap){
+    var ai = st.ai, az = st.az, ap = st.ap, at = st.at, am = st.am;
+    var cards = [];
+    cards.push(snapKpi('①指数竞价', (ai.shPct == null ? '—' : fpct(ai.shPct)), (ai.shPct == null ? '—' : (ai.shPct >= 0.5 ? '偏强' : (ai.shPct <= -1 ? '偏弱' : '中性'))), stLabel('idx', st.sIdx)));
+    cards.push(snapKpi('②涨停/跌停', az.zt + ' / ' + az.dt, '情绪温度', stLabel('zt', st.sZt)));
+    cards.push(snapKpi('③昨涨停高开率', (ap.redRate == null ? '—' : (ap.redRate * 100).toFixed(0) + '%'), '接力意愿', stLabel('prev', st.sPrev)));
+    cards.push(snapKpi('④最高标', (at.empty ? '—' : (at.lbc + '板 ' + esc(at.name))), (at.empty ? '—' : (at.pct == null ? '—' : fpct(at.pct))), stLabel('top', st.sTop)));
+    cards.push(snapKpi('⑤主线板块', (am.sa ? am.sa + ' 个S/A' : '0'), (am.has ? (am.allUp ? '续强' : (am.allDn ? '走弱' : '分歧')) : '无'), stLabel('main', st.sMain)));
+    cards.push(snapKpi('⑥量能', (ai.amtR == null ? '—' : (ai.amtR * 100).toFixed(0) + '%'), '较昨日同时', (ai.amtR == null ? '—' : (ai.amtR >= 1 ? '放量' : '缩量'))));
+    snap.innerHTML = cards.join('');
+  }
+  var v = $('m718_verdict');
+  if(v){
+    v.innerHTML = '<div class="m718-verdict"><span class="big">' + st.total + '</span>　<span class="pos">仓位 ' + st.pos + '</span>' +
+      '<div class="m718-kv">方向：' + st.dir + (st.newStrong ? '　<b style="color:#f59e0b">↑ 检测到高低切信号</b>' : '') + '</div>' +
+      '<div class="m718-kv">组合判定：指数[' + stLabel('idx', st.sIdx) + '] · 涨停[' + stLabel('zt', st.sZt) + '] · 昨涨停[' + stLabel('prev', st.sPrev) + '] · 最高标[' + stLabel('top', st.sTop) + '] · 主线[' + stLabel('main', st.sMain) + ']</div></div>';
+  }
+  m718Holds(st);
+}
+function snapKpi(t, v, s, label){
+  return '<div class="kpi"><div class="t">' + t + '</div><div class="v">' + v + '</div><div class="s">' + s + '</div><div class="m718-kv">' + label + '</div></div>';
+}
+function m718Holds(st){
+  var box = $('m718_holds'); if(!box) return;
+  var holds = (D.holds && D.holds.length) ? D.holds : [];
+  var rows = holds.map(function(h){
+    var a = auctionHoldAction(h, st);
+    var g = h.sec ? (h.sec.grade || '—') : '—';
+    var p = h.sec ? (h.sec.f3 != null ? h.sec.f3 : null) : null;
+    return '<tr><td><b>' + esc(h.name || h.code) + '</b></td><td class="mono">' + esc(h.code) + '</td>' +
+      '<td>' + (h.sec ? esc(h.sec.name || '—') : '—') + ' ' + gradeTag(g) + '</td>' +
+      '<td class="' + pctCls(p) + '">' + (p == null ? '—' : fpct(p)) + '</td>' +
+      '<td>' + auctionActTag(a.act) + esc(a.txt) + '</td></tr>';
+  }).join('');
+  box.innerHTML = '<div class="m718-card"><h4>⑥ 目标个股（持仓）竞价动作</h4>' +
+    '<div class="m718-act"><table class="mini-tbl"><thead><tr><th>名称</th><th>代码</th><th>板块/分级</th><th>当日</th><th>动作</th></tr></thead>' +
+    '<tbody>' + (rows || '<tr><td class="loading" colspan="5">暂无持仓（在 7.16 录入）</td></tr>') + '</tbody></table></div></div>';
+}
+var M718_CHK_DEF = [
+  '09:25:00 扫六看：涨停家数 / 昨涨停高开率 / 最高标 / 主线板块 / 目标股竞价',
+  '09:25:30 第一层：定总策略（攻/守/空）→ 仓位',
+  '09:26:00 第二层：定方向（主线延续 / 切换 / 无主线）',
+  '09:27:00 第三层：定个股动作（买 / 卖 / 等）',
+  '09:27:30 买入预埋限价单（低于竞价价1-2价位，等回踩成交）',
+  '09:28:30 卖出预埋卖单（高于竞价价，防高开回落）',
+  '09:29:30 停止下单，等开盘第一笔方向',
+  '09:30:00 开盘第一笔承接强→执行；直接砸盘→撤单观望'
+];
+function m718ChkRender(){
+  var box = $('m718_chk'); if(!box) return;
+  var chk = lsGet('wb_m718_chk', null) || {};
+  var html = '<div class="m718-card"><h4>09:25-09:30 五分钟执行清单（每日，勾选持久化）</h4>';
+  for(var i = 0; i < M718_CHK_DEF.length; i++){
+    var on = chk['m718chk' + i] ? ' checked' : '';
+    html += '<label class="chk"><input type="checkbox" id="m718chk' + i + '"' + on + '>' + esc(M718_CHK_DEF[i]) + '</label>';
+  }
+  html += '</div>';
+  box.innerHTML = html;
+  for(var j = 0; j < M718_CHK_DEF.length; j++){
+    (function(idx){
+      var el = $('m718chk' + idx); if(!el) return;
+      el.onchange = function(){
+        var c = lsGet('wb_m718_chk', null) || {};
+        c['m718chk' + idx] = this.checked;
+        lsSet('wb_m718_chk', c);
+      };
+    })(j);
+  }
+}
+function m718Ref(){
+  return '' +
+  '<div style="margin-top:8px"><b>一、竞价时间结构与规则</b><table class="mini-tbl"><thead><tr><th>时间</th><th>状态</th><th>你的动作</th></tr></thead><tbody>' +
+  '<tr><td>09:15</td><td>竞价开始</td><td>只看不操作（可撤单，数据会变）</td></tr>' +
+  '<tr><td>09:15-09:20</td><td>可撤单期</td><td>观察方向；涨停家数会虚高</td></tr>' +
+  '<tr><td>09:20-09:25</td><td>不可撤单期（关键）</td><td>看9:20后不撤的买单，才是真金白银</td></tr>' +
+  '<tr><td>09:25</td><td>竞价定型</td><td>开盘价产生，策略输入到位</td></tr>' +
+  '<tr><td>09:25-09:30</td><td>静默期</td><td>完成策略判定+挂单准备，不在盘口博弈</td></tr>' +
+  '</tbody></table></div>' +
+  '<div style="margin-top:8px"><b>二、六看清单</b><ul style="margin:4px 0 0 18px;color:#c9d6e3;font-size:12px;line-height:1.7">' +
+  '<li>① 指数竞价：高开0.5%以上偏强，低开1%以上偏弱；成交额放量=活跃，缩量=观望 → 定仓位总闸门</li>' +
+  '<li>② 涨停/跌停家数：≥30无跌停强，10-30且跌停≤5中，＜10弱，跌停≥10冰点</li>' +
+  '<li>③ 昨涨停高开率：＞70%接力强，30-70%分歧，＜30%无接力（禁追高）</li>' +
+  '<li>④ 最高标/龙头：顶一字/高开=高度在；炸开/低开=全军防守</li>' +
+  '<li>⑤ 主线板块：昨日主线高开量增=延续；集体低开=退潮/高低切；新板块批量高开=切换</li>' +
+  '<li>⑥ 目标个股：超预期（高开＞预期）计划买；低预期（低开/平开）计划卖或放弃；一字/大幅高开不打板追</li>' +
+  '</ul></div>' +
+  '<div style="margin-top:8px"><b>三、决策树三层</b><table class="mini-tbl"><thead><tr><th>竞价组合</th><th>当日总策略</th><th>仓位</th></tr></thead><tbody>' +
+  '<tr><td>指数高开+涨停多+昨涨停高开率＞70%</td><td>进攻日</td><td>6-8成</td></tr>' +
+  '<tr><td>指数平开+情绪中性+高开率30-70%</td><td>平衡日</td><td>3-5成</td></tr>' +
+  '<tr><td>指数低开+涨停少+高开率＜30%</td><td>防守日</td><td>1-2成</td></tr>' +
+  '<tr><td>跌停批量+最高标炸板</td><td>空仓日</td><td>0</td></tr>' +
+  '</tbody></table></div>' +
+  '<div style="margin-top:8px"><b>四、与三窗口体系衔接</b><table class="mini-tbl"><thead><tr><th>时间</th><th>定位</th><th>关系</th></tr></thead><tbody>' +
+  '<tr><td>09:25</td><td>定当日策略（本窗口）</td><td>定基调：攻/守/空</td></tr>' +
+  '<tr><td>09:30-10:00</td><td>开盘验证</td><td>验证竞价判断，假强就撤</td></tr>' +
+  '<tr><td>10:00-10:30</td><td>日内定性</td><td>决定加减仓力度</td></tr>' +
+  '<tr><td>13:00-13:30</td><td>午后验证</td><td>资金回流方向确认</td></tr>' +
+  '<tr><td>14:00-14:30</td><td>尾盘预演</td><td>辨识偷袭板与真回流（见7.15）</td></tr>' +
+  '</tbody></table></div>' +
+  '<div style="margin-top:8px"><b>五、关键避坑</b><ul style="margin:4px 0 0 18px;color:#c9d6e3;font-size:12px;line-height:1.7">' +
+  '<li>竞价数据会"表演"：9:15-9:20强势可能全是虚挂单，以9:20后不可撤单期为准</li>' +
+  '<li>竞价强≠全天强：高开8%+往往开盘冲高回落，反而弱</li>' +
+  '<li>不要竞价追高：竞价追高买入是成本最高、确定性最低的动作</li>' +
+  '<li>竞价结论要可推翻：09:30开盘前5分钟若与竞价相反，以盘面为准果断修正</li>' +
+  '<li>昨日涨停股竞价溢价率≈晋级率的竞价版；竞价量比/成交额用7.12/7.16判断标准</li>' +
+  '</ul></div>';
+}
+
 function renderM715(){
   var box = $('m7_15');
   if(!box) return;

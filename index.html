@@ -229,6 +229,11 @@ section{scroll-margin-top:70px;}
 <h2 style="border-color:#f0453a;color:#f0453a">7.22 周期女王（六步力学：定战场 · 识龙魂 · 断时机 · 辨真伪 · 持与离 · 接力形态）</h2>
 <div id="m7_22"><div class="loading">数据加载中…</div></div>
 </section>
+<!-- 7.23 10日涨幅榜 × MA5 四状态 · 交叉分析（7.12 的势能维度补充） -->
+<section class="card" id="m7top23">
+<h2 style="border-color:#f0453a;color:#f0453a">7.23 10日涨幅榜 × MA5 四状态 · 交叉分析（扫描势能最强的前 60 只 · 三层输出：可做多 / 待确认 / 回避）</h2>
+<div id="m7_23"><div class="loading">数据加载中…</div></div>
+</section>
 <section class="card" id="m7top16">
 <h2 style="border-color:#f0453a;color:#f0453a">7.16 个人持仓 · MA5 实时监控（四状态 + 合法买点 + 实时买入信号）</h2>
 <div id="m7_16"><div class="loading">数据加载中…</div></div>
@@ -540,7 +545,7 @@ function sinaKlineBars(code){
     s.onload = function(){
       var arr = window[name];
       fin(arr && arr.length >= 11 ? arr.map(function(x){
-        return { o: parseFloat(x.open), c: parseFloat(x.close), v: parseFloat(x.volume) };
+        return { o: parseFloat(x.open), c: parseFloat(x.close), h: parseFloat(x.high), l: parseFloat(x.low), v: parseFloat(x.volume) };
       }).filter(function(b){ return !isNaN(b.c); }) : null);
     };
     s.onerror = function(){ fin(null); };
@@ -548,7 +553,8 @@ function sinaKlineBars(code){
     document.head.appendChild(s);
   });
 }
-/* 日K主入口：返回 bars [{o,c,v},...]（前复权收盘口径，末根为当日实时价） */
+/* 日K主入口：返回 bars [{o,c,h,l,v},...]（前复权收盘口径，末根为当日实时价）
+   h/l（最高/最低）供 7.23「连续不创新高 / 上影线」类判定使用；旧调用方只读 o/c/v，向后兼容。 */
 function klineBars(code){
   var c = kCache[code];
   if(c && Date.now() - c.t < 1800000) return Promise.resolve(c.v);
@@ -564,7 +570,7 @@ function klineBars(code){
         var rows = d && (d.qfqday || d.day);
         if(!rows || !rows.length) throw new Error('empty');
         return rows.map(function(x){
-          return { o: parseFloat(x[1]), c: parseFloat(x[2]), v: parseFloat(x[5]) };   /* 行格式：日期,开,收,高,低,量 */
+          return { o: parseFloat(x[1]), c: parseFloat(x[2]), h: parseFloat(x[3]), l: parseFloat(x[4]), v: parseFloat(x[5]) };   /* 行格式：日期,开,收,高,低,量 */
         }).filter(function(b){ return !isNaN(b.c); });
       })
       .catch(function(){ return sinaKlineBars(code); })  /* 通道2：新浪日K，独立源，script无Origin限制 */
@@ -572,12 +578,12 @@ function klineBars(code){
         if(bs && bs.length) return bs;
         var secid = emSecid(code);                        /* 通道3：东财push2his日K JSONP 兜底 */
         if(!secid) return null;
-        return jsonp('https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=' + secid + '&klt=101&fqt=1&lmt=25&end=20500101&fields1=f1,f2,f3&fields2=f51,f52,f53,f56', 'cb', 12000).then(function(r){
+        return jsonp('https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=' + secid + '&klt=101&fqt=1&lmt=25&end=20500101&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56', 'cb', 12000).then(function(r){
           var kl = r && r.data && r.data.klines;
           if(!kl) return null;
           return kl.map(function(s){
-            var q = s.split(',');                          /* 行格式：日期,开,收,量 */
-            return { o: parseFloat(q[1]), c: parseFloat(q[2]), v: parseFloat(q[3]) };
+            var q = s.split(',');                          /* 行格式：日期,开,收,高,低,量 */
+            return { o: parseFloat(q[1]), c: parseFloat(q[2]), h: parseFloat(q[3]), l: parseFloat(q[4]), v: parseFloat(q[5]) };
           }).filter(function(b){ return !isNaN(b.c); });
         }).catch(function(){ return null; });
       });
@@ -650,8 +656,10 @@ function k10NewFlag(name, f26){
   return null;
 }
 function k10EmPage(host, pn){
+  /* 字段：f2最新价 f3涨跌幅 f5成交量(手) f10量比 f15最高 f18昨收 f100行业 f160十日涨幅 f26上市日期
+     多取的 f5/f10/f15/f18 供 7.23 买入信号用（量比 / 上影率 / 昨收），不增加任何额外请求。 */
   var u = 'https://' + host + '/api/qt/clist/get?pn=' + pn + '&pz=100&po=1&np=1&fltt=2&invt=2&fid=f160&fs=' +
-    encodeURIComponent(K10_FS) + '&fields=f12,f14,f2,f3,f100,f160,f26';
+    encodeURIComponent(K10_FS) + '&fields=f12,f14,f2,f3,f5,f10,f15,f18,f100,f160,f26';
   return jsonp(u, 'cb', 12000).then(function(r){
     var d = r && r.data && r.data.diff;
     if(!d) return [];
@@ -687,6 +695,7 @@ function loadK10EM(){
       out.push({ code: x.f12, name: x.f14,
         zdp: (x.f3 === undefined || x.f3 === null || x.f3 === '-') ? '-' : x.f3,
         price: x.f2, ind: x.f100 || (D.indMap && D.indMap[x.f12]) || '—', g10: g,
+        lb: num(x.f10), high: num(x.f15), pre: num(x.f18), vol: num(x.f5),   /* 量比/最高/昨收/成交量(手)：7.23 信号用 */
         listDays: k10ListDays(x.f26) });
     });
     out.sort(function(a, b){ return b.g10 - a.g10; });
@@ -1540,6 +1549,7 @@ function renderM7(){
   renderM71(); renderM72(); renderM73(); renderM74(); renderM75(); renderM76();
   renderM77(); renderM78(); renderM79(); renderM710(); renderM711(); renderM712(); renderM713(); renderM714(); renderM715(); renderM716(); renderM717(); renderM718(); renderM719(); renderM720();
   renderM722();   /* 7.22 周期女王：必须在此调度，否则容器永远停在"数据加载中…" */
+  renderM723();   /* 7.23 交叉分析（10日涨幅榜前 60 × MA5 四状态；自扫日K，与 7.12/7.16 共享 kCache） */
 }
 function renderM71(){
   var cmp = (D.amtToday != null && D.amtEst != null && D.amtEst > 0) ? (D.amtToday / D.amtEst - 1) * 100 : null;
@@ -4375,6 +4385,309 @@ function m722LoadForms(pool){
   step();
 }
 
+/* ==================================================================
+   7.23 10日涨幅榜 × MA5 四状态 · 交叉分析
+   ------------------------------------------------------------------
+   两套独立系统的交叉（**只用这两项**，不叠加任何额外范围约束）：
+     A. 10日涨幅榜（D.k10，全市场按 10 日涨幅 f160 排序）→ 势能维度：名次 + 涨幅档位
+     B. MA5 趋势系统（ma5Stats → ma5Classify 四状态 / ma5Buy 合法买点）→ 趋势维度
+   扫描宇宙 = 10日涨幅榜前 XREF_RULE.scanTop 只（势能最强的这批，不再是某个板块池），
+              逐只拉 25 日前复权日K 算 MA5（与 7.12 / 7.16 共享 kCache 30 分钟缓存）。
+   输出**三层**，避免"无标的"的空结果：
+     ★ 可做多（MA5 合法买点 / 坚定持有） → ☆ 待确认（超涨警戒 / 观察） → ✕ 回避（减仓 / 清仓）
+   本模块不新增任何买卖阈值：MA5 状态与买点全部引用平台既有的 ma5Classify / ma5Buy 结论；
+   涨幅档位边界仅为**展示分档**（给人看势能分布），不是买卖条件。
+   ================================================================== */
+var XREF_RULE = {
+  scanTop: 60,             /* 扫描 10日涨幅榜前 N 只（势能最强的一批） */
+  gBands: [20, 40, 60],    /* 10日涨幅分档边界（仅展示用） */
+  /* 综合分 = MA5 状态分 ×2（趋势权重更高：决定能不能做）+ 势能档位分（涨幅越高分越高） */
+  ma5Score: { buy: 5, hold: 4, over: 2, watch: 1, reduce: -2, sell: -4 },
+  gScore: [1, 2, 3, 4],
+  detailCap: 80
+};
+var XREF = { key: '', running: false, done: false, rows: [], t: 0, ok: 0, fail: 0 };
+/* 矩阵行：MA5 状态（按「能不能做」由强到弱排列） */
+var XREF_ROWS = [
+  { k: 'buy',    t: '合法买点',   sub: '斜率翻上 + 站稳2日 + 偏离0~6% + 放量阳线' },
+  { k: 'hold',   t: '坚定持有',   sub: 'MA5 向上 + 站稳 + 偏离<8%' },
+  { k: 'over',   t: '超涨警戒',   sub: 'MA5 向上但偏离 >8%，不新开仓' },
+  { k: 'watch',  t: '观察',       sub: '只看不买，等站线/斜率确认' },
+  { k: 'reduce', t: '减仓防守',   sub: '斜率向下 / 反复破线' },
+  { k: 'sell',   t: '无条件清仓', sub: 'MA5 向下 + 连续破线 ≥3 天' }
+];
+/* 该股落在矩阵哪一行：合法买点优先（与 7.12 分组口径一致），否则用四状态 */
+function xrefRowKey(r){
+  if(r && r.buy && r.buy.ok) return 'buy';
+  return (r && r.cl && r.cl.state) ? r.cl.state : 'watch';
+}
+/* 10日涨幅档位：0/1/2/3（仅展示分档，不是买卖条件） */
+function xrefGBand(g){
+  if(g == null || isNaN(g)) return 0;
+  var B = XREF_RULE.gBands;
+  if(g < B[0]) return 0;
+  if(g < B[1]) return 1;
+  if(g < B[2]) return 2;
+  return 3;
+}
+function xrefGBandName(i){
+  var B = XREF_RULE.gBands;
+  if(i === 0) return '< ' + B[0] + '%';
+  if(i === 1) return B[0] + '~' + B[1] + '%';
+  if(i === 2) return B[1] + '~' + B[2] + '%';
+  return '≥ ' + B[2] + '%';
+}
+/* 交叉构建（纯函数，便于单测）：rows 为已算好 MA5 的榜单个股 */
+function xrefBuild(rows){
+  var items = (rows || []).map(function(r){
+    var key = xrefRowKey(r);
+    var band = xrefGBand(r.g10);
+    var ms = XREF_RULE.ma5Score[key]; if(ms == null) ms = 0;
+    var gs = XREF_RULE.gScore[band]; if(gs == null) gs = 0;
+    return { rank: r.rank, name: r.name, code: r.code, sec: r.sec, grade: r.grade, pct: r.pct,
+      price: r.price, g10: r.g10, st: r.st, cl: r.cl, buy: r.buy,
+      rowKey: key, band: band, score: ms * 2 + gs };
+  });
+  var cells = {};
+  XREF_ROWS.forEach(function(R){ cells[R.k] = { 0: [], 1: [], 2: [], 3: [] }; });
+  items.forEach(function(x){ if(cells[x.rowKey]) cells[x.rowKey][x.band].push(x); });
+  /* 可做多：同分按偏离度升序（不追高） */
+  var playable = items.filter(function(x){ return x.rowKey === 'buy' || x.rowKey === 'hold'; });
+  playable.sort(function(a, b){
+    if(b.score !== a.score) return b.score - a.score;
+    var da = (a.st && a.st.dev != null) ? a.st.dev : 999;
+    var db = (b.st && b.st.dev != null) ? b.st.dev : 999;
+    return da - db;
+  });
+  var pending = items.filter(function(x){ return x.rowKey === 'over' || x.rowKey === 'watch'; });
+  pending.sort(function(a, b){ return b.score - a.score; });
+  var avoid = items.filter(function(x){ return x.rowKey === 'reduce' || x.rowKey === 'sell'; });
+  avoid.sort(function(a, b){ return a.score - b.score; });
+  return { items: items, cells: cells, n: items.length, playable: playable, pending: pending, avoid: avoid };
+}
+/* 矩阵格 / 明细行的操作建议（两套系统的组合语义） */
+function xrefAdvice(rowKey, band){
+  if(rowKey === 'buy' || rowKey === 'hold'){
+    var trend = (rowKey === 'buy') ? '买点成立' : '趋势健康';
+    if(band >= 2) return { t: '★ 双确认首选', cls: 'b-r', d: trend + ' + 势能居前（10日涨幅 ' + xrefGBandName(band) + '）→ 趋势与势能共振' };
+    if(band === 1) return { t: '★ 双确认', cls: 'b-r', d: trend + ' + 势能中段（10日涨幅 ' + xrefGBandName(band) + '）' };
+    return { t: '☆ 趋势优先', cls: 'b-o', d: trend + '，但 10日涨幅 ' + xrefGBandName(band) + '（势能尚弱或刚启动）' };
+  }
+  if(rowKey === 'over') return { t: '△ 警戒 · 等回踩', cls: 'b-o',
+    d: '趋势仍向上但乖离 >' + MA5_RULE.devOver + '%，不新开仓、持仓分批止盈' + (band >= 2 ? '；且势能居前，属高位加速区' : '') };
+  if(rowKey === 'watch') return { t: '观察', cls: 'b-g', d: '趋势未确认（未站线 / 斜率未翻上 / 无放量阳线），只看不买' };
+  if(rowKey === 'reduce') return { t: '✕ 回避', cls: 'b-b',
+    d: 'MA5 斜率向下或反复破线' + (band >= 2 ? ' —— 势能虽在但趋势已坏，最易套人，不参与' : '，不参与') };
+  return { t: '✕ 剔除', cls: 'b-b', d: 'MA5 向下 + 连续破线 ≥' + MA5_RULE.breakClear + ' 天，下跌趋势确立，不博弈反弹' };
+}
+function xrefTipHtml(){
+  return '<div class="note">本模块把两套<b>独立</b>系统做<b>交叉</b>：<b>A · 10日涨幅榜</b>（全市场按 10 日涨幅排序，回答「<b>势能在不在、有多强</b>」）' +
+    ' × <b>B · MA5 趋势系统</b>（四状态 + 合法买点，回答「<b>趋势能不能做</b>」）。' +
+    '两套结论都<b>直接引用</b>既有模块（⑨ 10日涨幅榜取数 / 7.12 的 ma5Stats · ma5Classify · ma5Buy），本模块<b>不新增任何买卖阈值、不叠加额外范围约束</b>。<br>' +
+    '<b>扫描范围：</b>10日涨幅榜前 <b>' + XREF_RULE.scanTop + '</b> 只（势能最强的一批），逐只拉 25 日前复权日K 算 MA5；日K 30 分钟缓存，与 7.12 / 7.16 共享。<br>' +
+    '<b>矩阵读法：</b>行 = MA5 状态（能不能做），列 = 10日涨幅档位（势能多强），格内数字 = 该组合下的个股数；<b>左上最强、右下最弱</b>。' +
+    '⚠️ 仅为两套系统的数据交叉与信号识别，<b>不构成投资建议</b>。</div>';
+}
+function xrefHeadHtml(xb){
+  var play = xb.playable, pend = xb.pending, avoid = xb.avoid;
+  var h = '<div class="stgbar">' +
+    '<div class="sg" style="flex:1.1"><div class="l">扫描范围</div><div class="v" style="font-size:15px">10日涨幅榜前 ' + XREF.rows.length + ' 只</div>' +
+      '<div class="d">势能最强的一批 · 日K成功 ' + XREF.ok + (XREF.fail ? ' · 失败 ' + XREF.fail : '') + '</div></div>' +
+    '<div class="sg" style="flex:1.2"><div class="l">★ 可做多（MA5 买点 / 坚定持有）</div><div class="v up" style="font-size:15px">' + play.length + ' 只</div>' +
+      '<div class="d">' + (play.length ? '按「趋势 × 势能」综合分排序' : '榜单内暂无趋势可做多者，看下方 ☆ 待确认') + '</div></div>' +
+    '<div class="sg"><div class="l">☆ 待确认（超涨 / 观察）</div><div class="v yel" style="font-size:15px">' + pend.length + ' 只</div>' +
+      '<div class="d">等回踩 MA5 或等站线 / 斜率确认</div></div>' +
+    '<div class="sg"><div class="l">✕ 回避（减仓 / 清仓）</div><div class="v dn" style="font-size:15px">' + avoid.length + ' 只</div>' +
+      '<div class="d">MA5 斜率向下 / 连续破线</div></div>' +
+    '</div>';
+  if(play.length){
+    h += '<div class="concl c-red"><b>★ 可做多 ' + play.length + ' 只</b>（势能 × 趋势 双维度均成立）：' +
+      play.slice(0, 10).map(function(x){
+        return esc(x.name) + '（10日' + (x.g10 == null ? '—' : x.g10.toFixed(1) + '%') + '·' + (x.rowKey === 'buy' ? '买点' : '持有') + '）';
+      }).join('、') + (play.length > 10 ? ' 等' : '') + '。</div>';
+  } else {
+    h += '<div class="concl c-ora">榜单内当前<b>无「MA5 合法买点 / 坚定持有」</b>的标的 —— 势能强但趋势未就绪，宜等确认，' +
+      '下方 <b>☆ 待确认</b> 清单（' + pend.length + ' 只）可继续跟踪。</div>';
+  }
+  return h;
+}
+function xrefMatrixHtml(xb){
+  var B = XREF_RULE.gBands;
+  var body = XREF_ROWS.map(function(R){
+    var tot = 0;
+    var tds = [0, 1, 2, 3].map(function(b){
+      var arr = xb.cells[R.k][b] || []; tot += arr.length;
+      var s0 = (XREF_RULE.ma5Score[R.k] || 0) * 2 + (XREF_RULE.gScore[b] || 0);
+      var alpha = Math.max(0, Math.min(1, (s0 + 8) / 21)) * 0.30;
+      var bg = s0 > 0 ? ('rgba(240,69,58,' + alpha.toFixed(2) + ')') : (s0 < 0 ? ('rgba(16,185,129,' + (alpha * 0.8).toFixed(2) + ')') : 'transparent');
+      var adv = xrefAdvice(R.k, b);
+      return '<td class="mono" style="text-align:center;background:' + bg + '" title="' + esc(adv.t + '：' + adv.d) + '">' +
+        (arr.length ? arr.length : '<span class="flat">0</span>') + '</td>';
+    }).join('');
+    return '<tr><td><b>' + esc(R.t) + '</b><div class="flat" style="font-size:10.5px">' + esc(R.sub) + '</div></td>' + tds + '<td class="mono">' + tot + '</td></tr>';
+  }).join('');
+  return '<div class="m718-card"><h4>① 交叉矩阵：MA5 四状态 ✕ 10日涨幅档位（共 ' + xb.n + ' 只）</h4>' +
+    '<div class="note">格内数字 = 该组合下的个股数（鼠标悬停看该组合的操作建议）。<b>左上 = 趋势可做 + 势能居前（最强）</b>；右下 = 趋势已坏 + 势能最弱（最弱）。' +
+    '涨幅档位边界（' + B.join(' / ') + '%）仅为<b>展示分档</b>，不是买卖条件。</div>' +
+    '<div class="twrap"><table class="mini-tbl"><thead><tr><th>MA5 四状态 ✕ 10日涨幅</th>' +
+    '<th>' + xrefGBandName(0) + '</th><th>' + xrefGBandName(1) + '</th><th>' + xrefGBandName(2) + '</th><th>' + xrefGBandName(3) + '</th><th>小计</th>' +
+    '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
+}
+function xrefPickHtml(xb){
+  var head = '<div class="m718-card"><h4>② ★ 可做多（MA5 买点 / 坚定持有 · 共 ' + xb.playable.length + ' 只 · 按「趋势 ✕ 势能」综合分排序）</h4>';
+  var body;
+  if(!xb.playable.length){
+    body = '<div class="loading">榜单内当前无「MA5 合法买点 / 坚定持有」的标的 —— 势能强但趋势未就绪，见下方 ☆ 待确认清单。</div>';
+  } else {
+    body = '<div class="note">排序 = MA5 状态分 ×2 + 势能档位分（<b>趋势权重更高</b>，因其决定「能不能做」）；同分按偏离度升序（<b>不追高</b>）。' +
+      '「建议」由 ① 矩阵对应格给出（★ 双确认 = 趋势可做 + 势能居前）。</div>' +
+      '<div class="twrap" style="max-height:460px;overflow-y:auto"><table class="mini-tbl"><thead><tr>' +
+      '<th>#</th><th>名称</th><th>代码</th><th>10日榜名次</th><th>10日涨幅</th><th>当日</th>' +
+      '<th>MA5 状态</th><th>偏离</th><th>站稳</th><th>斜率</th><th>放量阳线</th><th>综合分</th><th>建议</th>' +
+      '</tr></thead><tbody>';
+    xb.playable.forEach(function(x, i){
+      var s = x.st, adv = xrefAdvice(x.rowKey, x.band);
+      body += '<tr>' +
+        '<td class="mono">' + (i + 1) + '</td>' +
+        '<td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td>' +
+        '<td class="mono">' + esc(x.code) + '</td>' +
+        '<td class="mono">#' + x.rank + '</td>' +
+        '<td class="up mono">' + (x.g10 == null ? '—' : x.g10.toFixed(2) + '%') + '</td>' +
+        '<td>' + pcts(x.pct) + '</td>' +
+        '<td>' + (x.rowKey === 'buy' ? '<span class="badge b-r">合法买点</span>' : '<span class="badge b-y">坚定持有</span>') + '</td>' +
+        '<td class="mono">' + (s && s.dev != null ? ((s.dev > 0 ? '+' : '') + s.dev.toFixed(1) + '%') : '—') + '</td>' +
+        '<td class="mono">' + (s ? s.standDays + '日' : '—') + '</td>' +
+        '<td class="' + (s && s.slopeUp ? 'up' : 'dn') + '">' + (s ? (s.slopeUp ? ('向上' + s.upDays + '天') : '向下') : '—') + '</td>' +
+        '<td class="mono">' + (s ? s.volYang + '次' : '—') + '</td>' +
+        '<td class="mono ' + (x.score > 0 ? 'up' : 'flat') + '">' + x.score + '</td>' +
+        '<td><span class="badge ' + adv.cls + '">' + esc(adv.t) + '</span> <span class="flat">' + esc(adv.d) + '</span></td>' +
+        '</tr>';
+    });
+    body += '</tbody></table></div>';
+  }
+  return head + body + '</div>';
+}
+function xrefPendingHtml(xb){
+  var head = '<div class="m718-card"><h4>③ ☆ 待确认（超涨警戒 / 观察 · 共 ' + xb.pending.length + ' 只）</h4>';
+  var body;
+  if(!xb.pending.length){
+    body = '<div class="loading">当前无待确认标的。</div>';
+  } else {
+    body = '<div class="note">这些票<b>势能在、但趋势尚未给出买点</b>：<b>超涨警戒</b>=MA5 仍向上但乖离 >' + MA5_RULE.devOver +
+      '%（不新开仓，等回踩 MA5）；<b>观察</b>=未站线 / 斜率未翻上 / 无放量阳线（等确认，只看不买）。</div>' +
+      '<div class="twrap" style="max-height:340px;overflow-y:auto"><table class="mini-tbl"><thead><tr>' +
+      '<th>名称</th><th>代码</th><th>10日榜名次</th><th>10日涨幅</th><th>当日</th><th>MA5 状态</th><th>偏离</th><th>站稳</th><th>斜率</th><th>等待什么</th>' +
+      '</tr></thead><tbody>';
+    xb.pending.forEach(function(x){
+      var s = x.st, adv = xrefAdvice(x.rowKey, x.band);
+      body += '<tr>' +
+        '<td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td>' +
+        '<td class="mono">' + esc(x.code) + '</td>' +
+        '<td class="mono">#' + x.rank + '</td>' +
+        '<td class="up mono">' + (x.g10 == null ? '—' : x.g10.toFixed(2) + '%') + '</td>' +
+        '<td>' + pcts(x.pct) + '</td>' +
+        '<td>' + esc((x.cl && x.cl.label) || '—') + '</td>' +
+        '<td class="mono">' + (s && s.dev != null ? ((s.dev > 0 ? '+' : '') + s.dev.toFixed(1) + '%') : '—') + '</td>' +
+        '<td class="mono">' + (s ? s.standDays + '日' : '—') + '</td>' +
+        '<td class="' + (s && s.slopeUp ? 'up' : 'dn') + '">' + (s ? (s.slopeUp ? ('向上' + s.upDays + '天') : '向下') : '—') + '</td>' +
+        '<td><span class="badge ' + adv.cls + '">' + esc(adv.t) + '</span></td>' +
+        '</tr>';
+    });
+    body += '</tbody></table></div>';
+  }
+  return head + body + '</div>';
+}
+function xrefDetailHtml(xb){
+  var cap = XREF_RULE.detailCap;
+  var sorted = xb.items.slice(0).sort(function(a, b){
+    if(b.score !== a.score) return b.score - a.score;
+    return (a.rank || 999) - (b.rank || 999);
+  });
+  var rows = sorted.slice(0, cap).map(function(x){
+    var s = x.st, adv = xrefAdvice(x.rowKey, x.band);
+    return '<tr><td class="mono">#' + x.rank + '</td><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td>' +
+      '<td class="mono">' + esc(x.code) + '</td>' +
+      '<td class="up mono">' + (x.g10 == null ? '—' : x.g10.toFixed(2) + '%') + '</td>' +
+      '<td>' + pcts(x.pct) + '</td>' +
+      '<td class="mono">' + (s && s.dev != null ? ((s.dev > 0 ? '+' : '') + s.dev.toFixed(1) + '%') : '—') + '</td>' +
+      '<td>' + esc((x.cl && x.cl.label) || '—') + '</td>' +
+      '<td class="mono ' + (x.score > 0 ? 'up' : (x.score < 0 ? 'dn' : 'flat')) + '">' + x.score + '</td>' +
+      '<td><span class="badge ' + adv.cls + '">' + esc(adv.t) + '</span></td></tr>';
+  }).join('');
+  return '<details class="m718-card"><summary>④ 全部交叉明细（' + xb.n + ' 只 · 按综合分降序' + (xb.n > cap ? '，仅列前 ' + cap + ' 只' : '') + '）</summary>' +
+    '<div class="twrap" style="max-height:420px;overflow-y:auto"><table class="mini-tbl"><thead><tr>' +
+    '<th>10日榜名次</th><th>名称</th><th>代码</th><th>10日涨幅</th><th>当日</th><th>偏离</th><th>MA5 四状态</th><th>综合分</th><th>建议</th>' +
+    '</tr></thead><tbody>' + (rows || '<tr><td class="loading" colspan="9">无数据</td></tr>') + '</tbody></table></div>' +
+    '<div class="note">「建议」取自①交叉矩阵的对应格；<b>MA5 四状态</b>为 7.12 的 ma5Classify 结论，<b>名次 / 10日涨幅</b>为全市场 10日涨幅榜排名（⑨ 同一取数口径）。</div></details>';
+}
+function xrefRuleHtml(){
+  return '<details class="m718-card"><summary>规则速查：两套系统的口径与本模块的交叉含义</summary><div class="dbody">' +
+    '<div class="twrap"><table class="mini-tbl"><thead><tr><th>系统</th><th>口径</th><th>在本模块的角色</th></tr></thead><tbody>' +
+    '<tr><td class="up"><b>10日涨幅榜</b></td><td style="white-space:normal">全市场按 10 日涨幅（东财 f160 = 最新收盘 / 11 个交易日前收盘 − 1）降序；已剔除新股/次新与 ST/退市</td>' +
+      '<td>提供<b>势能</b>维度：名次 + 涨幅档位（' + XREF_RULE.gBands.join(' / ') + '%，仅展示分档）</td></tr>' +
+    '<tr><td class="up"><b>MA5 趋势系统</b></td><td style="white-space:normal">铁律优先级：MA5 斜率 ＞ 连续破线天数 ＞ 是否站线 ＞ 偏离度；状态 = 合法买点 / 坚定持有 / 超涨警戒 / 观察 / 减仓 / 清仓</td>' +
+      '<td>提供<b>趋势</b>维度：决定「能不能做」，综合分权重更高</td></tr>' +
+    '</tbody></table></div>' +
+    '<div class="twrap" style="margin-top:8px"><table class="mini-tbl"><thead><tr><th>合法买点（四条件全部满足）</th><th>禁止买点（绝对不买）</th></tr></thead><tbody>' +
+    '<tr><td style="white-space:normal">① MA5 斜率由下翻上（翻上前 ' + MA5_RULE.slopeWin + ' 天内）<br>' +
+      '② 连续 ' + MA5_RULE.standBuy + ' 日站稳 MA5<br>' +
+      '③ 偏离度 ' + MA5_RULE.devBuyLo + '%~' + MA5_RULE.devBuyHi + '%（不追高）<br>' +
+      '④ 近 ' + MA5_RULE.volDays + ' 日有放量阳线（量 ≥ 前5日均量 ' + MA5_RULE.volRatio + ' 倍）</td>' +
+    '<td style="white-space:normal" class="dn">① MA5 斜率向下（一切反弹不参与）<br>' +
+      '② 偏离度 &gt;' + MA5_RULE.devOver + '%（超涨不追）<br>' +
+      '③ 连续破线 &gt;' + (MA5_RULE.breakClear - 1) + ' 天的弱势票<br>' +
+      '④ 冰点期（周期总权重禁止开仓）</td></tr>' +
+    '</tbody></table></div>' +
+    '<div class="note"><b>交叉的两个关键解读：</b>① <b>势能强但 MA5 已坏</b>（10日涨幅居前、趋势却已拐头）属最易套人的形态 —— 紧跟大涨幅冲进去，趋势已终结，一律回避；' +
+    '② <b>MA5 可做但势能弱</b>（10日涨幅 &lt;' + XREF_RULE.gBands[0] + '%）= 趋势刚成立、势能尚未显现，可跟踪但需自行确认板块配合与量能。<br>' +
+    '<b>数据口径：</b>扫描范围 = 10日涨幅榜前 ' + XREF_RULE.scanTop + ' 只，逐只拉 25 日前复权日K（腾讯 → 新浪 → 东财三通道兜底，与 7.12/7.16 共享 30 分钟缓存），末根以实时价覆盖；' +
+    '本模块不新增任何买卖阈值。以上仅为交易体系梳理与数据可视化，<b>不构成任何投资建议</b>。</div></div></details>';
+}
+function renderM723(){
+  var box = $('m7_23');
+  if(!box) return;
+  if(!(D.k10 || []).length){
+    box.innerHTML = '<div class="loading">7.23 交叉分析：等待 10日涨幅榜数据（与 ⑨ 同一取数口径）…若刚打开页面请等本轮刷新完成。</div>';
+    return;
+  }
+  var cand = (D.k10 || []).slice(0, XREF_RULE.scanTop);
+  var key = D.date + '|' + cand.map(function(x){ return x.code; }).join(',');
+  var expired = XREF.done && (Date.now() - XREF.t > 25 * 60 * 1000);   /* 日K缓存 30 分钟，25 分钟后主动重扫 */
+  if(XREF.key !== key || !XREF.done || expired){
+    if(!XREF.running){
+      XREF.key = key; XREF.running = true; XREF.done = false; XREF.ok = 0; XREF.fail = 0; XREF.rows = [];
+      var i = 0, acc = [];
+      (function step(){
+        if(i >= cand.length){
+          XREF.rows = acc; XREF.running = false; XREF.done = true; XREF.t = Date.now();
+          if($('m7_23')) renderM723();
+          return;
+        }
+        var start = i, batch = cand.slice(start, start + 6); i = start + 6;
+        Promise.all(batch.map(function(x, bi){
+          return klineBars(x.code).then(function(bars){
+            var stt = ma5Stats(bars, num(x.price));
+            if(!stt){ XREF.fail++; return; }
+            XREF.ok++;
+            acc.push({ rank: start + bi + 1, name: x.name, code: x.code, sec: x.ind || '—', grade: '—',
+              pct: (x.zdp === '-' || x.zdp == null) ? null : num(x.zdp), price: num(x.price),
+              g10: num(x.g10), st: stt, cl: ma5Classify(stt), buy: ma5Buy(stt) });
+          }).catch(function(){ XREF.fail++; });
+        })).then(step);
+      })();
+    }
+    box.innerHTML = '<div class="concl c-blu"><b>7.23 交叉分析扫描中…</b>正在对 10日涨幅榜前 ' + cand.length +
+      ' 只逐批拉取 25 日前复权日K（腾讯 → 新浪 → 东财三通道，每批 6 只），完成后自动刷新本模块。日K 缓存 30 分钟，后续刷新秒级完成。</div>';
+    return;
+  }
+  if(!XREF.rows.length){
+    box.innerHTML = '<div class="concl c-grn">7.23 交叉分析：10日涨幅榜前 ' + cand.length + ' 只的日K均未取到（接口受限或非交易时段），暂无可交叉标的。</div>';
+    return;
+  }
+  var xb = xrefBuild(XREF.rows);
+  box.innerHTML = xrefTipHtml() + xrefHeadHtml(xb) + xrefMatrixHtml(xb) +
+    xrefPickHtml(xb) + xrefPendingHtml(xb) + xrefDetailHtml(xb) + xrefRuleHtml();
+}
 function renderM715(){
   var box = $('m7_15');
   if(!box) return;

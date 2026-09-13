@@ -621,9 +621,34 @@ function loadK10(stocks){
    域名容错：push2 优先（实时），返回空/失败自动回退 push2delay（延迟行情，对日级阶段涨幅无影响）。 */
 var K10_FS = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23,m:0+t:81+s:2048';
 var K10_HOSTS = ['push2.eastmoney.com', 'push2delay.eastmoney.com'];
+/* 新股 / 次新股 过滤阈值
+   K10_NEW_DAYS：上市未满该自然日数即视为「次新股」并剔除，默认 90 天（约 3 个月 / 60 个交易日）——
+   次新股上市初期筹码未充分换手、且创业板/科创板前5日与北交所首日无涨跌幅限制，10日涨幅会失真、不具可比性。
+   另有硬阈值 16 自然日（约不足 11 个交易日）：此时 f160 实为「上市以来涨幅」，10日涨幅根本无法计算，必删。 */
+var K10_NEW_DAYS = 90;
+/* 上市至今的自然日数（f26 = 上市日期 YYYYMMDD）；无法解析返回 null */
+function k10ListDays(f26){
+  if(f26 == null) return null;
+  var d = String(f26);
+  if(!/^(19|20)\d{6}$/.test(d)) return null;
+  var y = +d.slice(0, 4), m = +d.slice(4, 6), dd = +d.slice(6, 8);
+  if(!(m >= 1 && m <= 12 && dd >= 1 && dd <= 31)) return null;
+  var t = new Date(y, m - 1, dd).getTime();
+  if(isNaN(t)) return null;
+  return (Date.now() - t) / 86400000;
+}
+/* 返回 'N'(上市首日/早期,交易所N/C标记) / 'X'(上市不足11个交易日,10日涨幅失真) / 'C'(次新股) / null(保留) */
+function k10NewFlag(name, f26){
+  if(/^[NC]/.test(String(name || '').trim())) return 'N';   /* 交易所新股标记：上市首日N、第2~5日C */
+  var days = k10ListDays(f26);
+  if(days == null) return null;                              /* 无上市日期 → 不误杀，保留 */
+  if(days < 16) return 'X';                                  /* 不足约11个交易日 → 数据失真，必删 */
+  if(days < K10_NEW_DAYS) return 'C';                        /* 次新股 → 按用户要求剔除 */
+  return null;
+}
 function k10EmPage(host, pn){
   var u = 'https://' + host + '/api/qt/clist/get?pn=' + pn + '&pz=100&po=1&np=1&fltt=2&invt=2&fid=f160&fs=' +
-    encodeURIComponent(K10_FS) + '&fields=f12,f14,f2,f3,f100,f160';
+    encodeURIComponent(K10_FS) + '&fields=f12,f14,f2,f3,f100,f160,f26';
   return jsonp(u, 'cb', 12000).then(function(r){
     var d = r && r.data && r.data.diff;
     if(!d) return [];
@@ -646,19 +671,24 @@ function loadK10EM(){
       .catch(function(){ return tryHost(); });
   }
   return tryHost().then(function(all){
-    var out = [], seen = {};
+    var out = [], seen = {}, rm = { N: 0, X: 0, C: 0, st: 0 };
     all.forEach(function(x){
       if(!x || !x.f12 || seen[x.f12]) return;
       var g = num(x.f160);
       if(g == null || isNaN(g)) return;
-      if(/ST|退/i.test(String(x.f14 || ''))) return;
+      if(/ST|退/i.test(String(x.f14 || ''))){ rm.st++; return; }
+      /* 实时剔除新股 / 次新股（每次刷新都过滤） */
+      var nf = k10NewFlag(x.f14, x.f26);
+      if(nf){ rm[nf]++; return; }
       seen[x.f12] = 1;
       out.push({ code: x.f12, name: x.f14,
         zdp: (x.f3 === undefined || x.f3 === null || x.f3 === '-') ? '-' : x.f3,
-        price: x.f2, ind: x.f100 || (D.indMap && D.indMap[x.f12]) || '—', g10: g });
+        price: x.f2, ind: x.f100 || (D.indMap && D.indMap[x.f12]) || '—', g10: g,
+        listDays: k10ListDays(x.f26) });
     });
     out.sort(function(a, b){ return b.g10 - a.g10; });
-    D.k10diag = { total: 5913, ok: out.length, fail: 0, src: '东财全市场10日涨幅排行' };
+    D.k10diag = { total: 5913, ok: out.length, fail: 0, src: '东财全市场10日涨幅排行',
+      rmNew: rm.N + rm.X, rmSub: rm.C, rmSt: rm.st, newDays: K10_NEW_DAYS };
     return out;
   });
 }
@@ -5002,10 +5032,15 @@ function renderM9(){
     var rk = i + 1;
     return '<tr><td class="mono">' + rk + ' ' + k10RankTag(rk, prevRanks[x.code]) + '</td><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code, 'k10') + '</td><td class="mono">' + esc(x.code) + '</td><td class="up mono">' + x.g10.toFixed(2) + '%</td><td>' + pcts(x.zdp == '-' ? null : x.zdp) + '</td><td class="mono">' + (x.price == '-' || x.price == null ? '—' : Number(x.price).toFixed(2)) + '</td><td>' + esc(x.ind) + '</td><td>' + k10RecognTag(recogn.cnt[x.code], recogn.days) + '</td></tr>';
   }).join('');
+  var kd = D.k10diag || {};
+  var kdRm = (kd.rmNew || 0) + (kd.rmSub || 0);
+  var rmTxt = kdRm
+    ? '已<b>实时剔除新股/次新股 <b class="dn">' + kdRm + '</b> 只</b>（上市未满 ' + (kd.newDays || 90) + ' 自然日≈3个月；其中上市不足11个交易日、10日涨幅实为"上市以来涨幅"的 ' + (kd.rmNew || 0) + ' 只' + (kd.rmSt ? '；另剔除 ST/退市 ' + kd.rmSt + ' 只' : '') + '）'
+    : '新股/次新股（上市未满 ' + (kd.newDays || 90) + ' 自然日）已实时剔除';
   $('m9body').innerHTML =
   barsHtml('行业分布统计', indCount(D.k10, 100), '#f59e0b') +
   '<div class="twrap" style="margin-top:10px"><table><thead><tr><th>排名</th><th>名称</th><th>代码</th><th>10日涨幅</th><th>今日涨幅</th><th>最新价</th><th>所属行业</th><th>辨识度(近5日)</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-  '<div class="note">采样口径：<b>全市场A股（约5900只）按10日涨幅降序</b>取前200 —— 数据源东财「阶段涨幅」f160（口径 = 最新收盘 / 11个交易日前收盘 − 1，与本地日K算法一致），<b>不再受「当日必须进涨幅前100」限制</b>，因此当日小涨/平盘/下跌但10日涨幅高的个股也会正常入榜。主通道失败时自动回退「涨幅榜前100 + 逐股日K」通道。<b>名次变动标注：</b>' + rankLegend() + '辨识度：近5个交易日进入「10日涨幅榜前10」的次数，<b style="color:#fbbf24">★高 = ≥3 次</b>。</div>' +
+  '<div class="note">采样口径：<b>全市场A股（约5900只）按10日涨幅降序</b>取前200 —— 数据源东财「阶段涨幅」f160（口径 = 最新收盘 / 11个交易日前收盘 − 1，与本地日K算法一致），<b>不再受「当日必须进涨幅前100」限制</b>，因此当日小涨/平盘/下跌但10日涨幅高的个股也会正常入榜；' + rmTxt + '。主通道失败时自动回退「涨幅榜前100 + 逐股日K」通道。<b>名次变动标注：</b>' + rankLegend() + '辨识度：近5个交易日进入「10日涨幅榜前10」的次数，<b style="color:#fbbf24">★高 = ≥3 次</b>。</div>' +
   k10RecognBlock(recogn);
 }
 /* 今日最强 & 立即买入（独立卡片，位于 7.12 之后；数据取自 10日涨幅前30） */

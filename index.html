@@ -364,6 +364,12 @@ section{scroll-margin-top:70px;}
 <div id="m9body"><div class="loading">数据加载中…</div></div>
 </section>
 
+<!-- 7.21 十日涨幅榜交易系统（置于 ⑨ 10日涨幅榜之后） -->
+<section class="card">
+<h2 style="border-color:#f0453a;color:#f0453a">7.21 十日涨幅榜交易系统（看周期 · 择股 · 多空博弈 · 主流题材 · 心法）</h2>
+<div id="m7_21"><div class="loading">数据加载中…</div></div>
+</section>
+
 <!-- 模块10 成交额>10亿 -->
 <section class="card" id="m10">
 <h2>⑩ 成交额 &gt; 10亿 个股</h2>
@@ -607,6 +613,56 @@ function loadK10(stocks){
   return step().then(function(){ out.sort(function(a, b){ return b.g10 - a.g10; }); return out; });
 }
 
+/* 10日涨幅榜【主通道】：东财「阶段涨幅」全市场排行（fid=f160 = 10日涨幅）
+   为什么需要它：旧逻辑只扫描「今日涨幅榜前100」再算10日涨幅，导致**当日不强势但10日涨幅很高**的票被整只漏掉
+   （实测：300852 四会富仕 今日仅 +3.1% 未进涨幅前100，但10日涨幅 44.41%，旧逻辑必漏）。
+   f160 口径已与本地 gain10 交叉验证一致：均为「最新收盘 / 11个交易日前收盘 − 1」（300852 实测两边都是 44.41%）。
+   本通道一次请求覆盖全市场 5913 只并按10日涨幅降序取前 200（单页上限100，取2页；第200名约 +14%）。
+   域名容错：push2 优先（实时），返回空/失败自动回退 push2delay（延迟行情，对日级阶段涨幅无影响）。 */
+var K10_FS = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23,m:0+t:81+s:2048';
+var K10_HOSTS = ['push2.eastmoney.com', 'push2delay.eastmoney.com'];
+function k10EmPage(host, pn){
+  var u = 'https://' + host + '/api/qt/clist/get?pn=' + pn + '&pz=100&po=1&np=1&fltt=2&invt=2&fid=f160&fs=' +
+    encodeURIComponent(K10_FS) + '&fields=f12,f14,f2,f3,f100,f160';
+  return jsonp(u, 'cb', 12000).then(function(r){
+    var d = r && r.data && r.data.diff;
+    if(!d) return [];
+    /* diff 可能是数组或对象（东财两种都返回过），统一处理 */
+    if(Object.prototype.toString.call(d) === '[object Array]') return d;
+    return Object.keys(d).map(function(k){ return d[k]; });
+  });
+}
+function loadK10EM(){
+  var hi = 0;
+  function tryHost(){
+    if(hi >= K10_HOSTS.length) return Promise.reject(new Error('k10 em all hosts failed'));
+    var host = K10_HOSTS[hi++];
+    return Promise.all([k10EmPage(host, 1), k10EmPage(host, 2)])
+      .then(function(res){
+        var all = res[0].concat(res[1]);
+        if(!all.length) return tryHost();          /* 该域名返回空 → 换下一个 */
+        return all;
+      })
+      .catch(function(){ return tryHost(); });
+  }
+  return tryHost().then(function(all){
+    var out = [], seen = {};
+    all.forEach(function(x){
+      if(!x || !x.f12 || seen[x.f12]) return;
+      var g = num(x.f160);
+      if(g == null || isNaN(g)) return;
+      if(/ST|退/i.test(String(x.f14 || ''))) return;
+      seen[x.f12] = 1;
+      out.push({ code: x.f12, name: x.f14,
+        zdp: (x.f3 === undefined || x.f3 === null || x.f3 === '-') ? '-' : x.f3,
+        price: x.f2, ind: x.f100 || (D.indMap && D.indMap[x.f12]) || '—', g10: g });
+    });
+    out.sort(function(a, b){ return b.g10 - a.g10; });
+    D.k10diag = { total: 5913, ok: out.length, fail: 0, src: '东财全市场10日涨幅排行' };
+    return out;
+  });
+}
+
 /* 昨日全天成交额（亿元）
    主通道：腾讯newfqkline（第9列为成交额万元，CORS放行、IPv4-only）
    备用：东财push2his日K JSONP（f57成交额，元） */
@@ -729,7 +785,12 @@ function refreshAll(){
     D.zt.forEach(function(x){ D.indMap[x.c] = x.hybk; });
     D.top100.concat(D.bot100, D.amtTop).forEach(function(x){ if(x.f12 && x.f100) D.indMap[x.f12] = x.f100; });
     var cand = D.top100.filter(function(x){ return x.f12 && emSecid(x.f12) && !/ST|退/i.test(String(x.f14 || '')); }).slice(0, 100);
-    return loadK10(cand);
+    /* 主通道：东财全市场10日涨幅排行（覆盖全部A股，修正「当日不强势的高涨幅票被漏掉」的问题）
+       失败/返回过少则回退原「涨幅榜前100 + 逐股日K」通道 */
+    return loadK10EM().then(function(k10){
+      if(k10 && k10.length >= 10) return k10;
+      return loadK10(cand);
+    }).catch(function(){ return loadK10(cand); });
   }).then(function(k10){
     D.k10 = k10;
     buildGroups();
@@ -1157,7 +1218,7 @@ function renderAll(){
   renderTimeline();
   renderStageQuick();
   renderM3(); renderM4(); renderM5(); renderM6();
-  renderM7(); renderM8(); renderM9(); renderM10(); renderM11();
+  renderM7(); renderM8(); renderM9(); renderM721(); renderM10(); renderM11();
 }
 /* --- 模块2 五阶段策略速查（数据源：7.10 的 STAGE / STAGE_SUMMARY / buyWindow，单一事实源） --- */
 function renderStageQuick(){
@@ -1418,6 +1479,7 @@ function indCount(list, n){
 function k10Hint(){
   if(D.k10.length) return '';
   var dg = D.k10diag || { total: 0, ok: 0, fail: 0 };
+  if(dg.src) return '（' + esc(dg.src) + ' 返回 0 条，正在回退日K通道…）';
   if(!dg.total) return '（涨幅榜候选为空）';
   if(!dg.fail) return '（计算中…）';
   return '（K线获取失败' + dg.fail + '/' + dg.total + '，三通道(腾讯/新浪/东财)均未成功，请点右上角刷新重试）';
@@ -4607,6 +4669,188 @@ function renderPool(){
   '<div class="twrap"><table><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div>';
 }
 
+/* ============ 7.21 十日涨幅榜交易系统 ============ */
+/* 来源：公众号「逢吉」《短线很牛的交易工具～十日涨幅榜》
+   核心：把「10日涨幅榜前30」当成股池 + 主流题材，用 10日涨幅(势能排序) 与 日内涨幅(动能排序) 双排序，
+   构成 ①看周期 ②择股 ③临盘多空博弈 ④前30当主流题材 ⑤心法 的闭环。
+   原文明确阈值：前30只 / 10日翻倍=100% / 补位梯队 40%~50% / 空间高度 40→80→100 / 多空中轴15家 / 20cm·30cm·10cm。
+   ⚠️ 原文未给出具体仓位比例与固定止损数值 —— 本模块只做框架与信号识别，不构成投资建议。 */
+function k21Top(n){ return (D.k10 || []).slice(0, n || 30); }
+function k21Pct(x){ var v = x.zdp; if(v === '-' || v == null) return null; return num(v); }
+/* 涨跌幅限制：主板10cm / 创业板·科创板20cm / 北交所30cm */
+function k21Limit(code){
+  var c = String(code || '');
+  if(/^(30|688)/.test(c)) return '20cm';
+  if(/^(8|4|92)/.test(c)) return '30cm';
+  if(/^(60|00)/.test(c)) return '10cm';
+  return '?';
+}
+/* ① 看周期：按 10日涨幅 分档统计 + 高位下杀识别 */
+function k21Cycle(){
+  var top = k21Top(30);
+  if(!top.length) return { empty: true };
+  var dbl = [], h80 = [], m50 = [], l40 = [], i, g;
+  for(i = 0; i < top.length; i++){
+    g = num(top[i].g10); if(g == null) continue;
+    if(g >= 100) dbl.push(top[i]);
+    else if(g >= 80) h80.push(top[i]);
+    else if(g >= 50) m50.push(top[i]);
+    else if(g >= 40) l40.push(top[i]);
+  }
+  var kill = 0;
+  for(i = 0; i < dbl.length; i++){ var p = k21Pct(dbl[i]); if(p != null && p < 0) kill++; }
+  var state, tip, cls;
+  if(dbl.length && kill > 0){
+    state = '高位下杀 · 空方最猛'; cls = 'b-g';
+    tip = '榜上 ' + dbl.length + ' 只10日翻倍个股中 <b class="dn">' + kill + '</b> 只今日下跌 —— 原文：空方力量最大时「会把现在攻击的个股、半高位/中高位个股全部拖着一起杀」，此阶段应<b>避开、不做多</b>。';
+  } else if(dbl.length){
+    state = '退潮警戒'; cls = 'b-o';
+    tip = '榜上出现 <b>' + dbl.length + '</b> 只10日翻倍个股 —— 口诀「出现10日翻倍个股就要注意它随时退潮、兑现、杀高位，因为涨多了会跌」。高位股高度警惕，留意高低切换。';
+  } else if(h80.length){
+    state = '高位冲刺'; cls = 'b-o';
+    tip = '无翻倍股，但有 <b>' + h80.length + '</b> 只处于 80%~100% —— 空间高度末端（原文路径 40→80→100），冲高过程注意兑现。';
+  } else {
+    state = '新周期启动'; cls = 'b-r';
+    tip = '榜上无10日翻倍个股、都杀干净 —— 口诀「需要注意新的攻击，周期的本质就是不断轮回高低切换」。重点看 <b>40%~50%</b> 梯队谁能扛住下杀、不补跌，谁就是下一轮 50%→100% 的候选。';
+  }
+  return { empty: false, top: top, dbl: dbl, h80: h80, m50: m50, l40: l40, kill: kill, state: state, tip: tip, cls: cls };
+}
+/* ② 择股：前30 中今日涨停者（尤其 20cm/30cm），即「来到榜后以一个涨停板开始」的启动信号 */
+function k21Pick(){
+  var top = k21Top(30), zt = {}, i;
+  for(i = 0; i < (D.zt || []).length; i++) zt[String(D.zt[i].c)] = D.zt[i];
+  var out = [];
+  for(i = 0; i < top.length; i++){
+    var x = top[i], z = zt[String(x.code)], lim = k21Limit(x.code), g = num(x.g10);
+    out.push({ name: x.name, code: x.code, ind: x.ind, g10: g, zdp: k21Pct(x), lim: lim,
+      zt: !!z, lbc: z ? (z.lbc || 1) : 0, fbt: z ? num(z.fbt) : null, sec: z ? (z.hybk || x.ind) : (x.ind || '—'),
+      star: (!!z && (lim === '20cm' || lim === '30cm')) });
+  }
+  return out;
+}
+/* ③ 临盘多空博弈：前30 内红/绿盘家数，以 15 家为中轴 */
+function k21Battle(){
+  var top = k21Top(30), red = 0, green = 0, flat = 0, i, p;
+  for(i = 0; i < top.length; i++){
+    p = k21Pct(top[i]); if(p == null) continue;
+    if(p > 0) red++; else if(p < 0) green++; else flat++;
+  }
+  var side, tip, cls;
+  if(red >= 15){ side = '多方力量大'; cls = 'b-r'; tip = '红盘 <b class="up">' + red + '</b> 家 ≥ 15（中轴）—— 多方力量大，即便买错也有包容度、给不错出来的机会；是从低位向高位进发的做多阶段。'; }
+  else if(green >= 15){ side = '空方力量大'; cls = 'b-g'; tip = '绿盘 <b class="dn">' + green + '</b> 家 ≥ 15（中轴）—— 空方力量大，即便看对个股也会补跌；<b>应避开、不站队</b>。'; }
+  else if(red > green){ side = '多方略占优'; cls = 'b-o'; tip = '红盘 ' + red + ' / 绿盘 ' + green + '，未过 15 家中轴，多方略占优但力度不足，轻仓试探为主。'; }
+  else { side = '空方略占优'; cls = 'b-o'; tip = '红盘 ' + red + ' / 绿盘 ' + green + '，空方略占优，等待红盘过 15 家再站队。'; }
+  return { red: red, green: green, flat: flat, side: side, tip: tip, cls: cls };
+}
+/* ④ 前30 当主流题材：标杆 + 行业分布 + 扩散（同行业≥2只） */
+function k21Sector(){
+  var top = k21Top(30);
+  if(!top.length) return { empty: true };
+  var lead = top[0] || null;
+  var dist = indCount(top, 30);
+  var spread = dist.filter(function(d){ return d.cnt >= 2; });
+  return { empty: false, lead: lead, dist: dist, spread: spread, cnt: top.length };
+}
+/* ⑤ 心法自检清单（每日勾选，持久化） */
+var K21_CHK = [
+  '今日周期状态已判定（退潮/下杀/切换/新周期），未逆势做多',
+  '只在前30内选股，未到榜外找票',
+  '已用日内涨幅排序看过 20cm/30cm 涨停启动信号',
+  '临盘确认红绿盘家数（15家中轴）后再站队',
+  '持有中遇到颠簸/诱惑，按「持续度说了算」而非情绪决策',
+  '未因「有更强的取代它」而放飞持仓',
+  '避开高位下杀阶段（10日翻倍股杀跌时不接高位）'
+];
+function k21ChkHtml(){
+  var st = lsGet('wb_m721_chk', {}) || {};
+  var h = '<div class="m718-card"><h4>⑤ 心法 · 每日自检（勾选持久化）</h4>' +
+    '<div class="note">原文：完成10日翻倍的过程「不是一帆风顺」，会面临<b>颠簸跟诱惑</b> —— 一会觉得有更强的要取代它，一会觉得它颠簸变弱，最终每次都错过或放飞。<b>这不是个股问题，是人心与人性的问题</b>。信条：<b style="color:#fbbf24">价格包容一切，持续度说了算，我只按持续度持股。</b></div>';
+  for(var i = 0; i < K21_CHK.length; i++){
+    h += '<label class="chk"><input type="checkbox" id="k21chk' + i + '"' + (st['k21chk' + i] ? ' checked' : '') + '>' + esc(K21_CHK[i]) + '</label>';
+  }
+  return h + '</div>';
+}
+function k21BindChk(){
+  for(var i = 0; i < K21_CHK.length; i++){
+    (function(idx){
+      var el = $('k21chk' + idx); if(!el) return;
+      el.onchange = function(){
+        var st = lsGet('wb_m721_chk', {}) || {};
+        st['k21chk' + idx] = this.checked;
+        lsSet('wb_m721_chk', st);
+      };
+    })(i);
+  }
+}
+function k21Ref(){
+  return '<div style="margin-top:8px"><b>原文五大功能与阈值总表</b><table class="mini-tbl"><thead><tr><th>功能</th><th>核心方法</th><th>阈值/口诀</th></tr></thead><tbody>' +
+    '<tr><td>① 看周期</td><td>用10日涨幅排序看近10日最强个股；高位下杀=高低切换</td><td>出现<b>10日翻倍(100%)</b>→退潮警戒；翻倍股<b>下杀</b>→空方最猛；<b>无翻倍且杀干净</b>→新攻击；补位看 <b>40%~50%</b></td></tr>' +
+    '<tr><td>② 择股</td><td>路径 0%→50%→100%；20/30cm 来到榜后<b>以一个涨停板开始</b></td><td>前30内今日涨停者，尤其 <b>20cm/30cm</b>；走势分持续连涨 / N字 / 趋势三类</td></tr>' +
+    '<tr><td>③ 临盘多空</td><td>用日内涨幅排序看前30内红绿盘家数</td><td>以 <b>15家</b> 为中轴：红≥15多方大（容错高）；绿≥15空方大（对了也补跌）</td></tr>' +
+    '<tr><td>④ 前30=主流题材</td><td>个股先动→进榜(10日40%/50%)→才有板块；前30不分板块皆为做多合力</td><td>标杆=势能最高者；同行业≥2只=板块扩散；抱团在<b>有辨识度、引领情绪</b>的个股</td></tr>' +
+    '<tr><td>⑤ 心法</td><td>修炼人性贪婪，应对颠簸与诱惑</td><td><b>价格包容一切，持续度说了算，我只按持续度持股</b></td></tr>' +
+    '</tbody></table></div>' +
+    '<div style="margin-top:8px"><b>空间高度路径</b>：10日涨幅 <b>40% → 80% → 100% → 100%再往上</b>（原文：最开始打到40，然后从80打到100再往上）。</div>' +
+    '<div class="note" style="margin-top:6px"><b>诚实标注：</b>原文<b>未给出</b>具体仓位比例与固定止损数值（仅提到配合「之前的入场/离场条件」、用套利思维处理）。因此本模块只提供<b>周期状态、启动信号、多空力度、题材结构</b>四类客观信号与心法自检，<b>不含仓位与止损建议</b>。原文结语：「投资有风险，入市需谨慎」。</div>';
+}
+function renderM721(){
+  var box = $('m7_21'); if(!box) return;
+  if(!(D.k10 || []).length){
+    box.innerHTML = '<div class="loading">10日涨幅数据未就绪（等待日K拉取完成）…本模块依赖 ⑨ 10日涨幅榜数据。</div>';
+    return;
+  }
+  var cy = k21Cycle(), bt = k21Battle(), sc = k21Sector(), pk = k21Pick();
+  var h = '<div class="note">本模块把「10日涨幅榜前30」作为<b>股池 + 主流题材</b>，用 <b>10日涨幅（势能）</b> 与 <b>日内涨幅（动能）</b> 双排序，落地原文五大功能闭环。样本 = 今日涨幅榜前100中 <b>10日涨幅最高的前30只</b>。⚠️ 原文未给出仓位/止损数值，本模块仅信号与框架，<b>不构成投资建议</b>。</div>';
+  /* ① 周期 */
+  h += '<div class="m718-card"><h4>① 看周期（退潮 · 下杀 · 切换 · 新周期）</h4>' +
+    '<div class="m718-row"><b>当前状态：</b><span class="badge ' + cy.cls + '">' + cy.state + '</span></div>' +
+    '<div class="note" style="margin-top:4px">' + cy.tip + '</div>' +
+    '<div class="grid4" style="margin-top:8px">' +
+      '<div class="kpi"><div class="t">10日翻倍(≥100%)</div><div class="v dn">' + cy.dbl.length + '</div><div class="s">退潮警戒源</div></div>' +
+      '<div class="kpi"><div class="t">80%~100%</div><div class="v ora">' + cy.h80.length + '</div><div class="s">高位冲刺</div></div>' +
+      '<div class="kpi"><div class="t">50%~80%</div><div class="v yel">' + cy.m50.length + '</div><div class="s">中继梯队</div></div>' +
+      '<div class="kpi"><div class="t">40%~50%</div><div class="v up">' + cy.l40.length + '</div><div class="s">补位候选</div></div>' +
+    '</div>' +
+    (cy.dbl.length ? '<div class="note" style="margin-top:6px">翻倍股今日下跌 <b class="dn">' + cy.kill + '</b>/' + cy.dbl.length + ' 只（高位下杀强度）。</div>' : '') +
+    '</div>';
+  /* ③ 多空（置于择股前，先定“敢不敢”） */
+  h += '<div class="m718-card"><h4>③ 临盘多空博弈（前30内红/绿盘，15家为中轴）</h4>' +
+    '<div class="m718-row"><b>力量判定：</b><span class="badge ' + bt.cls + '">' + bt.side + '</span>' +
+    '<span class="flat">红盘 <b class="up">' + bt.red + '</b> / 绿盘 <b class="dn">' + bt.green + '</b> / 平盘 ' + bt.flat + '</span></div>' +
+    '<div class="note" style="margin-top:4px">' + bt.tip + '</div></div>';
+  /* ② 择股 */
+  var stars = pk.filter(function(x){ return x.star; });
+  var ztAll = pk.filter(function(x){ return x.zt; });
+  h += '<div class="m718-card"><h4>② 择股（前30内今日涨停 = 启动信号；★=20cm/30cm）</h4>' +
+    '<div class="note">原文：所有能完成10日翻倍的20cm/30cm，<b>都是来到10日涨幅榜之后以一个涨停板开始</b>。当前前30内今日涨停 <b>' + ztAll.length + '</b> 只，其中 20cm/30cm <b class="up">' + stars.length + '</b> 只。</div>';
+  if(ztAll.length){
+    h += '<div class="twrap" style="margin-top:6px;max-height:320px;overflow-y:auto"><table class="mini-tbl"><thead><tr><th>名称</th><th>代码</th><th>10日涨幅</th><th>今日涨幅</th><th>板数</th><th>封板</th><th>涨跌幅限制</th><th>所属板块</th></tr></thead><tbody>' +
+      ztAll.map(function(x){
+        return '<tr><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + (x.star ? ' <span class="badge b-r">★</span>' : '') + '</td><td class="mono">' + esc(x.code) + '</td>' +
+          '<td class="up mono">' + (x.g10 == null ? '—' : x.g10.toFixed(2) + '%') + '</td>' +
+          '<td class="' + pctCls(x.zdp) + '">' + (x.zdp == null ? '—' : fpct(x.zdp)) + '</td>' +
+          '<td class="mono">' + (x.lbc >= 2 ? x.lbc + '板' : '首板') + '</td>' +
+          '<td class="mono">' + (x.fbt == null ? '—' : fmtFbt(x.fbt)) + '</td>' +
+          '<td class="mono">' + x.lim + '</td><td>' + esc(x.sec) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  } else {
+    h += '<div class="note">今日前30内暂无涨停股 —— 无「涨停启动」信号，按原文应继续观察，等待启动板出现。</div>';
+  }
+  h += '</div>';
+  /* ④ 主流题材 */
+  if(!sc.empty){
+    h += '<div class="m718-card"><h4>④ 前30 = 一个主流题材（标杆 + 合力抱团）</h4>' +
+      '<div class="m718-row"><b>标杆（势能最高）：</b>' + (sc.lead ? ('<b style="color:#f0453a">' + esc(sc.lead.name) + '</b> <span class="mono">' + esc(sc.lead.code) + '</span> 10日涨幅 <b class="up">' + num(sc.lead.g10).toFixed(2) + '%</b> · ' + esc(sc.lead.ind)) : '—') + '</div>' +
+      barsHtml('前30行业分布（每个板块派一个代表 = 做多合力）', sc.dist, '#f59e0b') +
+      '<div class="note" style="margin-top:4px">板块扩散（同行业≥2只）：<b>' + (sc.spread.length ? sc.spread.map(function(d){ return esc(d.name) + d.cnt + '只'; }).join('、') : '无（均为单打独斗，靠情绪助力）') + '</b>。原文：前30只<b>不分同板块/不同板块，都是多方力量</b>；先知先觉一定在头部。</div></div>';
+  }
+  /* ⑤ 心法 + 参考 */
+  h += k21ChkHtml();
+  h += '<details class="m718-card"><summary>附：原文五大功能详解 · 阈值总表 · 空间高度路径 · 未量化说明</summary>' + k21Ref() + '</details>';
+  box.innerHTML = h;
+  k21BindChk();
+}
+
 /* --- 模块9 10日涨幅榜 --- */
 /* 名次历史（10日涨幅榜名次变动的颜色标签）：{ 'YYYYMMDD': { code: rank } } */
 var K10R_KEY = 'wb_k10rank_v1';
@@ -4761,7 +5005,7 @@ function renderM9(){
   $('m9body').innerHTML =
   barsHtml('行业分布统计', indCount(D.k10, 100), '#f59e0b') +
   '<div class="twrap" style="margin-top:10px"><table><thead><tr><th>排名</th><th>名称</th><th>代码</th><th>10日涨幅</th><th>今日涨幅</th><th>最新价</th><th>所属行业</th><th>辨识度(近5日)</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-  '<div class="note">样本=今日涨幅榜前100个股，按前复权日K计算：10日涨幅 = 最新收盘 / 11个交易日前收盘 - 1。<b>名次变动标注：</b>' + rankLegend() + '辨识度：近5个交易日进入「10日涨幅榜前10」的次数，<b style="color:#fbbf24">★高 = ≥3 次</b>。</div>' +
+  '<div class="note">采样口径：<b>全市场A股（约5900只）按10日涨幅降序</b>取前200 —— 数据源东财「阶段涨幅」f160（口径 = 最新收盘 / 11个交易日前收盘 − 1，与本地日K算法一致），<b>不再受「当日必须进涨幅前100」限制</b>，因此当日小涨/平盘/下跌但10日涨幅高的个股也会正常入榜。主通道失败时自动回退「涨幅榜前100 + 逐股日K」通道。<b>名次变动标注：</b>' + rankLegend() + '辨识度：近5个交易日进入「10日涨幅榜前10」的次数，<b style="color:#fbbf24">★高 = ≥3 次</b>。</div>' +
   k10RecognBlock(recogn);
 }
 /* 今日最强 & 立即买入（独立卡片，位于 7.12 之后；数据取自 10日涨幅前30） */

@@ -372,7 +372,7 @@ section{scroll-margin-top:70px;}
 
 <!-- 7.9 交叉分析（从 ⑦ 资金主线区块移出 → 置于 ⑩ 成交额>10亿 之后） -->
 <section class="card">
-<h2 style="border-color:#f0453a;color:#f0453a">7.9 交叉分析：10日涨幅前100 × 成交额&gt;10亿</h2>
+<h2 style="border-color:#f0453a;color:#f0453a">7.9 交叉分析：10日涨幅前30 × 成交额&gt;10亿</h2>
 <div id="m7_9"><div class="loading">数据加载中…</div></div>
 </section>
 
@@ -1153,6 +1153,7 @@ function gradeSectors(){
 
 /* ================= 渲染 ================= */
 function renderAll(){
+  rankIndexBuild();   /* 先建「10日涨幅榜名次变动」全局索引，供各模块统一标注 */
   renderTimeline();
   renderStageQuick();
   renderM3(); renderM4(); renderM5(); renderM6();
@@ -1334,7 +1335,7 @@ function renderM5(){
   var h = ls.map(function(l){
     var rows = groups[l].sort(function(a, b){ return (a.fbt || 0) - (b.fbt || 0); }).map(function(x){
       var tj = x.zttj ? (x.zttj.days + '天' + x.zttj.ct + '板') : (l + '连板');
-      return '<tr><td class="mono">' + esc(x.c) + '</td><td><b>' + esc(x.n) + '</b></td><td>' + pcts(x.zdp) + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td>' + pnum((x.fund || 0) / 1e8) + '</td><td>' + esc(x.hybk || '—') + '</td><td class="yel mono">' + tj + '</td></tr>';
+      return '<tr><td class="mono">' + esc(x.c) + '</td><td><b>' + esc(x.n) + '</b>' + rankBadgeAny(x.c) + '</td><td>' + pcts(x.zdp) + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td>' + pnum((x.fund || 0) / 1e8) + '</td><td>' + esc(x.hybk || '—') + '</td><td class="yel mono">' + tj + '</td></tr>';
     }).join('');
     return '<tr style="background:rgba(240,69,58,.07)"><td colspan="7"><b class="up">' + l + '连板(' + groups[l].length + '家)</b></td></tr>' + rows;
   }).join('');
@@ -1917,11 +1918,11 @@ function renderM78(){
 function renderM79(){
   var amt10 = D.amtTop.filter(function(x){ return (x.f6 || 0) > 1e9; });
   var amtSet = {}; amt10.forEach(function(x){ amtSet[x.f12] = x.f14; });
-  var inter = D.k10.filter(function(x){ return amtSet[x.code]; });
+  var inter = D.k10.slice(0, 30).filter(function(x){ return amtSet[x.code]; });
   var h = inter.length ? inter.map(function(x){ return '<span class="tag tag-o">' + esc(x.name) + '</span>'; }).join(' ') : '<span class="loading">暂无交集个股（等待10日K数据）</span>';
   $('m7_9').innerHTML = '<div class="concl c-ora"><b>交集个股（' + inter.length + '只）：</b>' + h + '</div>' +
-  '<div class="note">筛选条件：10日涨幅前100 ∩ 成交额&gt;10亿。这些是兼具中期趋势与即期流动性的核心票。</div>' +
-  (inter.length ? '<div class="twrap" style="margin-top:6px"><table><thead><tr><th>名称</th><th>代码</th><th>10日涨幅</th><th>今日涨幅</th></tr></thead><tbody>' + inter.slice(0, 20).map(function(x){ return '<tr><td><b>' + esc(x.name) + '</b></td><td class="mono">' + esc(x.code) + '</td><td class="up mono">' + x.g10.toFixed(2) + '%</td><td>' + pcts(x.zdp == '-' ? null : x.zdp) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '');
+  '<div class="note">筛选条件：10日涨幅前30 ∩ 成交额&gt;10亿。这些是兼具强势趋势与即期流动性的核心票。</div>' +
+  (inter.length ? '<div class="twrap" style="margin-top:6px"><table><thead><tr><th>名称</th><th>代码</th><th>10日涨幅</th><th>今日涨幅</th></tr></thead><tbody>' + inter.map(function(x){ return '<tr><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td><td class="mono">' + esc(x.code) + '</td><td class="up mono">' + x.g10.toFixed(2) + '%</td><td>' + pcts(x.zdp == '-' ? null : x.zdp) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '');
 }
 /* --- 7.11 主线标的筛选（三档：龙头/中军/补涨） ---
    范围：7.4主线判定输出的Top1板块全部成分股
@@ -1975,13 +1976,13 @@ function renderM711(){
     if((x.lbc || 1) === maxLbc && maxLbc >= 2) tags += ' <span class="tag tag-r" style="font-size:11px">空间龙头</span>';
     if((x.fbt || 999999) === minFbt) tags += ' <span class="tag tag-o" style="font-size:11px">资金最先认可</span>';
     if((x.fund || 0) === maxFund && maxFund > 0) tags += ' <span class="tag tag-y" style="font-size:11px">多头最强</span>';
-    return '<tr><td class="mono">' + (i + 1) + '</td><td><b>' + esc(x.n) + '</b>' + tags + '</td><td class="mono">' + esc(x.c) + '</td><td class="up mono">' + ((x.lbc || 1) >= 2 ? x.lbc + '板' : '首板') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td class="mono">' + pnum((x.fund || 0) / 1e8) + '</td></tr>';
+    return '<tr><td class="mono">' + (i + 1) + '</td><td><b>' + esc(x.n) + '</b>' + tags + rankBadgeAny(x.c) + '</td><td class="mono">' + esc(x.c) + '</td><td class="up mono">' + ((x.lbc || 1) >= 2 ? x.lbc + '板' : '首板') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td class="mono">' + pnum((x.fund || 0) / 1e8) + '</td></tr>';
   });
   var mh = mids.map(function(x, i){
-    return '<tr><td class="mono">' + (i + 1) + '</td><td><b>' + esc(x.f14) + '</b></td><td class="mono">' + esc(x.f12) + '</td><td>' + pcts(x.f3) + '</td><td class="mono">' + famt(x.f6) + '</td><td class="mono">' + pnum(x.f21 / 1e8) + '</td></tr>';
+    return '<tr><td class="mono">' + (i + 1) + '</td><td><b>' + esc(x.f14) + '</b>' + rankBadgeAny(x.f12) + '</td><td class="mono">' + esc(x.f12) + '</td><td>' + pcts(x.f3) + '</td><td class="mono">' + famt(x.f6) + '</td><td class="mono">' + pnum(x.f21 / 1e8) + '</td></tr>';
   });
   var wh = lows.map(function(x, i){
-    return '<tr><td class="mono">' + (i + 1) + '</td><td><b>' + esc(x.f14) + '</b></td><td class="mono">' + esc(x.f12) + '</td><td class="up">' + pcts(x.f3) + '</td><td class="mono">' + famt(x.f6) + '</td><td class="mono">' + pnum(x.f21 / 1e8) + '</td></tr>';
+    return '<tr><td class="mono">' + (i + 1) + '</td><td><b>' + esc(x.f14) + '</b>' + rankBadgeAny(x.f12) + '</td><td class="mono">' + esc(x.f12) + '</td><td class="up">' + pcts(x.f3) + '</td><td class="mono">' + famt(x.f6) + '</td><td class="mono">' + pnum(x.f21 / 1e8) + '</td></tr>';
   });
   var cyc = (typeof emotion === 'function' && emotion() && emotion().cyc) || '—';
   var cycTip = (cyc === '退潮' || cyc === '冰点')
@@ -2247,7 +2248,7 @@ function renderM712(){
       '<th>名称</th><th>代码</th><th>板块</th><th>涨幅</th><th>现价/MA5</th><th>偏离</th><th>站稳</th><th>斜率</th><th>量能</th><th>周期仓位</th><th>买点逻辑（四条件）</th></tr></thead><tbody>' +
       cats.buy.map(function(r){
         var s = r.st;
-        return '<tr><td><b>' + esc(r.name) + '</b></td><td class="mono">' + esc(r.code) + '</td>' +
+        return '<tr><td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + '</td><td class="mono">' + esc(r.code) + '</td>' +
           '<td class="yel">' + esc(r.sec) + ' <span class="badge ' + gradeCls(r.grade) + '">' + r.grade + '</span></td>' +
           '<td>' + pcts(r.pct) + '</td><td class="mono">' + (r.price != null ? r.price.toFixed(2) : '—') + ' / ' + s.ma5.toFixed(2) + '</td>' +
           '<td class="up mono">+' + s.dev.toFixed(1) + '%</td><td class="mono">' + s.standDays + '日</td>' +
@@ -2266,7 +2267,7 @@ function renderM712(){
   }
   function rowMini(r){
     var s = r.st, pos = s.standDays >= 1 ? ('稳' + s.standDays + '日') : ('破' + s.breakDays + '日');
-    return '<tr><td><b>' + esc(r.name) + '</b>' + (r.cl.state === 'watch' && s.volYang === 0 ? ' <span class="badge b-o">无量·剔除自选</span>' : '') + '</td>' +
+    return '<tr><td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + (r.cl.state === 'watch' && s.volYang === 0 ? ' <span class="badge b-o">无量·剔除自选</span>' : '') + '</td>' +
       '<td class="mono">' + esc(r.code) + '</td><td>' + pcts(r.pct) + '</td>' +
       '<td class="mono">' + (s.dev == null ? '—' : (s.dev > 0 ? '+' : '') + s.dev.toFixed(1) + '%') + '</td>' +
       '<td class="mono">' + pos + '</td><td class="' + (s.slopeUp ? 'up' : 'dn') + '">' + (s.slopeUp ? '向上' + s.upDays + '天' : '向下') + '</td>' +
@@ -2311,9 +2312,9 @@ function renderM713(){
       var tc = txCode(x.code), a = tc ? q[tc] : null;
       var pct = a ? parseFloat(a[32]) : x.zdp;
       var amt = a ? parseFloat(a[37]) / 10000 : null;
-      return '<tr><td class="mono">' + x.rank + '</td><td><b>' + esc(x.name) + '</b></td><td class="mono">' + esc(x.code) + '</td><td>' + pcts(pct) + '</td><td>' + (amt != null ? famt(amt) : '—') + '</td><td class="yel">' + esc(D.indMap[x.code] || '—') + '</td></tr>';
+      return '<tr><td class="mono">' + x.rank + '</td><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td><td class="mono">' + esc(x.code) + '</td><td>' + pcts(pct) + '</td><td>' + (amt != null ? famt(amt) : '—') + '</td><td class="yel">' + esc(D.indMap[x.code] || '—') + '</td></tr>';
     }).join('');
-    $('m7_13').innerHTML = '<div class="note">数据源：' + esc(D.rankSrc || '热榜') + '（同花顺接口跨域受限时自动回退东财人气榜）</div><div class="twrap"><table><thead><tr><th>排名</th><th>名称</th><th>代码</th><th>涨跌幅</th><th>成交额</th><th>所属行业</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    $('m7_13').innerHTML = '<div class="note">数据源：' + esc(D.rankSrc || '热榜') + '（同花顺接口跨域受限时自动回退东财人气榜） · 名次变动标注：' + rankLegend() + '</div><div class="twrap"><table><thead><tr><th>排名</th><th>名称</th><th>代码</th><th>涨跌幅</th><th>成交额</th><th>所属行业</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   });
 }
 function renderM714(){
@@ -2624,7 +2625,7 @@ function secBoardHtml(rows){
       var stb = cl.state ? ('b-' + (cl.state === 'hold' ? 'r' : (cl.state === 'over' ? 'o' : (cl.state === 'reduce' ? 'y' : (cl.state === 'sell' ? 'b' : 'g'))))) : 'g';
       var cell = s.unmatched ? '<span class="note">—</span>'
         : (esc(s.name) + (s.src === '成分匹配' ? ' <span class="note" style="font-size:10px">成分匹配</span>' : ''));
-      return '<tr><td><b>' + esc(r.name) + '</b></td><td class="mono">' + esc(r.code) + '</td>' +
+      return '<tr><td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + '</td><td class="mono">' + esc(r.code) + '</td>' +
         '<td style="font-size:11.5px;white-space:normal">' + cell + '</td>' +
         '<td>' + gradeTag(s.grade || '—') + '</td>' +
         '<td>' + roleBadge(s.role, s.lbc, s.maxLbc) + '</td>' +
@@ -2690,7 +2691,7 @@ function renderM716body(rows, exec, st, e){
   if(cats.buy.length){
     h += '<div class="alert-buy"><span class="ab-ic">🟢</span><div style="flex:1"><div>实时买入信号 · 共 ' + cats.buy.length + ' 只满足 MA5 合法买点（四条件全满足）</div>' +
       '<table><thead><tr><th>名称</th><th>代码</th><th>现价</th><th>偏离</th><th>周期仓位</th><th>买点逻辑</th></tr></thead><tbody>' +
-      cats.buy.map(function(r){ var s = r.st; return '<tr><td><b>' + esc(r.name) + '</b></td><td class="mono">' + esc(r.code) + '</td>' +
+      cats.buy.map(function(r){ var s = r.st; return '<tr><td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + '</td><td class="mono">' + esc(r.code) + '</td>' +
         '<td class="mono">' + (r.price != null ? r.price.toFixed(2) : '—') + '</td><td class="mono">+' + s.dev.toFixed(1) + '%</td>' +
         '<td>' + ma5PosAdvice(exec) + '</td><td style="font-size:11.5px">' + r.buy.why.join('；') + '</td></tr>'; }).join('') +
       '</tbody></table></div></div>';
@@ -2727,7 +2728,7 @@ function renderM716body(rows, exec, st, e){
   }
   function rf(r){
     var s = r.st;
-    return '<tr><td><b>' + esc(r.name) + '</b>' + (r.cl.state==='watch'&&s.volYang===0?' <span class="badge b-o">无量·剔除</span>':'') + '</td>' +
+    return '<tr><td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + (r.cl.state==='watch'&&s.volYang===0?' <span class="badge b-o">无量·剔除</span>':'') + '</td>' +
       '<td class="mono">' + esc(r.code) + '</td>' +
       '<td style="white-space:normal;font-size:11px">' + (r.sec ? (r.sec.unmatched ? '<span class="note">未归属板块' + (r.sec.why ? '·' + esc(r.sec.why) : '') + '</span>' : (esc(r.sec.name) + ' ' + gradeTag(r.sec.grade) + '<br>' + roleBadge(r.sec.role, r.sec.lbc, r.sec.maxLbc))) : '—') + '</td>' +
       '<td>' + pcts(r.pct) + '</td>' +
@@ -3372,7 +3373,7 @@ function m718Holds(st){
     var a = auctionHoldAction(h, st);
     var g = h.sec ? (h.sec.grade || '—') : '—';
     var p = h.sec ? (h.sec.f3 != null ? h.sec.f3 : null) : null;
-    return '<tr><td><b>' + esc(h.name || h.code) + '</b></td><td class="mono">' + esc(h.code) + '</td>' +
+    return '<tr><td><b>' + esc(h.name || h.code) + '</b>' + rankBadgeAny(h.code) + '</td><td class="mono">' + esc(h.code) + '</td>' +
       '<td>' + (h.sec ? esc(h.sec.name || '—') : '—') + ' ' + gradeTag(g) + '</td>' +
       '<td class="' + pctCls(p) + '">' + (p == null ? '—' : fpct(p)) + '</td>' +
       '<td>' + auctionActTag(a.act) + esc(a.txt) + '</td></tr>';
@@ -3838,7 +3839,7 @@ function m720Table(title, list, seatMap){
       var c = s.k === 'bad' ? 'b-g' : (s.k === 'star' ? 'b-r' : (s.k === 'warn' ? 'b-o' : 'b-b'));
       return '<span class="badge ' + c + '">' + esc(s.t) + '</span>';
     }).join(' ');
-    return '<tr><td><b>' + esc(x.n) + '</b><div class="mono" style="font-size:11px">' + esc(x.c) + '</div></td>' +
+    return '<tr><td><b>' + esc(x.n) + '</b>' + rankBadgeAny(x.c) + '<div class="mono" style="font-size:11px">' + esc(x.c) + '</div></td>' +
       '<td class="' + pctCls(x.pct) + ' mono">' + (x.pct == null ? '—' : fpct(x.pct)) + '</td>' +
       '<td class="mono ' + (x.net >= 0 ? 'up' : 'dn') + '">' + fmtNet(x.net) + '</td>' +
       '<td class="mono">' + fmtNet(x.buy) + '</td>' +
@@ -3992,7 +3993,7 @@ function renderM715(){
   /* 单只渲染的单元格（共用） */
   function rowCells(r){
     var x = r.x;
-    return '<tr><td>' + VBADGE[r.j.verdict] + '</td><td><b>' + esc(x.n) + '</b></td><td class="mono">' + esc(x.c) + '</td><td class="yel">' + esc(x.hybk || '其他') + '</td>' +
+    return '<tr><td>' + VBADGE[r.j.verdict] + '</td><td><b>' + esc(x.n) + '</b>' + rankBadgeAny(x.c) + '</td><td class="mono">' + esc(x.c) + '</td><td class="yel">' + esc(x.hybk || '其他') + '</td>' +
       '<td class="mono">' + (x.lbc || 1) + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td>' +
       '<td class="mono">' + ((num(x.fund) || 0) / 1e8).toFixed(2) + '</td><td class="mono">' + (x.zbc || 0) + '</td>' +
       '<td class="mono">' + r.secCnt + '</td><td class="lgc">' + (r.j.marks.length ? r.j.marks.join('；') : '五维全部健康') + '</td></tr>';
@@ -4015,7 +4016,7 @@ function renderM715(){
     groupBlock('sneak', '❌ 偷袭板（不碰 · 次日开盘规避）', '#f0453a', '特征命中≥3项：14:45 后突袭 / 封单薄 / 孤立拉升 / 反复炸板') +
     (lateZb.length ? '<div class="kpi" style="margin-top:6px"><div class="t">尾盘炸板 / 砸盘警示（14:00 后尝试封板失败）</div><div class="twrap" style="margin-top:4px"><table class="mini-tbl"><tbody>' +
       lateZb.map(function(x){
-        return '<tr><td><b>' + esc(x.n) + '</b></td><td class="mono">' + esc(x.c) + '</td><td class="yel">' + esc(x.hybk || '其他') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td class="dn">尾盘封板失败 · 资金避险信号，次日方向偏弱，降低隔夜仓位</td></tr>';
+        return '<tr><td><b>' + esc(x.n) + '</b>' + rankBadgeAny(x.c) + '</td><td class="mono">' + esc(x.c) + '</td><td class="yel">' + esc(x.hybk || '其他') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td class="dn">尾盘封板失败 · 资金避险信号，次日方向偏弱，降低隔夜仓位</td></tr>';
       }).join('') + '</tbody></table></div></div>' : '');
   /* ---- ⑤ 风险提示汇总 ---- */
   var risks = [];
@@ -4581,26 +4582,28 @@ function renderPool(){
       : '<tr><th>代码</th><th>名称</th><th>涨跌幅</th><th>最新价</th><th>成交额(亿)</th><th>封单资金(亿)</th><th>连板数</th><th>首次封板</th><th>炸板次数</th><th>所属行业</th><th>涨停统计</th></tr>';
     rows = view.map(function(x){
       var tj = x.tj ? (x.tj.days + '天' + x.tj.ct + '板') : '—';
+      var rb = rankBadgeAny(x.code);
       if(isDt){
-        return '<tr><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b></td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.price ? x.price.toFixed(2) : '—') + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + pnum((x.fund || 0) / 1e8) + '</td><td class="mono">' + ((x.lbc || 1) >= 2 ? '<span class="dn">' + x.lbc + '连跌停</span>' : '今日首跌') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td>' + esc(x.ind) + '</td></tr>';
+        return '<tr><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rb + '</td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.price ? x.price.toFixed(2) : '—') + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + pnum((x.fund || 0) / 1e8) + '</td><td class="mono">' + ((x.lbc || 1) >= 2 ? '<span class="dn">' + x.lbc + '连跌停</span>' : '今日首跌') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td>' + esc(x.ind) + '</td></tr>';
       }
-      return '<tr><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b></td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.price ? x.price.toFixed(2) : '—') + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + pnum((x.fund || 0) / 1e8) + '</td><td class="mono">' + ((x.lbc || 1) >= 2 ? '<span class="up">' + x.lbc + '板</span>' : '首板') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td class="mono">' + x.zbc + '</td><td>' + esc(x.ind) + '</td><td class="yel">' + tj + '</td></tr>';
+      return '<tr><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rb + '</td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.price ? x.price.toFixed(2) : '—') + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + pnum((x.fund || 0) / 1e8) + '</td><td class="mono">' + ((x.lbc || 1) >= 2 ? '<span class="up">' + x.lbc + '板</span>' : '首板') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td class="mono">' + x.zbc + '</td><td>' + esc(x.ind) + '</td><td class="yel">' + tj + '</td></tr>';
     }).join('');
   } else if(t === 'top' || t === 'bot'){
     head = '<tr><th>排名</th><th>代码</th><th>名称</th><th>涨跌幅</th><th>最新价</th><th>成交额(亿)</th><th>所属行业</th></tr>';
     rows = view.map(function(x){
-      return '<tr><td class="mono">' + x.rank + '</td><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b></td><td>' + pcts(x.zdp == '-' ? null : x.zdp) + '</td><td class="mono">' + (x.price == '-' || x.price == null ? '—' : Number(x.price).toFixed(2)) + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + esc(x.ind) + '</td></tr>';
+      return '<tr><td class="mono">' + x.rank + '</td><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td><td>' + pcts(x.zdp == '-' ? null : x.zdp) + '</td><td class="mono">' + (x.price == '-' || x.price == null ? '—' : Number(x.price).toFixed(2)) + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + esc(x.ind) + '</td></tr>';
     }).join('');
   } else {
     head = '<tr><th>代码</th><th>名称</th><th>昨日连板数</th><th>今日涨跌幅</th><th>今日最高</th><th>开盘溢价</th><th>所属行业</th></tr>';
     rows = view.map(function(x){
-      return '<tr><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b></td><td class="mono">' + x.lbc + '板</td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.high || '—') + '</td><td>' + pcts(x.openPrem) + '</td><td>' + esc(x.ind) + '</td></tr>';
+      return '<tr><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td><td class="mono">' + x.lbc + '板</td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.high || '—') + '</td><td>' + pcts(x.openPrem) + '</td><td>' + esc(x.ind) + '</td></tr>';
     }).join('');
   }
   $('m8body').innerHTML =
   '<div class="filterbar"><span class="flat">按行业筛选：</span><select onchange="poolFilter[\'' + t + '\']=this.value;renderPool()">' +
   indArr.map(function(n){ return '<option' + (n === f ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select>' +
-  '<span class="flat">共 ' + view.length + ' / ' + data.length + ' 条</span></div>' +
+  '<span class="flat">共 ' + view.length + ' / ' + data.length + ' 条</span>' +
+  '<span class="flat" style="margin-left:auto">名次变动标注：' + rankLegend() + '</span></div>' +
   '<div class="twrap"><table><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div>';
 }
 
@@ -4620,15 +4623,49 @@ function k10SaveRanks(){
   if(keys.length > 30){ keys.slice(0, keys.length - 30).forEach(function(k){ delete st[k]; }); }
   lsSet(K10R_KEY, st);
 }
-/* 名次标签：仅 top30（rank≤30）出现；进阶=粉色，退阶且仍在30内=青色，新进30=粉色 */
-function k10RankTag(rank, prevRank){
-  if(rank > 30) return '';
-  if(prevRank == null) return '<span class="badge" style="background:#3a1f2f;color:#f472b6">新进30</span>';
+/* ===== 名次变动标注引擎（唯一跟踪榜：10日涨幅榜） =====
+   原则：**只认 10日涨幅榜** —— 名次进入 30 以内即标注，且该股出现在平台任何位置都标注；
+   名次进阶=粉色 ↑n（新晋前30 = 粉色「新进30」），退阶且仍在30内=青色 ↓n，持平=灰「持平」。
+   名次历史 `wb_k10rank_v1 = { 'YYYYMMDD': {code: rank} }`（保留30天），取"今日之前最近一天"做差。
+   成交额榜/涨幅榜/热榜等**不作为**标注依据（成交额>10亿不做特殊标注）。 */
+/* 名次标签核心：rank≤30 才出 */
+function rankDeltaTag(rank, prevRank){
+  if(rank == null || rank > 30) return '';
+  if(prevRank == null || prevRank > 30) return '<span class="badge" style="background:#3a1f2f;color:#f472b6">新进30</span>';
   var d = prevRank - rank;
   if(d > 0) return '<span class="badge" style="background:#3a1f2f;color:#f472b6">↑' + d + '</span>';
   if(d < 0) return '<span class="badge" style="background:#0b2e33;color:#22d3ee">↓' + (-d) + '</span>';
   return '<span class="badge" style="background:#1c2433;color:#9fb3c8">持平</span>';
 }
+var RANKI = { date: '', tag: {}, rank: {} };
+/* 每轮刷新重建索引：tag[code] = 10日涨幅榜 top30 的名次变动标签 */
+function rankIndexBuild(){
+  var arr = (D.k10 || []), prev = k10PrevRanks(), tag = {}, rank = {}, i, k, r;
+  for(i = 0; i < arr.length && i < 100; i++){
+    k = String(arr[i] && arr[i].code);
+    if(!k || k === 'undefined' || rank[k] != null) continue;
+    r = i + 1; rank[k] = r;
+    if(r <= 30) tag[k] = rankDeltaTag(r, (prev[k] != null ? prev[k] : null));
+  }
+  RANKI = { date: D.date, tag: tag, rank: rank };
+  return RANKI;
+}
+/* 惰性兜底：渲染函数被单独调用（非 renderAll 链路）时自动重建 */
+function rankEnsure(){ if(RANKI.date !== D.date) rankIndexBuild(); return RANKI; }
+/* 平台任意位置通用标注：该股在 10日涨幅榜前30 即返回内联标签；skipSrc='k10' 用于该榜单自身避免重复 */
+function rankBadgeAny(code, skipSrc){
+  rankEnsure();
+  if(skipSrc === 'k10') return '';
+  var t = RANKI.tag[String(code)];
+  if(!t) return '';
+  return ' <span class="flat" style="font-size:10px;margin-right:2px">10日</span>' + t;
+}
+/* 图例（各榜单脚注复用） */
+function rankLegend(){
+  return '<b style="color:#f472b6">粉色 = 10日涨幅榜名次进阶</b>（含新晋前30），<b style="color:#22d3ee">青色 = 名次退阶但仍在前30</b>；仅 <b>10日涨幅榜名次 ≤30</b> 时标注（标签前「10日」为来源）。';
+}
+/* 别名：10日涨幅榜自身"名次"列使用 */
+function k10RankTag(rank, prevRank){ return rankDeltaTag(rank, prevRank); }
 /* 强势形态：A 高开高走直接涨停（无炸板·早盘封）/ B 快速涨停+小炸板快速回封 / C 尾盘板（≥14:30） */
 function k10FormOf(zbc, fbt){
   if(num(zbc) >= 1) return { k: 'B', t: '盘中快速涨停 + 小炸板快速回封' };
@@ -4669,7 +4706,7 @@ function k10RecognBlock(recogn){
     var g10 = (k && k.g10 != null) ? Number(k.g10).toFixed(2) + '%' : '—';
     var zdp = (k && k.zdp !== '-' && k.zdp != null) ? fpct(num(k.zdp)) : '—';
     var ind = (k && k.ind) || (z && z.hybk) || '—';
-    return '<tr><td><b>' + esc(nm) + '</b></td><td class="mono">' + esc(c) + '</td><td>' + esc(ind) + '</td><td class="mono">' + rank + '</td><td class="up mono">' + g10 + '</td><td>' + zdp + '</td><td>' + k10RecognTag(cnt[c], days) + '</td></tr>';
+    return '<tr><td><b>' + esc(nm) + '</b>' + rankBadgeAny(c) + '</td><td class="mono">' + esc(c) + '</td><td>' + esc(ind) + '</td><td class="mono">' + rank + '</td><td class="up mono">' + g10 + '</td><td>' + zdp + '</td><td>' + k10RecognTag(cnt[c], days) + '</td></tr>';
   }).join('');
   return '<div class="m718-card" style="margin-top:10px"><h4>辨识度筛选（近5日 ≥3 次进入10日涨幅榜前10）</h4>' +
     '<div class="note">「辨识度」= 个股近期反复出现在 10日涨幅榜前列（近' + (days || 5) + '个交易日累计）。<b style="color:#fbbf24">★高</b> = 满足「近5日 ≥3 次进前10」。</div>' +
@@ -4719,12 +4756,12 @@ function renderM9(){
   var recogn = k10Recogn();
   var rows = D.k10.slice(0, 100).map(function(x, i){
     var rk = i + 1;
-    return '<tr><td class="mono">' + rk + ' ' + k10RankTag(rk, prevRanks[x.code]) + '</td><td><b>' + esc(x.name) + '</b></td><td class="mono">' + esc(x.code) + '</td><td class="up mono">' + x.g10.toFixed(2) + '%</td><td>' + pcts(x.zdp == '-' ? null : x.zdp) + '</td><td class="mono">' + (x.price == '-' || x.price == null ? '—' : Number(x.price).toFixed(2)) + '</td><td>' + esc(x.ind) + '</td><td>' + k10RecognTag(recogn.cnt[x.code], recogn.days) + '</td></tr>';
+    return '<tr><td class="mono">' + rk + ' ' + k10RankTag(rk, prevRanks[x.code]) + '</td><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code, 'k10') + '</td><td class="mono">' + esc(x.code) + '</td><td class="up mono">' + x.g10.toFixed(2) + '%</td><td>' + pcts(x.zdp == '-' ? null : x.zdp) + '</td><td class="mono">' + (x.price == '-' || x.price == null ? '—' : Number(x.price).toFixed(2)) + '</td><td>' + esc(x.ind) + '</td><td>' + k10RecognTag(recogn.cnt[x.code], recogn.days) + '</td></tr>';
   }).join('');
   $('m9body').innerHTML =
   barsHtml('行业分布统计', indCount(D.k10, 100), '#f59e0b') +
   '<div class="twrap" style="margin-top:10px"><table><thead><tr><th>排名</th><th>名称</th><th>代码</th><th>10日涨幅</th><th>今日涨幅</th><th>最新价</th><th>所属行业</th><th>辨识度(近5日)</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-  '<div class="note">样本=今日涨幅榜前100个股，按前复权日K计算：10日涨幅 = 最新收盘 / 11个交易日前收盘 - 1。名次标签：10日涨幅榜 top30 出现；<b style="color:#f472b6">粉色 = 名次进阶</b>，<b style="color:#22d3ee">青色 = 名次退阶（仍在30内）</b>。辨识度：近5个交易日进入「10日涨幅榜前10」的次数，<b style="color:#fbbf24">★高 = ≥3 次</b>。</div>' +
+  '<div class="note">样本=今日涨幅榜前100个股，按前复权日K计算：10日涨幅 = 最新收盘 / 11个交易日前收盘 - 1。<b>名次变动标注：</b>' + rankLegend() + '辨识度：近5个交易日进入「10日涨幅榜前10」的次数，<b style="color:#fbbf24">★高 = ≥3 次</b>。</div>' +
   k10RecognBlock(recogn);
 }
 /* 今日最强 & 立即买入（独立卡片，位于 7.12 之后；数据取自 10日涨幅前30） */
@@ -4738,10 +4775,11 @@ function renderM10(){
   var list = D.amtTop.filter(function(x){ return (x.f6 || 0) > 1e9; });
   if(!list.length){ $('m10body').innerHTML = '<div class="loading">暂无成交额超10亿个股（可能为非交易时段）</div>'; return; }
   var rows = list.map(function(x, i){
-    return '<tr><td class="mono">' + (i + 1) + '</td><td class="mono">' + esc(x.f12) + '</td><td><b>' + esc(x.f14) + '</b></td><td>' + pcts(x.f3 == '-' ? null : x.f3) + '</td><td class="mono">' + famt((x.f6 || 0) / 1e8) + '</td><td>' + esc(x.f100 || '—') + '</td></tr>';
+    return '<tr><td class="mono">' + (i + 1) + '</td><td class="mono">' + esc(x.f12) + '</td><td><b>' + esc(x.f14) + '</b>' + rankBadgeAny(x.f12) + '</td><td>' + pcts(x.f3 == '-' ? null : x.f3) + '</td><td class="mono">' + famt((x.f6 || 0) / 1e8) + '</td><td>' + esc(x.f100 || '—') + '</td></tr>';
   }).join('');
   $('m10body').innerHTML = barsHtml('行业分布统计', indCount(list, 100), '#60a5fa') +
-  '<div class="twrap" style="margin-top:10px"><table><thead><tr><th>#</th><th>代码</th><th>名称</th><th>涨跌幅</th><th>成交额</th><th>所属行业</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  '<div class="twrap" style="margin-top:10px"><table><thead><tr><th>#</th><th>代码</th><th>名称</th><th>涨跌幅</th><th>成交额</th><th>所属行业</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+  '<div class="note">名次变动标注：' + rankLegend() + '</div>';
 }
 
 /* --- 模块11 自动分析总结 --- */

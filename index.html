@@ -2786,6 +2786,7 @@ function renderM712(){
     (c ? c.v : []).forEach(function(x){ if(x.f12) memBy[x.f12] = x; });
   });
   var cats = { buy: [], hold: [], over: [], reduce: [], sell: [], watch: [], noData: [] };
+  var midN = 0;
   MA5S.rows.forEach(function(r){
     var live = memBy[r.code] || {};
     var price = num(live.f2) != null ? num(live.f2) : r.price;
@@ -2796,8 +2797,9 @@ function renderM712(){
       name: r.name, code: r.code, sec: r.sec, grade: r.grade,
       pct: num(live.f3) != null ? num(live.f3) : r.pct,
       price: price, amt: num(live.f6) != null ? num(live.f6) : r.amt,
-      st: stt, cl: ma5Classify(stt), buy: ma5Buy(stt)
+      st: stt, cl: ma5Classify(stt), buy: ma5Buy(stt), mid: isMid(live)
     };
+    if(row.mid) midN++;
     if(row.buy.ok) cats.buy.push(row);
     else if(row.cl.state === 'hold') cats.hold.push(row);
     else if(row.cl.state === 'over') cats.over.push(row);
@@ -2808,10 +2810,11 @@ function renderM712(){
   var N = MA5S.rows.length;
   h += '<div class="concl c-blu" style="margin-top:8px"><b>一句话总纲：</b>MA5 斜率向上为唯一做多趋势，站稳 5 日线、乖离合理则持有；斜率向下一律视为弱势反弹，破线 3 天趋势终结无条件清仓；乖离超 8% 停止开仓、分批止盈。</div>' +
     '<div class="note" style="margin-top:4px">扫描 ' + N + ' 只（成功 ' + MA5S.ok + (MA5S.fail ? ' · 日K失败 ' + MA5S.fail : '') + (cats.noData.length ? ' · 数据不足 ' + cats.noData.length : '') + '）—— ' +
-    '合法买点 <b class="up">' + cats.buy.length + '</b> · 持有 <b class="up">' + cats.hold.length + '</b> · 超涨警戒 <b class="ora">' + cats.over.length + '</b> · 减仓 <b class="yel">' + cats.reduce.length + '</b> · 清仓 <b class="dn">' + cats.sell.length + '</b> · 观察 <b class="flat">' + cats.watch.length + '</b>' +
+    '合法买点 <b class="up">' + cats.buy.length + '</b> · 持有 <b class="up">' + cats.hold.length + '</b> · 超涨警戒 <b class="ora">' + cats.over.length + '</b> · 减仓 <b class="yel">' + cats.reduce.length + '</b> · 清仓 <b class="dn">' + cats.sell.length + '</b> · 观察 <b class="flat">' + cats.watch.length + '</b> · 中军 <b class="ora">' + midN + '</b>' +
     '。盘中实时判定随每轮刷新更新；<b>尾盘 14:45 后以收盘价定局执行</b>。</div>';
   /* ④ 合法买点（必须全部满足四条件；仓位服从 7.10 周期约束） */
   h += '<div style="margin-top:10px"><b style="font-size:12.5px;color:#f0453a">今日合法买点（斜率由下翻上 + 连续2日站稳 + 偏离0~6% + 近期放量阳线 · 共 ' + cats.buy.length + ' 只）</b></div>';
+  h += '<div class="note" style="margin-top:4px">名称后 <span class="badge b-o">中军</span> 标注 = 板块内大容量趋势票（未涨停 + 成交额≥10亿 + 流通≥50亿，口径与 7.11 三档一致）；分歧日可低吸承接、破位即减仓。全池命中 <b class="ora">' + midN + '</b> 只，已并入下方四状态分类逐股展示。</div>';
   if(exec === '冰点'){
     h += '<div class="concl c-grn" style="margin-top:6px"><b>冰点期禁止开仓。</b>下列 MA5 买点信号仅作拐点观察记录，不得实际买入（情绪周期总权重优先于一切技术信号）。</div>';
   }
@@ -2822,7 +2825,7 @@ function renderM712(){
       '<th>名称</th><th>代码</th><th>板块</th><th>涨幅</th><th>现价/MA5</th><th>偏离</th><th>站稳</th><th>斜率</th><th>量能</th><th>周期仓位</th><th>买点逻辑（四条件）</th></tr></thead><tbody>' +
       cats.buy.map(function(r){
         var s = r.st;
-        return '<tr><td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + '</td><td class="mono">' + esc(r.code) + '</td>' +
+        return '<tr><td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + (r.mid ? ' <span class="badge b-o">中军</span>' : '') + '</td><td class="mono">' + esc(r.code) + '</td>' +
           '<td class="yel">' + esc(r.sec) + ' <span class="badge ' + gradeCls(r.grade) + '">' + r.grade + '</span></td>' +
           '<td>' + pcts(r.pct) + '</td><td class="mono">' + (r.price != null ? r.price.toFixed(2) : '—') + ' / ' + s.ma5.toFixed(2) + '</td>' +
           '<td class="up mono">+' + s.dev.toFixed(1) + '%</td><td class="mono">' + s.standDays + '日</td>' +
@@ -2841,7 +2844,7 @@ function renderM712(){
   }
   function rowMini(r){
     var s = r.st, pos = s.standDays >= 1 ? ('稳' + s.standDays + '日') : ('破' + s.breakDays + '日');
-    return '<tr><td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + (r.cl.state === 'watch' && s.volYang === 0 ? ' <span class="badge b-o">无量·剔除自选</span>' : '') + '</td>' +
+    return '<tr><td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + (r.mid ? ' <span class="badge b-o">中军</span>' : '') + (r.cl.state === 'watch' && s.volYang === 0 ? ' <span class="badge b-o">无量·剔除自选</span>' : '') + '</td>' +
       '<td class="mono">' + esc(r.code) + '</td><td>' + pcts(r.pct) + '</td>' +
       '<td class="mono">' + (s.dev == null ? '—' : (s.dev > 0 ? '+' : '') + s.dev.toFixed(1) + '%') + '</td>' +
       '<td class="mono">' + pos + '</td><td class="' + (s.slopeUp ? 'up' : 'dn') + '">' + (s.slopeUp ? '向上' + s.upDays + '天' : '向下') + '</td>' +
@@ -3039,6 +3042,12 @@ function roleBadge(role, lbc, maxLbc){
   if(role === 'mid') return '<span class="badge b-o">中军</span>';
   if(role === 'zha') return '<span class="badge b-g">杂毛</span>';
   return '<span class="badge b-g" style="opacity:.7">未归属</span>';
+}
+/* 中军判定（口径与 7.11/7.16 严格一致）：未涨停(0≤涨幅<9.8%) + 成交额≥10亿 + 流通市值≥50亿 */
+function isMid(x){
+  if(!x) return false;
+  var f3 = num(x.f3), f6 = num(x.f6), f21 = num(x.f21);
+  return f3 != null && f3 >= 0 && f3 < 9.8 && f6 != null && f6 >= 1e9 && f21 != null && f21 >= 5e9;
 }
 function gradeRank(g){ return GRADE_RANK[g] == null ? 5 : GRADE_RANK[g]; }
 function roleRank(r){ return r === 'lead' ? 0 : r === 'mid' ? 1 : r === 'zha' ? 2 : 3; }

@@ -393,7 +393,7 @@ section{scroll-margin-top:70px;}
 <div id="m11body"><div class="loading">数据加载中…</div></div>
 </section>
 
-<p class="note" style="text-align:center">数据来源：东方财富 / 腾讯行情 / 新浪财经 · 仅供参考，不构成投资建议 · 自动刷新间隔180秒</p>
+<p class="note" style="text-align:center">数据来源：东方财富 / 腾讯行情 / 新浪财经 · 仅供参考，不构成投资建议 · 仅 A股交易时段（9:30-11:30、13:00-15:00）自动刷新，间隔180秒，非交易时段暂停</p>
 </div>
 
 <script>
@@ -818,6 +818,39 @@ function tradeProgress(){
   else if(mins >= 780 && mins <= 900) elapsed = 120 + (mins - 780);
   else if(mins > 900) elapsed = 240;
   return elapsed / 240;
+}
+/* ================= 交易时段判定 ================= */
+/* A股交易时段：周一~周五 09:30-11:30、13:00-15:00（本地时间）。
+   非交易时段（周末 / 午休 / 盘前盘后）不抓取、不刷新；进入交易时段瞬间立即拉一次最新快照。 */
+function isTradingHours(){
+  var d = new Date();
+  var day = d.getDay();            /* 0=周日, 6=周六 */
+  if(day === 0 || day === 6) return false;
+  var m = d.getHours() * 60 + d.getMinutes();
+  return (m >= 570 && m <= 690) || (m >= 780 && m <= 900);
+}
+function nextOpenMs(){
+  var d = new Date();
+  var day = d.getDay();
+  var m = d.getHours() * 60 + d.getMinutes();
+  function atDay(off, min){ var x = new Date(); x.setDate(x.getDate() + off); x.setHours(0, 0, 0, 0); return x.getTime() + min * 60000; }
+  if(day >= 1 && day <= 5){
+    if(m < 570) return atDay(0, 570);                    /* 当日上午盘前 */
+    if(m > 690 && m < 780) return atDay(0, 780);         /* 午休 */
+    if(m > 900) return atDay((day === 5) ? 3 : 1, 570);  /* 收盘后→下一交易日(周五跳周一) */
+    return -1;                                           /* 正在交易(不应调用) */
+  }
+  if(day === 6) return atDay(2, 570);   /* 周六→下周一 */
+  return atDay(1, 570);                 /* 周日→下周一 */
+}
+function nextOpenLabel(){
+  var t = nextOpenMs();
+  if(t < 0) return '休市';
+  var diff = Math.round((t - Date.now()) / 1000);
+  if(diff <= 0) return '即将开盘';
+  var h = Math.floor(diff / 3600), mm = Math.floor((diff % 3600) / 60);
+  if(h >= 24){ var days = Math.floor(h / 24); return days + '天' + (h % 24) + '小时后开盘'; }
+  return (h > 0 ? (h + '小时') : '') + mm + '分后开盘';
 }
 function refreshAll(){
   if(refreshing) return;
@@ -6166,17 +6199,33 @@ function renderM11(){
 }
 
 /* ================= 启动 ================= */
+var wasTrading = false;
 setInterval(function(){
+  var el = $('cd');
+  if(!isTradingHours()){
+    if(el) el.textContent = nextOpenLabel();   /* 非交易时段：暂停倒计时与刷新 */
+    remain = REFRESH;          /* 开盘后立刻进入倒计时 */
+    wasTrading = false;
+    return;
+  }
+  if(!wasTrading){             /* 刚进入交易时段：立即拉一次最新快照 */
+    wasTrading = true;
+    remain = REFRESH;
+    refreshAll();
+    if(el) el.textContent = remain + 's';
+    return;
+  }
   remain--;
   if(remain <= 0){ remain = REFRESH; refreshAll(); }
-  var el = $('cd');
   if(el) el.textContent = remain + 's';
 }, 1000);
 window.addEventListener('resize', function(){
   if(idxChart) idxChart.resize();
   if(emoChart) emoChart.resize();
 });
-refreshAll();
+/* 启动即处于交易时段才抓取数据；否则仅显示休市状态，不发起任何行情请求 */
+if(isTradingHours()){ wasTrading = true; refreshAll(); }
+else if($('cd')){ $('cd').textContent = nextOpenLabel(); }
 </script>
 </body>
 </html>

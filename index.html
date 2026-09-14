@@ -313,7 +313,7 @@ section{scroll-margin-top:70px;}
 
 <!-- 模块6 大盘情绪周期 -->
 <section class="card" id="m6">
-<h2>⑥ 大盘情绪周期<small>七维加权情绪指数（0-100）</small></h2>
+<h2>⑥ 大盘情绪周期<small>八维加权情绪指数（0-100 · 含亏钱效应 · 跌停&gt;10 家周期降一档）</small></h2>
 <div id="m6body"><div class="loading">数据加载中…</div></div>
 <div id="emoChart" style="width:100%;height:260px;margin-top:10px"></div>
 </section>
@@ -495,7 +495,14 @@ var SEC_F = 'f2,f3,f6,f8,f10,f12,f14,f18,f20,f21,f62,f104,f105,f184,f128';
 
 function txCode(c){ var f = String(c)[0]; if(f === '6') return 'sh' + c; if(f === '0' || f === '3') return 'sz' + c; return null; }
 function emSecid(c){ var f = String(c)[0]; if(f === '6') return '1.' + c; if(f === '0' || f === '3') return '0.' + c; return null; }
-function loadTxQuotes(codes){
+/* 腾讯实时行情（script 标签，GBK 编码；指数 / 昨涨停池 / 7.16 持仓共用）
+   ⚠️ 必须有硬超时：qt.gtimg.cn 在部分网络环境（公司代理、运营商劫持、境外线路）下会被**静默丢弃** ——
+   既不触发 onload 也不触发 onerror。旧版没有任何超时，于是：
+     · 7.16 永远停在「正在拉取实时行情…」（用户看到的"数据加载不出来"）；
+     · refreshAll 第 3 步被卡住 → D.prevQ 拿不到 → 7.3 昨涨停溢价全部是 "—"。
+   现在按批超时兜底：超时的那一批当"本批无数据"，不影响其它批次与整条刷新链。
+   注意每个 chunk 各有 done 标志，避免 onload / onerror / 超时三者重复触发导致 pending 提前归零。 */
+function loadTxQuotes(codes, ms){
   codes = codes.filter(function(c, i){ return codes.indexOf(c) === i; });
   return new Promise(function(resolve){
     var chunks = [], i;
@@ -503,9 +510,15 @@ function loadTxQuotes(codes){
     if(!chunks.length){ resolve({}); return; }
     var res = {}, pending = chunks.length;
     chunks.forEach(function(ch){
-      var s = document.createElement('script');
+      var s = document.createElement('script'), done = false;
       s.charset = 'GBK';
-      function fin(){ if(s.parentNode) s.parentNode.removeChild(s); if(--pending === 0) resolve(res); }
+      var tm = setTimeout(fin, ms || 9000);
+      function fin(){
+        if(done) return; done = true;
+        clearTimeout(tm);
+        if(s.parentNode) s.parentNode.removeChild(s);
+        if(--pending === 0) resolve(res);
+      }
       s.onload = function(){
         ch.forEach(function(c){ var v = window['v_' + c]; if(v) res[c] = String(v).split('~'); });
         fin();
@@ -515,6 +528,37 @@ function loadTxQuotes(codes){
       document.head.appendChild(s);
     });
   });
+}
+/* 指数行情兜底：腾讯被网络策略拦截时，用东财 push2delay 补齐「点位 / 涨跌幅 / 成交额」。
+   指数是判断大盘情绪最上游的输入 —— 涨跌家数方向系数、成交额趋势（价量配合）、
+   以及文档第六章的「指数 × 情绪」背离判断全靠它。旧版没有兜底，一旦腾讯被拦就整列 "—"。 */
+function emSecidIdx(tc){
+  var s = String(tc || '').toLowerCase();
+  if(s.indexOf('sh') === 0) return '1.' + s.slice(2);
+  if(s.indexOf('sz') === 0) return '0.' + s.slice(2);
+  return null;
+}
+function idxFallbackEM(){
+  var miss = IDX_DEF.filter(function(x){ return !D.idx[x[0]]; });
+  if(!miss.length) return Promise.resolve();
+  var ids = [], rev = {};
+  miss.forEach(function(x){ var s = emSecidIdx(x[0]); if(s){ ids.push(s); rev[s] = x[0]; } });
+  if(!ids.length) return Promise.resolve();
+  return jsonp('https://push2delay.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&secids=' + ids.join(',') +
+    '&fields=f2,f3,f6,f12,f14', 'cb', 9000).then(function(r){
+    var d = r && r.data && r.data.diff;
+    if(!d) return;
+    Object.keys(d).forEach(function(k){
+      var x = d[k];
+      if(!x || !x.f12) return;
+      var tc = rev[emSecidIdx('sh' + x.f12)] || rev[emSecidIdx('sz' + x.f12)];
+      if(!tc) return;
+      var a = [];                                        /* 下标与腾讯字段表对齐：1=名称 3=最新价 32=涨跌幅 37=成交额(万元) */
+      a[1] = x.f14; a[3] = x.f2; a[32] = x.f3;
+      a[37] = (x.f6 == null ? null : x.f6 / 10000);
+      D.idx[tc] = a;
+    });
+  }).catch(function(){});
 }
 
 /* 个股日K（开/收/量三字段，MA5 趋势系统与 10 日涨幅共用，每30分钟缓存）
@@ -794,7 +838,7 @@ function refreshAll(){
   steps.push(fetchClist(0, 100, 'f3', FS_STOCK, 'f2,f3,f6,f12,f14,f100').then(function(a){ D.bot100 = a; }).catch(function(){ D.bot100 = []; }));
   steps.push(fetchClist(1, 100, 'f6', FS_STOCK, 'f2,f3,f6,f12,f14,f100').then(function(a){ D.amtTop = a; }).catch(function(){ D.amtTop = []; }));
   steps.push(jsonp('https://push2delay.eastmoney.com/api/qt/ulist.np/get?secids=1.000001,0.399001&fields=f2,f3,f12,f14,f104,f105,f106', 'cb').then(function(r){ D.mkt = (r && r.data && r.data.diff) || null; }).catch(function(){ D.mkt = null; }));
-  steps.push(loadTxQuotes(IDX_DEF.map(function(x){ return x[0]; })).then(function(q){ D.idx = q; }).catch(function(){ D.idx = {}; }));
+  steps.push(loadTxQuotes(IDX_DEF.map(function(x){ return x[0]; })).then(function(q){ D.idx = q; }).catch(function(){ D.idx = {}; }).then(idxFallbackEM));
   steps.push(fetchNews().then(function(a){ D.news = a; }).catch(function(){ D.news = []; }));
   steps.push(fetchRank().then(function(r){ D.rank = r.list; D.rankSrc = r.src; }).catch(function(){ D.rank = []; D.rankSrc = ''; }));
 
@@ -1136,42 +1180,334 @@ function analyzePrev(){
     dtCnt: dtCnt, vsSH: vsSH
   };
 }
+/* 前一交易日情绪快照（取自 7.19 的 30 日历史 wb_hist30_v1）—— 供文档第五章「连续 2 日才确认」 */
+function emoPrevDay(){
+  try{
+    var h = lsGet('wb_hist30_v1', {}) || {};
+    var ks = Object.keys(h).filter(function(k){ return k < D.date; }).sort();
+    return ks.length ? h[ks[ks.length - 1]] : null;
+  }catch(e){ return null; }
+}
+/* 全市场行业板块主力净流入（元）：优先 D.ml.totalInflow，否则累加 D.secAmt 的 f62 */
+function secFlowNow(){
+  var v = (D.ml && D.ml.totalInflow != null) ? D.ml.totalInflow : null;
+  if(v == null){
+    var s = 0, has = false;
+    (D.secAmt || []).forEach(function(x){ var t = num(x.f62); if(t != null){ s += t; has = true; } });
+    if(has) v = s;
+  }
+  return v;
+}
+/* ---------- 昨涨停池「T+1 承接质量」五档 ----------
+   ⚠️ 这**不是**大盘情绪周期。情绪周期只有一个权威来源 emotion()（八维加权 + 文档判定条件 + 特殊规则）。
+   旧版这里直接返回 主升 / 修复 / 分歧 / 退潮 / 冰点，于是 7.3「综合情绪判定」与 7.6/7.11 出现了
+   两套互相打架的周期结论（同一页面可能同时显示"当前周期：分歧"和"综合判定：主升"）。
+   现改为只描述「昨日涨停股今天接得怎么样」，不再冒充周期，仓位也统一由情绪周期给出。 */
 function prevVerdict(a){
-  if(a.empty) return { name: '—', cls: 'flat', pos: '—' };
-  if(a.promoRate != null && a.promoRate >= 0.5 && (a.avg || 0) > 2) return { name: '主升', cls: 'up', pos: '40-70%' };
-  if((a.redRate || 0) >= 0.6 && (a.avg || 0) > 0.5) return { name: '修复', cls: 'grn', pos: '10-20%' };
-  if((a.avg || 0) > -2 && (a.redRate || 0) >= 0.4) return { name: '分歧', cls: 'yel', pos: '20-40%' };
-  if((a.avg || -9) > -5 && (a.mianRate || 0) <= 0.2) return { name: '退潮', cls: 'ora', pos: '0-10%' };
-  return { name: '冰点', cls: 'blu', pos: '0-5%' };
+  if(a.empty) return { name: '—', cls: 'flat', grade: -1 };
+  if(a.promoRate != null && a.promoRate >= 0.5 && (a.avg || 0) > 2) return { name: '极强', cls: 'up', grade: 0 };
+  if((a.redRate || 0) >= 0.6 && (a.avg || 0) > 0.5) return { name: '强', cls: 'grn', grade: 1 };
+  if((a.avg || 0) > -2 && (a.redRate || 0) >= 0.4) return { name: '中性', cls: 'yel', grade: 2 };
+  if((a.avg || -9) > -5 && (a.mianRate || 0) <= 0.2) return { name: '偏弱', cls: 'ora', grade: 3 };
+  return { name: '极弱', cls: 'blu', grade: 4 };
 }
 
-/* 七维情绪指数 */
-function emotion(){
-  var zt = D.zt.length, zb = D.zb.length;
-  var seal = zt + zb > 0 ? zt / (zt + zb) : 0.5;
-  var maxLbc = D.zt.reduce(function(m, x){ return Math.max(m, x.lbc || 1); }, 1);
-  var promo = (D.analysis && !D.analysis.empty && D.analysis.lbTotal) ? D.analysis.promoLB / D.analysis.lbTotal : 0.4;
-  var mianRate = (D.analysis && !D.analysis.empty) ? (D.analysis.mianRate || 0) : 0;
-  var up = 0, dn = 0;
-  if(D.mkt){
-    try{ Object.keys(D.mkt).forEach(function(k){ up += (D.mkt[k].f104 || 0); dn += (D.mkt[k].f105 || 0); }); }catch(e){}
+/* ==================================================================
+   八维加权情绪指数（v3，2026-09-14 按《大盘情绪周期判断逻辑》完整策略文档重算）
+   ------------------------------------------------------------------
+   第二章 八大核心指标 —— 指标 / 权重 / 分档表全部照抄文档：
+    ① 涨停家数   25%   ≤15→0-15 / 16-30→15-35 / 31-50→35-55 / 51-70→55-75 / 71-90→75-90 / ≥90→90-100
+    ② 跌停家数   15%   0→100 / 1-3→85-100 / 4-8→60-85 / 9-15→30-60 / 16-25→10-30 / ≥26→0-10（反向）
+    ③ 大面率     15%   <5%→90-100 / 5-10%→75-90 / 10-20%→50-75 / 20-30%→25-50 / ≥30%→0-25（反向）
+    ④ 连板高度   10%   1板0-10 / 2板10-25 / 3板25-45 / 4板45-65 / 5板65-80 / 6板80-90 / ≥7板90-100
+    ⑤ 晋级率     10%   ≥70%→85-100 / 50-70%→60-85 / 30-50%→35-60 / 10-30%→10-35 / <10%→0-10
+    ⑥ 封板率     10%   ≥80%→85-100 / 70-80%→70-85 / 60-70%→50-70 / 50-60%→30-50 / <50%→0-30
+    ⑦ 涨跌家数比 10%   ≥3:1→90-100 / 2-3→75-90 / 1.5-2→60-75 / 1-1.5→40-60 / 0.7-1→20-40 / <0.7→0-20
+    ⑧ 成交额趋势  5%   放量方向修正表（涨多跌少/跌多涨少 × 放量幅度，见 amtTrendScore）
+   分档表端点严格照抄，中间线性插值（pw），保证与文档区间端值完全一致。
+   ------------------------------------------------------------------
+   v2 → v3 修掉的真实缺陷（逐条对应文档）：
+     a. 权重回到文档的 25/15/15/10/10/10/10/5（v2 自创的 25/10/12/10/10/13/10/10 与文档不符）；
+     b. 涨跌家数比改用文档口径「上涨家数 ÷ 下跌家数」（v2 用的是上涨占比，量纲不同 → 分档表失效）；
+     c. 晋级率小样本双档折扣：昨日连板 <5 只 ×0.5、<3 只 ×0.3（v2 只有 <5 一档）；
+     d. 缺失维度改代入中性分并显式标注（v2 一律当 0 分 → 接口一挂情绪就被无故压低）；
+     e. 跌停 ≥10 家一票降档（文档阈值是 ≥10，v2 写成 >10）；
+     f. 新增文档第四章「判定条件」：冰点 / 退潮特征满足 2 条即直接落入该档；
+     g. 新增文档第四章「判定条件」：主升保留条件为 6 条"全部满足"（不满足只降一档到分歧，
+        不级联），冰点 / 退潮为"满足 2 条即成立"的强确认落档；
+     h. 新增文档第五章「周期切换确认」：连续 2 日向上切换（修复→主升）确认；
+     i. 全部规则命中理由写进 e.rules，7.6 逐条展示 —— 周期结论从此可解释、可复算。
+   ================================================================== */
+/* 分段线性插值：pts 为 [[x0,y0],[x1,y1],...]（x 递增）；低于首点取首值，高于末点取末值 */
+function pw(x, pts){
+  if(x == null || isNaN(x)) return null;
+  if(x <= pts[0][0]) return pts[0][1];
+  for(var i = 1; i < pts.length; i++){
+    if(x <= pts[i][0]){
+      var x0 = pts[i-1][0], y0 = pts[i-1][1], x1 = pts[i][0], y1 = pts[i][1];
+      return x1 === x0 ? y1 : y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+    }
   }
-  var upr = up + dn > 0 ? up / (up + dn) : 0.5;
-  var amtR = (D.amtEst && D.amtToday) ? D.amtToday / D.amtEst : 1;
-  var s = [
-    clamp(zt / 80 * 100), clamp(seal / 0.85 * 100), clamp(maxLbc / 8 * 100),
-    clamp(promo / 0.5 * 100), clamp((1 - mianRate * 3) * 100), clamp(upr / 0.6 * 100), clamp(amtR / 1.2 * 100)
-  ];
-  var w = [0.2, 0.15, 0.15, 0.15, 0.1, 0.15, 0.1];
-  var score = 0; for(var i = 0; i < 7; i++) score += s[i] * w[i];
-  var cyc, pos, cycIdx;
-  if(score >= 70){ cyc = '主升'; pos = '40-70%'; cycIdx = 2; }
-  else if(score >= 50){ cyc = '修复'; pos = '10-20%'; cycIdx = 1; }
-  else if(score >= 35){ cyc = '分歧'; pos = '20-40%'; cycIdx = 3; }
-  else if(score >= 22){ cyc = '退潮'; pos = '0-10%'; cycIdx = 4; }
-  else { cyc = '冰点'; pos = '0-5%'; cycIdx = 0; }
-  return { score: score, cyc: cyc, pos: pos, cycIdx: cycIdx, s: s, up: up, dn: dn,
-    names: ['涨停家数','封板率(1-炸板率)','连板高度','晋级率','无大面','涨跌家数比','成交额'] };
+  return pts[pts.length - 1][1];
+}
+/* 文档第二章 8 张分档表的端点（严格照抄，中间线性插值） */
+var EMO_CURVE = {
+  zt:    [[0,0],[15,15],[30,35],[50,55],[70,75],[90,90],[120,100]],
+  dt:    [[0,100],[3,85],[8,60],[15,30],[25,10],[35,0]],
+  mian:  [[0,100],[5,90],[10,75],[20,50],[30,25],[40,0]],
+  lbc:   [[1,5],[2,18],[3,35],[4,55],[5,72],[6,85],[7,95],[8,100]],
+  promo: [[0,0],[10,10],[30,35],[50,60],[70,85],[100,100]],
+  seal:  [[0,0],[50,30],[60,50],[70,70],[80,85],[100,100]],
+  upr:   [[0,0],[0.7,20],[1,40],[1.5,60],[2,75],[3,90],[5,100]]
+};
+/* 维度顺序 + 权重（严格按文档第二章） */
+var EMO_NAMES = ['涨停家数','跌停家数','大面率(昨涨停)','连板高度','晋级率','封板率','涨跌家数比','成交额趋势'];
+var EMO_W = [0.25, 0.15, 0.15, 0.10, 0.10, 0.10, 0.10, 0.05];
+/* 原始数据缺失时的中性分 —— 避免「接口挂了 → 情绪被当成 0 分」的假冰点 */
+var EMO_NEUTRAL = [55, 60, 75, 35, 50, 70, 40, 60];
+/* 文档指标8：成交额趋势（含方向修正）
+   —— 成交额大 ≠ 情绪好：放量下跌是出货，必须给低分（文档"常见陷阱 3"） */
+function amtTrendScore(amtR, upShare){
+  if(amtR == null || isNaN(amtR)) return null;
+  var chg = amtR - 1;
+  var bull = upShare != null && upShare >= 0.5;            /* 涨多跌少 */
+  if(bull){
+    if(chg >= 0.20) return pw(chg, [[0.20,85],[0.40,100]]); /* 放量>20%   → 85-100 */
+    if(chg >= 0.10) return pw(chg, [[0.10,70],[0.20,85]]);  /* 放量10-20% → 70-85  */
+    if(chg >= -0.10) return pw(chg, [[-0.10,50],[0.10,70]]);/* 平量±10%   → 50-70  */
+    return pw(chg, [[-0.30,30],[-0.10,50]]);                /* 缩量        → 30-50  */
+  }
+  if(chg >= 0.20) return pw(chg, [[0.20,20],[0.40,0]]);     /* 放量>20% + 跌多涨少 → 0-20（最危险） */
+  if(chg >= 0.10) return pw(chg, [[0.10,30],[0.20,10]]);    /* 放量10-20% + 跌多涨少 → 10-30 */
+  return 25;   /* 跌多涨少 + 平量/缩量：文档未定义 → 取保守插值 25（低于涨多跌少，高于放量下跌） */
+}
+/* 一次算好所有原始量（emotion / stageCheck 共用，保证口径绝对一致） */
+function emoCtx(){
+  var zt = D.zt.length, zb = D.zb.length, dt = (D.dt || []).length;
+  var a = D.analysis || { empty: true }, hasA = !a.empty;
+  var mianPct = (hasA && a.mianRate != null) ? a.mianRate * 100 : null;          /* 大面率 % */
+  var maxLbc = D.zt.reduce(function(m, x){ return Math.max(m, x.lbc || 1); }, 1);
+  var lbTotal = hasA ? (a.lbTotal || 0) : 0;
+  var promoPct = (lbTotal > 0 && a.promoRate != null) ? a.promoRate * 100 : null; /* 晋级率 % */
+  var sealPct = (zt + zb) > 0 ? zt / (zt + zb) * 100 : null;                      /* 封板率 % */
+  var up = 0, dn = 0, hasMkt = false;
+  if(D.mkt){
+    try{ Object.keys(D.mkt).forEach(function(k){
+      var x = D.mkt[k];
+      if(x && (x.f104 != null || x.f105 != null)){ up += (x.f104 || 0); dn += (x.f105 || 0); hasMkt = true; }
+    }); }catch(e){}
+  }
+  var upRatio = (hasMkt && dn > 0) ? up / dn : null;                              /* 涨跌比（文档口径） */
+  var upShare = (hasMkt && (up + dn) > 0) ? up / (up + dn) : null;                /* 红盘占比（成交额方向用） */
+  var amtR = (D.amtEst && D.amtToday) ? D.amtToday / D.amtEst : null;
+  var pv = emoPrevDay();
+  var pvZt = (pv && pv.zt != null) ? pv.zt : null, pvDt = (pv && pv.dt != null) ? pv.dt : null;
+  var mfNow = secFlowNow();
+  var hasS = false;
+  try{ hasS = gradeSectors().some(function(g){ return g.grade === 'S'; }); }catch(e){}
+  return {
+    zt: zt, zb: zb, dt: dt, mianPct: mianPct, maxLbc: maxLbc, lbTotal: lbTotal, promoPct: promoPct,
+    sealPct: sealPct, up: up, dn: dn, hasMkt: hasMkt, upRatio: upRatio, upShare: upShare, amtR: amtR,
+    pv: pv, pvZt: pvZt, pvDt: pvDt,
+    ztDown2: (pvZt != null && zt < pvZt),                       /* 涨停家数连续 2 日下降 → 走弱信号 */
+    dtUp2: (pvDt != null && dt >= pvDt && dt > 0),              /* 跌停连续 2 日增加 → 退潮确认 */
+    ztCollapse: (pvZt != null && pvZt >= 70 && zt <= 30),       /* 涨停 70 → 30 以下 → 退潮确认 */
+    mfNow: mfNow,
+    mfOut2: !!(pv && pv.mf != null && pv.mf < 0 && mfNow != null && mfNow < 0),
+    hasS: hasS, duanMian: hasA ? a.duanMian : null,
+    highZB: D.zb.some(function(x){ return (x.lbc || 1) >= 2; }),
+    shPct: (D.idxList && D.idxList[0]) ? num(D.idxList[0].pct) : null,
+    noData: (!zt && !zb && !dt && !(D.secAmt || []).length && !(D.secUp || []).length)
+  };
+}
+/* 文档第四章各阶段的「判定条件」（原样照抄，全部可量化）
+   条目结构 {label, ok, txt, std, t}：label=条件名 / txt=实际读数 / std=文档标准 / t=合并文案，
+   同时兼容 7.10 的 chkRow(o.label, o, o.std) 渲染和 emotion() 内部的可读规则文案。 */
+function emoCondList(cyc, c){
+  var L = [];
+  function it(label, ok, txt, std){ L.push({ label: label, ok: !!ok, txt: txt, std: std, t: label + '（现 ' + txt + '）' }); }
+  var mian = (c.mianPct == null ? '无昨日样本' : c.mianPct.toFixed(1) + '%');
+  var upr = (c.upRatio == null ? '无数据' : c.upRatio.toFixed(2) + ':1');
+  var promo = (c.promoPct == null ? '无连板样本' : c.promoPct.toFixed(0) + '% / ' + c.lbTotal + ' 只');
+  var duan = (c.duanMian == null ? '无样本' : c.duanMian + ' 家');
+  if(cyc === '冰点'){
+    it('涨停家数', c.zt <= 15, c.zt + ' 家', '\u226415 家');
+    it('跌停家数', c.dt >= 15, c.dt + ' 家', '\u226515 家');
+    it('大面率', c.mianPct != null && c.mianPct >= 30, mian, '\u226530%');
+    it('最高连板', c.maxLbc <= 2, c.maxLbc + ' 板', '\u22642 板');
+    it('涨跌家数比', c.upRatio != null && c.upRatio < 0.7, upr, '<0.7');
+  } else if(cyc === '修复'){
+    it('涨停家数', c.zt >= 20 && c.zt <= 40, c.zt + ' 家', '20-40 家');
+    it('跌停家数', c.dt <= 5, c.dt + ' 家', '\u22645 家');
+    it('大面率回落', c.mianPct != null && c.mianPct >= 10 && c.mianPct <= 20, mian, '10-20%');
+    it('最高连板', c.maxLbc >= 3 && c.maxLbc <= 4, c.maxLbc + ' 板', '3-4 板');
+    it('断板股不再 A 杀', c.duanMian != null && c.duanMian <= 1, duan, '\u22641 家');
+  } else if(cyc === '主升'){
+    it('涨停家数', c.zt >= 50, c.zt + ' 家', '\u226550 家');
+    it('跌停家数', c.dt <= 3, c.dt + ' 家', '\u22643 家');
+    it('大面率', c.mianPct != null && c.mianPct < 10, mian, '<10%');
+    it('最高连板', c.maxLbc >= 5, c.maxLbc + ' 板', '\u22655 板');
+    it('晋级率', c.promoPct != null && c.promoPct >= 50 && c.lbTotal >= 5, promo, '\u226550% 且样本\u22655 只');
+    it('涨跌家数比', c.upRatio != null && c.upRatio >= 1.5, upr, '\u22651.5:1');
+  } else if(cyc === '分歧'){
+    it('高标炸板但中军不崩盘', c.highZB, (c.highZB ? '存在连板股炸板' : '暂无连板炸板'), '高标出现分歧');
+    it('晋级率下滑且大面率未飙升', c.promoPct != null && c.promoPct < 40 && (c.mianPct == null || c.mianPct < 18),
+      (c.promoPct == null ? '无连板样本' : c.promoPct.toFixed(0) + '%') + ' / ' + mian, '<40% / <18%');
+    it('断板股震荡而非 A 杀', c.duanMian != null && c.duanMian <= 1, duan, '\u22641 家');
+    it('涨停仍 40 家以上但开始减少', c.zt >= 40 && (c.pvZt == null || c.zt < c.pvZt), c.zt + ' 家' + (c.pvZt != null ? ' / 前日 ' + c.pvZt + ' 家' : ''), '\u226540 家且低于前日');
+    it('主线内部高低切', c.hasS, (c.hasS ? '存在 S 级主线' : '无 S 级主线'), '存在 S/A 级主线');
+  } else {
+    it('大面率持续走高', c.mianPct != null && c.mianPct > 20, mian, '>20%');
+    it('跌停\u226510 家且连续增加', c.dt >= 10 && c.dtUp2, c.dt + ' 家' + (c.pvDt != null ? ' / 前日 ' + c.pvDt + ' 家' : ''), '\u226510 家且连续增加');
+    it('高位断板股普遍 A 杀', c.duanMian != null && c.duanMian >= 2, duan, '\u22652 家');
+    it('涨停数快速萎缩', c.ztCollapse, c.zt + ' 家' + (c.pvZt != null ? ' / 前日 ' + c.pvZt + ' 家' : ''), '70 \u2192 30 家以下');
+    it('板块资金连续 2 日净流出', c.mfOut2, (c.mfNow == null ? '无数据' : fmtYi(c.mfNow / 1e8)), '连续 2 日净流出');
+  }
+  return L;
+}
+function emotion(){
+  var c = emoCtx();
+  /* ---------- ① 八维得分（文档第二章） ---------- */
+  var sZt = pw(c.zt, EMO_CURVE.zt);
+  var sDt = pw(c.dt, EMO_CURVE.dt);
+  var sMian = pw(c.mianPct, EMO_CURVE.mian);
+  var sLbc = c.zt ? pw(c.maxLbc, EMO_CURVE.lbc) : null;      /* 无涨停 → 无连板高度，代入中性分 */
+  var sPromo = pw(c.promoPct, EMO_CURVE.promo);
+  var sSeal = pw(c.sealPct, EMO_CURVE.seal);
+  var sUpr = pw(c.upRatio, EMO_CURVE.upr);
+  var sAmt = amtTrendScore(c.amtR, c.upShare);
+  var promoTiny = c.lbTotal > 0 && c.lbTotal < 3, promoSmall = c.lbTotal > 0 && c.lbTotal < 5;
+  if(sPromo != null){ if(promoTiny) sPromo *= 0.3; else if(promoSmall) sPromo *= 0.5; }  /* 文档：小样本打折 */
+  var s = [sZt, sDt, sMian, sLbc, sPromo, sSeal, sUpr, sAmt];
+  var missing = [], score = 0, i;
+  for(i = 0; i < 8; i++){
+    if(s[i] == null || isNaN(s[i])){ s[i] = EMO_NEUTRAL[i]; missing.push(EMO_NAMES[i]); }
+    s[i] = clamp(s[i]);
+    score += s[i] * EMO_W[i];
+  }
+  var POS = { '冰点': '0 ~ 5%', '修复': '10 ~ 20%', '主升': '40 ~ 70%', '分歧': '20 ~ 40%', '退潮': '0 ~ 10%' };
+  /* ---------- ② 分数定基准档（文档第四章区间：<25 冰点 / 25-45 修复 / 45-65 主升 / 65-80 分歧 / ≥80 退潮） ---------- */
+  var base;
+  if(score >= 65) base = '分歧';
+  else if(score >= 45) base = '主升';
+  else if(score >= 25) base = '修复';
+  else base = '冰点';
+  var rules = [], cyc = base;
+  if(score >= 80){
+    var hist = lsGet('wb_emo_' + D.date, []) || [];
+    var peak = score;
+    hist.forEach(function(x){ if(x.s > peak) peak = x.s; });
+    if(peak - score >= 5){
+      cyc = '退潮';
+      rules.push({ k: 'dn', t: '情绪指数 ' + score.toFixed(1) + ' 分 ≥80，且较日内峰值 ' + peak.toFixed(0) + ' 已回落 ' + (peak - score).toFixed(1) + ' 分 → 退潮期（文档：≥80 且开始回落）' });
+    } else {
+      rules.push({ k: 'info', t: '情绪指数 ' + score.toFixed(1) + ' 分 ≥80 但未回落（日内峰值 ' + peak.toFixed(0) + '）→ 高位分歧，仍按分歧期执行（文档：80+ 未回落不判退潮）' });
+    }
+  }
+  /* ---------- ③ 文档第四章「判定条件」强确认：冰点 / 退潮 满足 2 条即成立 ---------- */
+  var iceF = [], taoF = [];
+  if(c.zt <= 15) iceF.push('涨停 ' + c.zt + ' 家≤15');
+  if(c.dt >= 15) iceF.push('跌停 ' + c.dt + ' 家≥15');
+  if(c.mianPct != null && c.mianPct >= 30) iceF.push('大面率 ' + c.mianPct.toFixed(1) + '%≥30%');
+  if(c.maxLbc <= 2) iceF.push('最高连板 ' + c.maxLbc + ' 板≤2');
+  if(c.upRatio != null && c.upRatio < 0.7) iceF.push('涨跌比 ' + c.upRatio.toFixed(2) + ':1<0.7');
+  if(c.mianPct != null && c.mianPct > 20) taoF.push('大面率 ' + c.mianPct.toFixed(1) + '%>20%');
+  if(c.dt >= 10 && c.dtUp2) taoF.push('跌停 ' + c.dt + ' 家≥10 且连续增加');
+  if(c.ztCollapse) taoF.push('涨停快速萎缩（' + c.pvZt + ' → ' + c.zt + ' 家）');
+  if(c.mfOut2) taoF.push('板块资金连续 2 日净流出');
+  if(c.pv && c.pv.maxLbc != null && c.maxLbc < c.pv.maxLbc && c.mianPct != null && c.mianPct > 15) taoF.push('连板高度下降（' + c.pv.maxLbc + ' → ' + c.maxLbc + ' 板）且大面率仍高');
+  if(c.duanMian != null && c.duanMian >= 2) taoF.push('断板股普遍 A 杀（断板大面 ' + c.duanMian + ' 家）');
+  var featHit = false;
+  if(iceF.length >= 2){
+    cyc = '冰点'; featHit = true;
+    rules.push({ k: 'dn', t: '冰点期判定条件命中 ' + iceF.length + ' 条（' + iceF.join('、') + '），文档要求满足 2 条即成立 → 直接判「冰点」' });
+  } else if(taoF.length >= 2){
+    cyc = '退潮'; featHit = true;
+    rules.push({ k: 'dn', t: '退潮期判定条件命中 ' + taoF.length + ' 条（' + taoF.join('、') + '），文档要求满足 2 条即成立 → 直接判「退潮」' });
+  } else {
+    if(iceF.length === 1) rules.push({ k: 'warn', t: '冰点特征 1/2 条：' + iceF.join('、') + '（还需 1 条才成立）' });
+    if(taoF.length === 1) rules.push({ k: 'warn', t: '退潮特征 1/2 条：' + taoF.join('、') + '（还需 1 条才成立）' });
+  }
+  /* ---------- ④ 主升档确认（文档第四章：主升判定条件是 6 条"全部满足"）——双向确认，不做级联 ----------
+     向下：分数落在「主升」区间但条件不全 → 降为「分歧」（只降一档）；
+     向上：分数落在「分歧」区间但 6 条全满足 → 升为「主升」（分数通常被成交额 / 涨跌家数等
+           维度拖低，不代表盘面弱：涨停 62 家 + 6 板 + 跌停 1 家 的盘面就该按主升给仓位）。
+     注：冰点 / 退潮 的"满足 2 条即可"已在第③步作强确认；修复 / 分歧 的"满足 2 条"是入档
+     充分条件，不作为留档必要条件 —— 否则会出现"90+ 分、涨停 80 家、8 板高度"的强势市场
+     被判进「退潮」0-10% 仓位的荒唐结果。 */
+  var stepTxt = [];
+  var mc = stageCheck('主升', c);
+  if(cyc === '主升'){
+    if(mc.all){
+      rules.push({ k: 'up', t: '主升判定条件 ' + mc.total + '/' + mc.total + ' 条全部满足，确认「主升」' });
+    } else {
+      cyc = '分歧';
+      stepTxt.push('分数落在「主升」区间，但主升判定条件只命中 ' + mc.hits + '/' + mc.total + ' 条（文档要求全部满足）→ 降为「分歧」');
+      rules.push({ k: 'dn', t: stepTxt[0] });
+    }
+  } else if((cyc === '分歧' || cyc === '修复') && mc.all){
+    cyc = '主升';
+    rules.push({ k: 'up', t: '分数落在「' + base + '」区间（' + score.toFixed(1) + ' 分，多因成交额 / 涨跌家数等维度拖累），但主升判定条件 ' + mc.total + '/' + mc.total + ' 条全部满足 → 升为「主升」' });
+  }
+  /* ---------- ⑤ 文档第五章：向下切换确认（满足任一即确认，至少降到「分歧」） ---------- */
+  var dnTxt = [];
+  if(c.pv && c.pv.kui != null && c.pv.kui < 10 && c.mianPct != null && c.mianPct > 20) dnTxt.push('大面率单日从 ' + c.pv.kui + '% 飙升到 ' + c.mianPct.toFixed(1) + '%（<10% → >20%）');
+  if(c.pvDt != null && c.pvDt <= 3 && c.dt >= 10) dnTxt.push('跌停数从 ' + c.pvDt + ' 家跳到 ' + c.dt + ' 家（≤3 → ≥10）');
+  var dnConfirm = dnTxt.length > 0;
+  if(dnConfirm){
+    if(POS_ORDER.indexOf(cyc) > POS_ORDER.indexOf('分歧')){
+      var dnFrom = cyc;
+      cyc = '分歧';
+      stepTxt.push('向下切换确认：' + dnTxt.join('；'));
+      rules.push({ k: 'dn', t: '向下切换确认（文档第五章，满足任一即确认）：' + dnTxt.join('；') + ' → 「' + dnFrom + '」至少降到「分歧」' });
+    } else {
+      rules.push({ k: 'info', t: '向下切换确认命中（' + dnTxt.join('；') + '），但当前执行档已不高于「分歧」，无需再降' });
+    }
+  }
+  /* ---------- ⑥ 文档特殊规则：跌停 ≥10 家 → 当日情绪直接降一档（已由特征强确认降档时不重复罚） ---------- */
+  var dtDemote = c.dt >= 10, dtDemoted = false, dtFrom = '';
+  if(dtDemote && !featHit){
+    var pi = POS_ORDER.indexOf(cyc);
+    if(pi > 0){
+      dtFrom = cyc; cyc = POS_ORDER[pi - 1]; dtDemoted = true;
+      rules.push({ k: 'dn', t: '跌停 ' + c.dt + ' 家 ≥10（文档：跌停 ≥10 家当日情绪直接降一档）→ 「' + dtFrom + '」降为「' + cyc + '」，仓位上限收窄为 ' + POS[cyc] });
+    }
+  } else if(dtDemote && featHit){
+    rules.push({ k: 'info', t: '跌停 ' + c.dt + ' 家 ≥10 的信息已计入上方的冰点/退潮判定条件，按「同一信息不重复扣分」不再额外降档' });
+  }
+  /* ---------- ⑦ 文档第五章：周期切换确认（只做标注，不改档位；档位已由 ④ 与保守规则决定） ----------
+     "连续 2 日"确认需要前一日快照：连续 2 日 涨停≥50 家 + 大面率<10% + 出现 S 级板块。
+     未取得该确认时明确提示按「待次日确认」对待，避免单日脉冲被当成趋势。 */
+  var up2 = !!(c.pv && c.pv.zt != null && c.pv.zt >= 50 && c.zt >= 50 && c.mianPct != null && c.mianPct < 10
+    && (c.pv.kui == null || c.pv.kui < 10) && c.hasS);
+  var upFrom = '', upMiss = '';
+  if(cyc === '主升'){
+    if(up2){
+      rules.push({ k: 'up', t: '向上切换确认（文档第五章）：连续 2 日 涨停≥50 家（' + c.pvZt + ' → ' + c.zt + '）+ 大面率<10% + 出现 S 级板块 → 主升档获"连续 2 日"双重确认' });
+    } else {
+      rules.push({ k: 'info', t: '主升档尚未取得文档第五章的"连续 2 日"向上切换确认（需连续 2 日 涨停≥50 + 大面率<10% + 出现 S 级板块），按「待次日确认」对待，仓位建议先取主升区间下沿 40%' });
+    }
+  }
+  /* ---------- ⑧ 结果 ---------- */
+  var pos = POS[cyc];
+  var cycIdx = ({ '冰点': 0, '修复': 1, '主升': 2, '分歧': 3, '退潮': 4 })[cyc];
+  var reasonTxt = '';
+  if(featHit) reasonTxt = (iceF.length >= 2 ? '冰点' : '退潮') + '期判定条件命中 ' + (iceF.length >= 2 ? iceF.length : taoF.length) + ' 条（≥2 条即成立）';
+  else if(dtDemoted) reasonTxt = '跌停 ' + c.dt + ' 家 ≥10，按文档直接降一档（' + dtFrom + ' → ' + cyc + '）';
+  else if(stepTxt.length) reasonTxt = stepTxt[0];
+  else if(upFrom) reasonTxt = '向上切换确认（连续 2 日）→ 升为主升';
+  return {
+    score: score, cyc: cyc, base: base, pos: pos, cycIdx: cycIdx,
+    s: s, w: EMO_W, names: EMO_NAMES, missing: missing, rules: rules,
+    raw: { zt: c.zt, zb: c.zb, dt: c.dt, mianPct: c.mianPct, maxLbc: c.maxLbc, promoPct: c.promoPct,
+           sealPct: c.sealPct, upRatio: c.upRatio, upShare: c.upShare, amtR: c.amtR,
+           lbTotal: c.lbTotal, shPct: c.shPct, duanMian: c.duanMian, pvZt: c.pvZt, pvDt: c.pvDt, hasS: c.hasS },
+    up: c.up, dn: c.dn, upRatio: c.upRatio, dt: c.dt, maxLbc: c.maxLbc, lbTotal: c.lbTotal,
+    promoSmall: promoSmall, promoTiny: promoTiny,
+    dtDemote: dtDemote, dtDemoted: dtDemoted, ruleDemote: (featHit || dtDemoted || dnConfirm || stepTxt.length > 0), reasonTxt: reasonTxt,
+    dnConfirm: dnConfirm, dnTxt: dnTxt, upSwitch: up2, upMiss: upMiss, upFrom: upFrom,
+    iceF: iceF, taoF: taoF, noData: c.noData
+  };
 }
 
 /* 新闻 -> 板块匹配（25个行业关键词映射表） */
@@ -1265,14 +1601,10 @@ function renderAll(){
 /* --- 模块2 五阶段策略速查（数据源：7.10 的 STAGE / STAGE_SUMMARY / buyWindow，单一事实源） --- */
 function renderStageQuick(){
   var box = $('stgQuick'); if(!box) return;
-  var e = emotion();
-  var chk = stageCheck(e.cyc);
-  var idx = POS_ORDER.indexOf(e.cyc);
-  var exec = (chk.conf < 0.6 && idx > 0) ? POS_ORDER[idx - 1] : e.cyc;
-  var st = STAGE[exec] || STAGE[e.cyc];
+  var EX = execStageOf(), e = EX.e, chk = EX.chk, exec = EX.exec, st = EX.st;
   var bw = buyWindow(exec);
   box.innerHTML = '<div class="kpi"><div class="t">五阶段策略速查<small style="font-weight:400;color:#94a3b8;margin-left:6px">按当前周期自动高亮 · 仓位 / 板块 / 买点 / 兑现</small></div>' +
-    '<div class="note" style="margin:3px 0 6px">当前执行档：<b class="ora">' + exec + ' 期</b>（判定 ' + e.cyc + ' · 特征吻合度 ' + (chk.conf * 100).toFixed(0) + '%' + (exec !== e.cyc ? '，已自动降档' : '') + '）' +
+    '<div class="note" style="margin:3px 0 6px">当前执行档：<b class="ora">' + exec + ' 期</b>（判定 ' + e.cyc + ' · 该档判定条件命中 <b>' + chk.hits + '/' + chk.total + '</b> 条' + (EX.reason ? ' ｜ ' + EX.reason : '') + '）' +
       ' · 仓位上限 <b class="ora">' + st.pos + '</b> · 买点窗口 <b class="' + (bw.ok ? 'up' : 'flat') + '">' + (bw.ok ? '✓ ' + st.buyShort : '未到（' + st.buyShort + '）') + '</b>' +
       (st.observe ? ' · <b class="dn">冰点期禁止买入，仅观察</b>' : '') + '</div>' +
     '<div class="twrap"><table class="mini-tbl"><thead><tr><th>阶段</th><th>仓位</th><th>可做板块</th><th>买点</th><th>兑现</th></tr></thead><tbody>' +
@@ -1310,7 +1642,7 @@ function renderTimeline(){
 function renderM3(){
   var a = D.analysis, box = $('m3body');
   if(!a || a.empty){ box.innerHTML = '<div class="loading">暂无昨日涨停池数据（可能为非交易日或接口受限）</div>'; return; }
-  var v = prevVerdict(a);
+  var v = prevVerdict(a), e = emotion();
   var vTag = v.cls === 'up' ? 'tag-r' : (v.cls === 'grn' ? 'tag-g' : v.cls === 'yel' ? 'tag-y' : v.cls === 'ora' ? 'tag-o' : 'tag-b');
   box.innerHTML =
   '<div class="grid4">' +
@@ -1328,8 +1660,8 @@ function renderM3(){
     '<div class="kpi"><div class="t">⑫ vs 上证指数</div><div class="v ' + pctCls(a.vsSH) + '">' + fpct(a.vsSH) + '</div><div class="s">昨涨停池vs大盘强弱</div></div>' +
   '</div>' +
   '<div class="grid2" style="margin-top:12px">' +
-    '<div class="concl c-red"><b>综合情绪判定：</b><span class="tag ' + vTag + '" style="font-size:15px">' + v.name + '</span><br><b>核心结论：</b><span class="' + v.cls + '">' + coreConclusion(v) + '</span></div>' +
-    '<div class="concl c-ora"><b>操作建议：</b>' + operAdvice(a, v) + '</div>' +
+    '<div class="concl c-red"><b>昨涨停池承接质量（T+1 溢价视角，<u>不是</u>大盘情绪周期）：</b><span class="tag ' + vTag + '" style="font-size:15px">' + v.name + '</span><br><b>核心结论：</b><span class="' + v.cls + '">' + coreConclusion(v) + '</span><br><b>当前情绪周期（唯一权威源，见 ⑥）：</b><span class="tag tag-y">' + e.cyc + '</span> 情绪指数 <b class="mono">' + e.score.toFixed(1) + '</b> · 仓位上限 <b class="ora">' + e.pos + '</b> · 背离 <b>' + (function(){ var d = emoDivergence(e); return d.name; })() + '</b></div>' +
+    '<div class="concl c-ora"><b>操作建议：</b>' + operAdvice(a, v, e.pos) + '</div>' +
   '</div>' +
   '<div class="grid3" style="margin-top:4px">' +
     '<div class="concl c-blu"><b>关键信号：</b><span class="up">红盘率' + (a.redRate == null ? '—' : (a.redRate * 100).toFixed(0) + '%') + '</span> · <span class="dn">大面' + a.mianAll + '家</span> · <span class="yel">晋级率' + (a.promoRate == null ? '—' : (a.promoRate * 100).toFixed(0) + '%') + '</span></div>' +
@@ -1347,19 +1679,20 @@ function renderM3(){
   }).join('') + '</tbody></table></div></div></details>';
 }
 function coreConclusion(v){
-  if(v.name === '主升') return '赚钱效应极强，资金接力意愿高，可积极参与主线龙头。';
-  if(v.name === '修复') return '亏钱效应收敛，首板回暖，可轻仓试错卡位龙头。';
-  if(v.name === '分歧') return '多空分歧加大，高位断板增多，只做最强龙头或观望。';
-  if(v.name === '退潮') return '亏钱效应扩散，断板大面频出，以清仓防守为主。';
-  if(v.name === '冰点') return '情绪降至冰点，连板绝迹核按钮频出，空仓等待周期反转。';
+  if(v.name === '极强') return '昨涨停股今日承接极好（晋级率\u226550% 且平均涨幅>2%），资金接力意愿高。';
+  if(v.name === '强') return '昨涨停股今日红盘率\u226560%、平均为正，承接良好。';
+  if(v.name === '中性') return '昨涨停股今日多空拉锯，承接中性，看方向。';
+  if(v.name === '偏弱') return '昨涨停股今日承接偏弱，亏钱效应开始抬头。';
+  if(v.name === '极弱') return '昨涨停股今日大面积走弱，核按钮 / 大面频繁，承接极差。';
   return '数据不足。';
 }
-function operAdvice(a, v){
+/* 操作建议：仓位上限不再由这里给（避免与情绪周期打架），统一引用 7.6 的周期仓位 */
+function operAdvice(a, v, cycPos){
   var s = [];
   if(a.avgOpenPrem != null) s.push('竞价溢价' + (a.avgOpenPrem >= 0 ? '为正' : '为负') + (a.avgOpenPrem >= 1 ? '，高开抢筹需防诱多' : (a.avgOpenPrem < -2 ? '，低开割肉盘多，首小时观望' : '，平开看方向')));
-  if(a.promoRate != null) s.push('晋级率' + (a.promoRate * 100).toFixed(0) + '%' + (a.promoRate >= 0.5 ? ' → 可接力' : (a.promoRate < 0.3 ? ' → 禁止接力' : ' → 谨慎')));
+  if(a.promoRate != null) s.push('晋级率' + (a.promoRate * 100).toFixed(0) + '%' + (a.promoRate >= 0.5 ? ' \u2192 可接力' : (a.promoRate < 0.3 ? ' \u2192 禁止接力' : ' \u2192 谨慎')));
   if((a.mianRate || 0) > 0.15) s.push('大面率超标，严控仓位');
-  s.push('建议仓位上限：' + v.pos);
+  s.push('仓位上限以当前情绪周期为准：' + (cycPos || '\u2014'));
   return s.join('；') + '。';
 }
 function riskWarn(a){
@@ -1509,6 +1842,77 @@ function renderM5(){
 }
 
 /* --- 模块6 情绪周期 --- */
+/* 维度原始读数文本（条宽 = 得分，右侧小字 = 原始值，方便一眼核对分数算得对不对） */
+function emoRawTxt(i, e){
+  var c = e.raw;
+  if(i === 0) return c.zt + ' 家';
+  if(i === 1) return c.dt + ' 家';
+  if(i === 2) return c.mianPct == null ? '无昨日样本' : c.mianPct.toFixed(1) + '%';
+  if(i === 3) return c.maxLbc + ' 板';
+  if(i === 4) return c.promoPct == null ? '无连板样本' : (c.promoPct.toFixed(0) + '%/' + c.lbTotal + '只' + (e.promoTiny ? ' \u00d70.3' : (e.promoSmall ? ' \u00d70.5' : '')));
+  if(i === 5) return c.sealPct == null ? '无数据' : c.sealPct.toFixed(1) + '%';
+  if(i === 6) return c.upRatio == null ? '无数据' : c.upRatio.toFixed(2) + ':1';
+  if(i === 7) return c.amtR == null ? '无数据' : (((c.amtR - 1) >= 0 ? '放量 +' : '缩量 ') + ((c.amtR - 1) * 100).toFixed(0) + '%' + (c.upShare == null ? '' : (c.upShare >= 0.5 ? '\u00b7涨多' : '\u00b7跌多')));
+  return '';
+}
+/* 周期判定过程（可解释：基准档 \u2192 判定条件 \u2192 特殊规则 \u2192 最终执行档） */
+function emoRulesHtml(e){
+  var map = { dn: 'dn', up: 'up', warn: 'yel', info: 'flat' };
+  var li = e.rules.map(function(r){ return '<li class="' + (map[r.k] || 'flat') + '">' + r.t + '</li>'; }).join('');
+  return '<div class="concl c-blu" style="margin-top:6px"><b>周期判定过程（八维评分 \u2192 文档判定条件 \u2192 文档特殊规则）：</b>' +
+    (li ? '<ul style="margin:4px 0 0 18px;line-height:1.75;font-size:12px">' + li + '</ul>' : '<span class="note">各项指标均在正常区间，无降档 / 升级规则命中。</span>') +
+    '<div class="note" style="margin-top:4px">基准档（八维加权 ' + e.score.toFixed(1) + ' 分）= <b>' + e.base + '</b> \u2192 最终执行档 = <b>' + e.cyc + '</b>（仓位上限 ' + e.pos + '）。文档口径：<b>分数定区间、判定条件做佐证、特殊规则一票降档</b>，同一条信息只扣分一次。</div></div>';
+}
+/* 文档第六章：指数 \u00d7 情绪 背离判断（4 象限 + 陷阱 4「指数强\u2260情绪强」） */
+function emoDivergence(e){
+  var sh = e.raw.shPct;
+  if(sh == null) return { k: 'na', name: '无法判断', cls: 'flat', act: '指数涨跌幅缺失（腾讯与东财指数通道均未返回），本轮无法做「指数 \u00d7 情绪」背离判断，请点右上角刷新重试。' };
+  var lv = e.score >= 55 ? 2 : (e.score >= 35 ? 1 : 0);   /* 2 强 / 1 抵抗 / 0 弱 */
+  if(sh > 0 && lv === 2) return { k: 'res_up', name: '共振上涨', cls: 'up', act: '指数涨 + 情绪强：最舒服的环境，S/A 级主线可打满仓位（上限 ' + e.pos + '）。' };
+  if(sh <= 0 && lv === 2) return { k: 'emo_lead', name: '情绪领涨背离', cls: 'yel', act: '指数弱 + 题材情绪强：可做主线，但按文档 <b>降一档仓位</b>，只做龙头 / 中军，不碰后排。' };
+  if(sh <= 0 && lv === 1) return { k: 'idx_lead', name: '大盘领跌', cls: 'ora', act: '指数跌 + 情绪抵抗：降低仓位，少博弈龙头，中军优先兑现。' };
+  if(sh <= 0 && lv === 0) return { k: 'res_dn', name: '共振下跌', cls: 'dn', act: '指数跌 + 情绪弱：空仓或极小仓（\u22645%）。' };
+  return { k: 'wm', name: '权重行情（指数强\u2260情绪强）', cls: 'yel', act: '指数红盘但题材情绪弱：多为权重护盘，<b>不是短线行情</b>，题材股不参与，仓位与买点都要降档。' };
+}
+/* 文档第八章：常见陷阱自检（命中的才列出，动态判断当前是否正踩坑） */
+function emoTrapHtml(e){
+  var c = e.raw, out = [];
+  if(c.zt >= 40 && c.dt >= 10) out.push(['① 只看涨停不看跌停', '涨停 ' + c.zt + ' 家看着不错，但跌停 ' + c.dt + ' 家 \u2014\u2014 按文档这是退潮特征，不是主升。']);
+  if(e.promoSmall) out.push(['② 晋级率失真', '昨日连板仅 ' + c.lbTotal + ' 只（<5），晋级率得分已 \u00d7' + (e.promoTiny ? '0.3' : '0.5') + ' 折扣，不可单独当作加仓依据。']);
+  if(c.amtR != null && (c.amtR - 1) >= 0.10 && c.upShare != null && c.upShare < 0.5) out.push(['③ 成交额误判', '成交额较基准放大 ' + ((c.amtR - 1) * 100).toFixed(0) + '% 但跌多涨少 \u2014\u2014 放量下跌是出货，成交额维度已按方向打折，不能给高分。']);
+  var dv = emoDivergence(e);
+  if(dv.k === 'wm') out.push(['④ 指数强\u2260情绪强', '指数红盘但情绪指数只有 ' + e.score.toFixed(1) + ' 分：权重行情，题材股批量走弱。']);
+  if(c.pvZt != null && c.zt - c.pvZt >= 25) out.push(['⑤ 单日脉冲误判', '涨停家数较前一日骤增 ' + (c.zt - c.pvZt) + ' 家（' + c.pvZt + ' \u2192 ' + c.zt + '）\u2014\u2014 单日暴增不代表主升，文档要求连续 2 日确认。']);
+  if(e.cyc === '分歧' && c.mianPct != null && c.mianPct < 20 && c.dt < 10) out.push(['⑥ 分歧当退潮', '当前是分歧（中军稳住、无批量大面、跌停 ' + c.dt + ' 家），不必空仓；只有中军破位 + 批量大面才是退潮。']);
+  if(!out.length) return '<span class="note">未命中文档列出的 6 类陷阱（只看涨停不看跌停 / 晋级率失真 / 成交额误判 / 指数强\u2260情绪强 / 单日脉冲误判 / 分歧当退潮）。</span>';
+  return '<ul style="margin:2px 0 0 18px;line-height:1.75;font-size:12px">' +
+    out.map(function(x){ return '<li><b class="ora">' + x[0] + '</b>：' + x[1] + '</li>'; }).join('') + '</ul>';
+}
+/* 文档第七章：每日执行流程（当前时段自动高亮） */
+var EMO_FLOW = [
+  ['09:25', '竞价', '昨涨停池竞价平均溢价 / 低开率、连板高标竞价情况 \u2192 初步预判情绪基调（详见 7.18 竞价定型）'],
+  ['09:30-10:00', '开盘验证', '昨涨停开盘兑现情况、炸板率动态变化、涨跌家数变化 \u2192 初步判定周期并锁定仓位上限'],
+  ['10:00-10:30', '定性', '确认情绪周期、板块 S/A/B/C/D 分级、是否存在主线、观察高低切信号'],
+  ['14:00-14:30', '尾盘预演', '资金为次日布局方向、低位板块尾盘抢筹、高位板块尾盘砸盘（详见 7.15）'],
+  ['15:00', '收盘复盘', '计算八大指标得分、确认情绪周期、记录历史数据（7.19 快照）、制定次日预案']
+];
+function emoFlowHtml(){
+  var hm = hmNow();
+  function on(t){
+    if(t === '09:25') return hm >= '09:15' && hm < '09:30';
+    if(t === '09:30-10:00') return hm >= '09:30' && hm <= '10:00';
+    if(t === '10:00-10:30') return hm > '10:00' && hm <= '10:30';
+    if(t === '14:00-14:30') return hm >= '14:00' && hm <= '14:30';
+    return hm >= '15:00';
+  }
+  return '<details class="kpi" style="margin-top:8px"><summary>每日执行流程（文档第七章 \u00b7 当前时段自动高亮）</summary>' +
+    '<div class="twrap" style="margin-top:6px"><table class="mini-tbl"><thead><tr><th>时间</th><th>环节</th><th>要做的事</th></tr></thead><tbody>' +
+    EMO_FLOW.map(function(x){
+      var o = on(x[0]);
+      return '<tr' + (o ? ' style="background:rgba(240,69,58,.12)"' : '') + '><td class="mono">' + x[0] + '</td><td><b class="' + (o ? 'up' : 'yel') + '">' + x[1] + '</b>' + (o ? ' <span class="badge b-r">当前</span>' : '') + '</td><td style="white-space:normal">' + x[2] + '</td></tr>';
+    }).join('') + '</tbody></table></div>' +
+    '<div class="note" style="margin-top:4px">口诀：<b>涨停定强弱，跌停定生死，大面定风险，连板定高度，晋级定接力；八维加权算分数，五段周期定仓位，连续两日才确认，背离信号要降档。</b></div></details>';
+}
 function renderM6(){
   var e = emotion();
   D.emoHist = lsGet('wb_emo_' + D.date, []);
@@ -1522,15 +1926,34 @@ function renderM6(){
     return '<div class="' + (on ? 'on' : '') + '"' + (on ? ' style="background:' + cycColors[c] + '"' : '') + '>' + c + '</div>';
   }).join('') + '</div>';
   var dimRows = e.names.map(function(n, i){
-    return '<div class="bar-row"><div class="bar-name">' + n + '</div><div class="bar-track"><div class="bar-fill" style="width:' + e.s[i].toFixed(1) + '%;background:' + (e.s[i] >= 60 ? '#f0453a' : (e.s[i] >= 40 ? '#fbbf24' : '#10b981')) + '"></div></div><div class="bar-val">' + e.s[i].toFixed(0) + '</div></div>';
+    var nm = (n === '连板高度' && e.raw.maxLbc != null) ? (n + ' \u00b7 最高' + e.raw.maxLbc + '板') : n;
+    return '<div class="bar-row"><div class="bar-name" style="width:154px" title="' + esc(n + '\uff5c文档权重 ' + (e.w[i] * 100) + '%') + '">' + nm +
+      ' <span class="note" style="font-size:10px">' + (e.w[i] * 100) + '%</span></div>' +
+      '<div class="bar-track"><div class="bar-fill" style="width:' + e.s[i].toFixed(1) + '%;background:' + (e.s[i] >= 60 ? '#f0453a' : (e.s[i] >= 40 ? '#fbbf24' : '#10b981')) + '"></div></div>' +
+      '<div class="bar-val">' + e.s[i].toFixed(0) + '<br><span class="note" style="font-size:9.5px;line-height:1.2">' + esc(emoRawTxt(i, e)) + '</span></div></div>';
   }).join('');
+  var dv = emoDivergence(e);
+  var dvTag = { up: 'tag-r', yel: 'tag-y', ora: 'tag-o', dn: 'tag-b', flat: 'tag-g' }[dv.cls] || 'tag-y';
+  var emoNotes = ['情绪趋势图：当日最近' + D.emoHist.length + '次刷新',
+    '涨停 ' + e.raw.zt + ' 家 / 炸板 ' + e.raw.zb + ' 家 / 跌停 ' + e.raw.dt + ' 家' + (e.dtDemote ? ' \u2192 <b class="dn">跌停 \u226510 家，文档规则已触发</b>' : '（跌停 \u226510 家将降一档）'),
+    e.promoSmall ? ('\u26a0\ufe0f 晋级率样本仅 ' + e.lbTotal + ' 只（<5），得分已 \u00d7' + (e.promoTiny ? '0.3' : '0.5') + ' 防小样本失真') : ('晋级率样本 ' + e.lbTotal + ' 只（\u22655 可信）')];
   $('m6body').innerHTML =
   '<div class="grid4">' +
-    '<div class="kpi"><div class="t">情绪指数(0-100)</div><div class="v" style="color:' + cycColors[e.cyc] + '">' + e.score.toFixed(1) + '</div><div class="s">七维加权</div></div>' +
+    '<div class="kpi"><div class="t">情绪指数(0-100)</div><div class="v" style="color:' + cycColors[e.cyc] + '">' + e.score.toFixed(1) + '</div><div class="s">八维加权 \u00b7 文档权重 25/15/15/10/10/10/10/5</div></div>' +
     '<div class="kpi"><div class="t">当前周期判定</div><div class="v" style="color:' + cycColors[e.cyc] + ';font-size:18px">' + e.cyc + '</div><div class="s">' + band + '</div></div>' +
     '<div class="kpi"><div class="t">仓位上限建议</div><div class="v ' + (e.cyc === '主升' ? 'up' : (e.cyc === '冰点' || e.cyc === '退潮' ? 'dn' : 'yel')) + '" style="font-size:18px">' + e.pos + '</div><div class="s">按纪律执行</div></div>' +
-    '<div class="kpi"><div class="t">涨跌家数</div><div class="v"><span class="up">' + (e.up || '—') + '</span> / <span class="dn">' + (e.dn || '—') + '</span></div><div class="s">沪深两市</div></div>' +
-  '</div><div class="bars" style="margin-top:8px">' + dimRows + '</div><div class="note">情绪趋势图：当日最近' + D.emoHist.length + '次刷新</div>';
+    '<div class="kpi"><div class="t">涨跌家数</div><div class="v"><span class="up">' + (e.up || '\u2014') + '</span> / <span class="dn">' + (e.dn || '\u2014') + '</span></div><div class="s">涨跌比 ' + (e.upRatio == null ? '\u2014' : e.upRatio.toFixed(2) + ' : 1') + '</div></div>' +
+  '</div>' +
+  (e.noData ? '<div class="concl c-ora" style="margin-top:6px"><b>数据未就绪：</b>涨停池 / 板块 / 指数均未取到，本轮 8 个维度已代入中性分占位，<b>不可用于决策</b>，请等本轮刷新完成或点右上角刷新。</div>' : '') +
+  (e.missing.length ? '<div class="note" style="margin-top:4px"><b class="ora">缺失维度（已按中性分代入，不再按 0 分压低）：</b>' + e.missing.join('、') + '</div>' : '') +
+  '<div class="bars" style="margin-top:8px">' + dimRows + '</div>' +
+  '<div class="note" style="margin-top:4px">' + emoNotes.join(' ｜ ') + '</div>' +
+  emoRulesHtml(e) +
+  '<div class="grid2" style="margin-top:6px">' +
+    '<div class="concl c-blu"><b>背离判断（指数 \u00d7 情绪 \u00b7 文档第六章）：</b><span class="tag ' + dvTag + '">' + dv.name + '</span><br>' + dv.act + '</div>' +
+    '<div class="concl c-ora"><b>常见陷阱自检（文档第八章）：</b>' + emoTrapHtml(e) + '</div>' +
+  '</div>' +
+  emoFlowHtml();
   if(typeof echarts === 'undefined') return;
   if(!emoChart) emoChart = echarts.init($('emoChart'));
   emoChart.setOption({
@@ -2294,11 +2717,7 @@ function renderM712(){
     box.innerHTML = '<div class="loading">等待数据（涨停池与板块资金未就绪，可能为非交易时段）…</div>';
     return;
   }
-  var e = emotion();
-  var chk = stageCheck(e.cyc);
-  var idx = POS_ORDER.indexOf(e.cyc);
-  var exec = (chk.conf < 0.6 && idx > 0) ? POS_ORDER[idx - 1] : e.cyc;
-  var st = STAGE[exec] || STAGE[e.cyc];
+  var EX = execStageOf(), e = EX.e, chk = EX.chk, exec = EX.exec, st = EX.st;
   var secs = planSectors(exec);
   /* 成分股缓存缺失 → 触发加载后回填重渲染（与 7.10/7.11 同一 MLM 缓存） */
   var loading = false;
@@ -2323,7 +2742,7 @@ function renderM712(){
   var stageCls = exec === '主升' ? 'up' : (exec === '修复' ? 'grn' : (exec === '分歧' ? 'yel' : 'ora'));
   var h = '<div class="stgbar ' + (st.cls || '') + '">' +
     '<div class="sg" style="flex:1.1"><div class="l">执行周期（情绪总权重优先）</div><div class="v ' + stageCls + '">' + exec + ' 期</div>' +
-      '<div class="d">MA5 信号必须服从周期：' + (exec === '冰点' ? '禁止开仓' : '仓位上限 ' + st.pos) + (exec !== e.cyc ? ' · 判定 ' + e.cyc + ' 降档执行' : '') + '</div></div>' +
+      '<div class="d">MA5 信号必须服从周期：' + (exec === '冰点' ? '禁止开仓' : '仓位上限 ' + st.pos) + (EX.reason ? ' ｜ ' + EX.reason : '') + '</div></div>' +
     '<div class="sg"><div class="l">扫描范围</div><div class="v" style="font-size:15px">' + (secs.length ? secs.length + ' 个板块' : '无') + '</div>' +
       '<div class="d">' + (secs.length ? secs.map(function(s){ return esc(s.name) + '(' + s.grade + ')'; }).join('、') : '当前周期无可操作板块池') + '</div></div>' +
     '<div class="sg"><div class="l">候选个股</div><div class="v" style="font-size:15px">' + cand.length + ' 只</div>' +
@@ -2800,20 +3219,56 @@ function renderM716(){
     return;
   }
   body.innerHTML = '<div class="loading">正在拉取实时行情与 25 日前复权日K，MA5 系统逐只判定中（每批6只，约 ' + Math.ceil(holds.length / 6) + ' 批）…</div>';
-  var e = emotion(), chk = stageCheck(e.cyc), idx = POS_ORDER.indexOf(e.cyc);
-  var exec = (chk.conf < 0.6 && idx > 0) ? POS_ORDER[idx - 1] : e.cyc;
-  var st = STAGE[exec] || STAGE[e.cyc];
+  var EX = execStageOf(), e = EX.e, chk = EX.chk, exec = EX.exec, st = EX.st;
   var tcs = holds.map(function(h){ return txCode(h.code); }).filter(Boolean);
-  var qp = tcs.length ? loadTxQuotes(tcs) : Promise.resolve({});
+  /* 行情：腾讯（带硬超时）+ 东财 ulist 双通道合并，永不 reject —— 详见 loadHoldQuotes */
+  var qp = loadHoldQuotes(holds, tcs);
   Promise.all(holds.map(function(h){
-    return klineBars(h.code).then(function(bars){ return { h: h, tc: txCode(h.code), bars: bars }; });
+    /* 逐只兜错：单只日K取失败只把那一行记为"数据不足"，不再让整块变成"实时行情获取失败" */
+    return klineBars(h.code).then(function(bars){ return { h: h, tc: txCode(h.code), bars: bars }; })
+      .catch(function(){ return { h: h, tc: txCode(h.code), bars: null }; });
   })).then(function(rows){
     return qp.then(function(q){ rows.forEach(function(r){ r.q = r.tc ? (q[r.tc] || null) : null; }); return rows; });
-  }).then(function(rows){ return loadHoldsSec(rows); }).then(function(rows){ renderM716body(rows, exec, st, e); }).catch(function(){
-    body.innerHTML = '<div class="concl c-grn" style="margin-top:8px">实时行情获取失败（可能非交易时段或接口受限），下轮刷新自动重试。</div>';
+  }).then(function(rows){ return loadHoldsSec(rows); }).then(function(rows){
+    renderM716body(rows, exec, st, e, EX.reason);
+  }).catch(function(err){
+    /* ⚠️ 旧版这里无论什么原因（包括真实 JS 报错）都只显示一句"实时行情获取失败，可能非交易时段或接口受限"，
+       把排查方向直接带偏 —— 7.16 打不开的真因其实是本函数内一处 EX 越界（renderM716body 里引用了
+       外层 renderM716 的局部变量），与行情接口毫无关系。现在把真实原因原样写出来。 */
+    var msg = (err && err.message) ? err.message : String(err);
+    body.innerHTML = '<div class="concl c-ora" style="margin-top:8px"><b>7.16 本轮渲染未完成：</b>' + esc(msg) +
+      '<br>常见原因：① 非交易时段（腾讯行情 9:15 前无数据）；② 局域网 / 代理拦截 qt.gtimg.cn；③ 持仓代码格式有误（需 6 位 A 股代码）。' +
+      '价位与行业已由东财通道兜底，日K 会在下一轮自动重试。</div>';
   });
 }
-function renderM716body(rows, exec, st, e){
+/* 持仓实时行情（双通道，永不 reject）：
+   ① 腾讯 qt.gtimg.cn（更实时，9 秒硬超时）—— 主通道
+   ② 东财 push2 ulist JSONP —— 兜底通道，且与 7.16 的行业归属共用同一份缓存（holdStocks），不额外请求
+   合并规则：同一 txCode 下腾讯优先；腾讯缺价的用东财 f2/f3 补齐（下标与腾讯字段表对齐：3=最新价、32=涨跌幅）；
+   两路都空则返回空表，由 renderM716body 走"数据不足 / —"分支，而不是整块报错。 */
+var HOLDQ = { key: '', t: 0, v: {} };
+function loadHoldQuotes(holds, tcs){
+  var key = holds.map(function(h){ return String(h.code); }).sort().join(',');
+  if(HOLDQ.key === key && Date.now() - HOLDQ.t < 15000) return Promise.resolve(HOLDQ.v);
+  var out = {};
+  return loadTxQuotes(tcs || [], 9000).then(function(tq){
+    Object.keys(tq || {}).forEach(function(k){ out[k] = tq[k]; });
+    return holdStocks(holds.map(function(h){ return String(h.code); })).catch(function(){ return {}; });
+  }).then(function(map){
+    Object.keys(map || {}).forEach(function(code){
+      var x = map[code], tc = txCode(code);
+      if(!x || !tc) return;
+      var cur = out[tc];
+      if(cur && cur[3] != null && cur[3] !== '' && !isNaN(parseFloat(cur[3]))) return;   /* 腾讯已给价，不覆盖 */
+      var a = [];
+      a[1] = x.f14; a[3] = x.f2; a[32] = x.f3; a[33] = x.f2;
+      out[tc] = a;
+    });
+    HOLDQ.key = key; HOLDQ.t = Date.now(); HOLDQ.v = out;
+    return out;
+  }).catch(function(){ return out; });
+}
+function renderM716body(rows, exec, st, e, reason){
   var body = $('m7_16_body'); if(!body) return;
   var cats = { buy: [], hold: [], over: [], reduce: [], sell: [], watch: [], noData: [] };
   var all = [];                       /* 全部持仓（含无数据），供板块角色实时看板全量列出 */
@@ -2860,14 +3315,14 @@ function renderM716body(rows, exec, st, e){
   /* ② 阶段横幅 */
   h += '<div class="stgbar ' + (st.cls || '') + '" style="margin-top:8px">' +
     '<div class="sg" style="flex:1.1"><div class="l">执行周期（情绪总权重优先）</div><div class="v ' + (exec==='主升'?'up':(exec==='修复'?'grn':(exec==='分歧'?'yel':'ora'))) + '">' + exec + ' 期</div>' +
-      '<div class="d">MA5 信号服从周期：' + (exec==='冰点'?'禁止开仓':('仓位上限 '+st.pos)) + (exec!==e.cyc?' · 判定 '+e.cyc+' 降档执行':'') + '</div></div>' +
+      '<div class="d">MA5 信号服从周期：' + (exec==='冰点'?'禁止开仓':('仓位上限 '+st.pos)) + (reason ? ' ｜ ' + reason : '') + '</div></div>' +
     '<div class="sg"><div class="l">持仓数量</div><div class="v" style="font-size:15px">' + N + ' 只</div><div class="d">本机 localStorage 保存</div></div>' +
     '<div class="sg"><div class="l">铁律优先级</div><div class="v" style="font-size:14px">斜率 ＞ 破线天数 ＞ 站线 ＞ 偏离度</div><div class="d">斜率向下=唯一清仓依据</div></div>' +
   '</div>';
   /* ③ 统计条 */
   h += '<div class="note" style="margin-top:6px">逐只判定 ' + N + ' 只（数据不足 ' + cats.noData.length + '） —— ' +
     '合法买点 <b class="up">' + cats.buy.length + '</b> · 持有 <b class="up">' + cats.hold.length + '</b> · 超涨警戒 <b class="ora">' + cats.over.length + '</b> · 减仓 <b class="yel">' + cats.reduce.length + '</b> · 清仓 <b class="dn">' + cats.sell.length + '</b> · 观察 <b class="flat">' + cats.watch.length + '</b>。' +
-    '盘中实时判定随每轮刷新更新；<b>尾盘 14:45 后以收盘价定局执行</b>。</div>';
+    '盘中实时判定随每轮刷新更新；<b>尾盘 14:45 后以收盘价定局执行</b>。行情源：<b>腾讯 qt.gtimg.cn（9 秒硬超时）+ 东财 push2</b> 双通道合并，任一通道可用即出价（不再出现「接口受限就整块空白」）；板块归属复用同一份东财快照。</div>';
   /* ③b 持仓板块角色实时看板（板块分级 + 龙头/中军/杂毛，全量持仓逐轮刷新实时更新） */
   h += secBoardHtml(all);
   D.holds = all;   /* 暴露给 7.18 竞价定型：持仓逐只含 sec{grade,role,f3,f6}，供个股动作判定复用 */
@@ -4080,7 +4535,12 @@ function m720Ref(){
 function renderM720(){
   var box = $('m7_20'); if(!box) return;
   var stale = LHB.data && (Date.now() - LHB.ts > 3 * 3600 * 1000);
-  if((!LHB.data && !LHB.loading) || stale){ if(stale){ LHB.data = null; LHB.loading = false; } lhbLoad(); }
+  /* ⚠️ 旧版是 `if((!data && !loading) || stale) lhbLoad();` ——
+     接口失败 → lhbLoad 的 catch 设 LHB.err 后又调 renderM720 → 条件再次成立 → 又 lhbLoad …
+     形成「失败 → 重渲染 → 再失败」的死循环：页面被拖住、接口被反复轰炸。
+     现在：报过错就只显示错误 + 手动重试，不再自动重拉（stale 换日时仍会自动重拉）。 */
+  if(stale){ LHB.data = null; LHB.loading = false; LHB.err = ''; lhbLoad(); }
+  else if(!LHB.data && !LHB.err && !LHB.loading){ lhbLoad(); }
   box.innerHTML = m720Shell();
   var rb = $('m720_reload');
   if(rb) rb.onclick = function(){ LHB.data = null; LHB.loading = false; LHB.err = ''; renderM720(); };
@@ -4695,11 +5155,7 @@ function renderM715(){
     box.innerHTML = '<div class="loading">等待数据（涨停池与板块资金未就绪，可能为非交易时段）…</div>';
     return;
   }
-  var e = emotion();
-  var chk = stageCheck(e.cyc);
-  var idx = POS_ORDER.indexOf(e.cyc);
-  var exec = (chk.conf < 0.6 && idx > 0) ? POS_ORDER[idx - 1] : e.cyc;
-  var st = STAGE[exec] || STAGE[e.cyc];
+  var EX = execStageOf(), e = EX.e, chk = EX.chk, exec = EX.exec, st = EX.st;
   var ph = winPhase(hmNow());
   var w1 = w1Score();
   var w2 = w2Verdict();
@@ -4709,7 +5165,7 @@ function renderM715(){
     '<div class="sg" style="flex:0.9"><div class="l">当前窗口（' + hmNow() + '）</div><div class="v" style="font-size:15px' + (ph.key === 'w1' || ph.key === 'w2' || ph.key === 'w3' ? ';color:#f0453a' : '') + '">' + ph.name + '</div><div class="d">' + ph.txt + '</div></div>' +
     '<div class="sg"><div class="l">窗口一 10:00-10:30 定性</div><div class="v ' + vCls[w1.verdict.k] + '" style="font-size:15px">' + w1.verdict.name + '</div><div class="d">六指标 ' + w1.score + ' 分（' + w1.known + ' 项有效）→ 定当日加减仓基调</div></div>' +
     '<div class="sg"><div class="l">窗口二 13:00-13:30 验证</div><div class="v ' + w2.holdCls + '" style="font-size:15px">' + w2.name + '</div><div class="d">' + (w2.ml ? esc(w2.ml.name) + ' ' + w2.holdTxt : '无主线') + ' → 定跟不跟</div></div>' +
-    '<div class="sg" style="flex:0.9"><div class="l">隔夜仓位上限</div><div class="v ora" style="font-size:15px">' + st.pos + '</div><div class="d">' + exec + ' 期' + (exec !== e.cyc ? '（' + e.cyc + ' 降档执行）' : '') + (exec === '退潮' || exec === '冰点' ? ' · 尾盘原则上不加仓' : '') + '</div></div>' +
+    '<div class="sg" style="flex:0.9"><div class="l">隔夜仓位上限</div><div class="v ora" style="font-size:15px">' + st.pos + '</div><div class="d">' + exec + ' 期' + (EX.reason ? '（' + EX.reason + '）' : '') + (exec === '退潮' || exec === '冰点' ? ' · 尾盘原则上不加仓' : '') + '</div></div>' +
   '</div>' +
   '<div class="note"><b>三窗口联动闭环：</b>上午定加减，午后定方向，尾盘定隔夜。它们是同一判断的递进，不能用后一个窗口推翻前一个已确认的减仓纪律。<b>一句话：偷袭不碰、真回才跟、量价必须配合。</b></div>';
   /* ---- ② 窗口一：日内定性六指标对照 ---- */
@@ -4849,7 +5305,7 @@ var STAGE = {
     sl:'低开&gt;-2% 直接离场；反弹无力冲高回落即走',
     forbid:['连板接力','抄底 D 级旧主线','越跌越补','重仓'] }
 };
-/* 按仓位由低到高的保守序（仓位上限越大越激进），用于"特征吻合度不足 → 降档执行" */
+/* 按仓位由低到高的保守序（越靠前越保守）。用于「判定条件不成立 → 沿保守序降一档」 */
 var POS_ORDER = ['冰点','退潮','修复','分歧','主升'];
 var GRADE_ORDER = { S:0, A:1, B:2, C:3, D:4, '—':5 };
 /* 各阶段的可买分档（src=zt 取涨停池，src=mem 取板块成分股；lo/hi=涨幅区间，cap=流通上限，max3=中军涨幅上限） */
@@ -4912,61 +5368,29 @@ function buyWindow(cyc){
   if(cyc === '分歧') return { ok: inR('09:30', '14:30'), txt: '早盘杀跌 → 日内收回（09:30–14:30）' };
   return { ok: inR('09:25', '14:30'), txt: '竞价起至 14:30（全手法可做）' };
 }
-/* ---------- 阶段特征校验（总纲给出的"可验证情绪特征"逐项对照） ---------- */
-function stageCheck(cyc){
-  var a = D.analysis || { empty: true };
-  var hasA = !a.empty;
-  var zt = D.zt.length, zb = D.zb.length;
-  var zbrate = (zt + zb) > 0 ? zb / (zt + zb) : null;
-  var secF = (D.secAmt || []).reduce(function(s, x){ var v = num(x.f62); return s + (v == null ? 0 : v); }, 0);
-  var secCnt = (D.secAmt || []).length;
-  var mls = (D.ml && D.ml.main) ? D.ml.main : [];
-  var ztSec = Object.keys(ztCountBySector()).length;
-  var gs = gradeSectors();
-  var aliveCnt = gs.filter(function(g){ return ['S','A','B'].indexOf(g.grade) >= 0; }).length;
-  var mianRate = hasA ? a.mianRate : null;
-  var med = (hasA && a.med != null) ? a.med : null;
-  var avg = (hasA && a.avg != null) ? a.avg : null;
-  var promo = (hasA && a.promoRate != null) ? a.promoRate : null;
-  var duanMian = hasA ? a.duanMian : null;
-  var highZB = D.zb.some(function(x){ return (x.lbc || 1) >= 2; });
-  var items = [];
-  function it(label, state, txt, std){ items.push({ label: label, ok: state === true, soft: state === null, txt: txt, std: std }); }
-  function pctTxt(v){ return v == null ? '无昨日样本' : fpct(v); }
-  if(cyc === '冰点'){
-    it('昨涨停大面率', mianRate == null ? null : mianRate > 0.30, pctTxt(mianRate), '&gt;30%（大面）');
-    it('昨涨停中位数', med == null ? null : med < -5, med == null ? '无昨日样本' : fpct(med), '深跌（&lt;-5%）');
-    it('核按钮 / 跌停扩散', hasA ? (a.mian3 >= 3 || D.dt.length >= 10) : null, (hasA ? '核按钮' + a.mian3 + '家 · ' : '') + '跌停' + D.dt.length + '家', '跌停持续增加、核按钮批量');
-    it('炸板率', zbrate == null ? null : zbrate > 0.50, zbrate == null ? '—' : (zbrate * 100).toFixed(1) + '%', '&gt;50%');
-    it('资金恐慌出逃', secCnt ? secF < 0 : null, secCnt ? famt(secF / 1e8) : '—', '行业板块主力净流出');
-  } else if(cyc === '修复'){
-    it('大面率回落', mianRate == null ? null : mianRate < 0.18, pctTxt(mianRate), '&lt;18%（恐慌消退）');
-    it('中位数由负转正', med == null ? null : med > 0, med == null ? '无昨日样本' : fpct(med), '&gt;0');
-    it('断板 A 杀减少', duanMian == null ? null : duanMian <= 1, duanMian == null ? '无样本' : ('断板大面' + duanMian + '家'), '≤1 家');
-    it('资金试探新板块', ztSec >= 2, '涨停分布 ' + ztSec + ' 个板块', '≥2 个方向萌芽');
-    it('出现 B 级以上活口', aliveCnt > 0, aliveCnt + ' 个', '轮动收敛、方向萌芽');
-  } else if(cyc === '主升'){
-    it('昨涨停平均 + 中位数同步向上', (avg == null || med == null) ? null : (avg > 3 && med > 1), '均' + pctTxt(avg) + ' 中位' + pctTxt(med), 'avg&gt;3% 且 med&gt;1%');
-    it('大面率', mianRate == null ? null : mianRate < 0.10, pctTxt(mianRate), '&lt;10%');
-    it('晋级率高', promo == null ? null : promo >= 0.40, promo == null ? '无连板样本' : (promo * 100).toFixed(0) + '%', '≥40%');
-    it('存在 S/A 级主线', mls.length > 0, mls.length ? mls.slice(0, 3).map(function(r){ return esc(r.name) + r.grade; }).join('、') : '无', '资金抱团主线');
-    it('题材扩散', ztSec >= 5, '涨停分布 ' + ztSec + ' 个板块', '≥5 个方向扩散');
-  } else if(cyc === '分歧'){
-    it('高标炸板', highZB, highZB ? '存在连板股炸板' : '暂无连板炸板', '高位股出现分歧');
-    it('晋级率下滑', promo == null ? null : promo < 0.40, promo == null ? '无连板样本' : (promo * 100).toFixed(0) + '%', '&lt;40%');
-    it('大面率未飙升', mianRate == null ? null : mianRate < 0.18, pctTxt(mianRate), '&lt;18%（未批量大面）');
-    it('主线中军不崩盘', mls.length ? (num(mls[0].f3) == null ? null : (num(mls[0].f3) > -2)) : false, mls.length ? (esc(mls[0].name) + ' ' + (num(mls[0].f3) == null ? '—' : fpct(num(mls[0].f3)))) : '无 S/A 主线', '中军稳住不破位');
-    it('资金主线内高低切', mls.length ? (num(mls[0].f62) == null ? null : num(mls[0].f62) > 0) : false, mls.length ? ('主线主力净流入 ' + fmtYi(num(mls[0].f62))) : '—', '仍为净流入（不是出逃）');
-  } else {
-    it('大面率持续走高', mianRate == null ? null : mianRate > 0.20, pctTxt(mianRate), '&gt;20%');
-    it('中位数持续为负', med == null ? null : med < 0, med == null ? '无昨日样本' : fpct(med), '&lt;0');
-    it('断板普遍 A 杀', duanMian == null ? null : duanMian >= 2, duanMian == null ? '无样本' : ('断板大面' + duanMian + '家'), '≥2 家');
-    it('板块资金持续净流出', secCnt ? secF < 0 : null, secCnt ? famt(secF / 1e8) : '—', '行业板块主力净流出');
-    it('主线逻辑证伪', mls.length === 0, mls.length ? ('仍有 ' + mls.length + ' 个 S/A 主线') : '无 S/A 主线', '旧主线被证伪');
-  }
+/* ---------- 阶段特征校验：改为《大盘情绪周期判断逻辑》第四章「五阶段判定条件」原文 ----------
+   命中数 hits / 总数 total 就是文档说的"满足 2 条即可"；主升要求全部满足（all）。
+   ⚠️ 这里只负责"核对 + 展示"，真正的降档由 emotion() 统一执行（同一信息只罚一次）。 */
+function stageCheck(cyc, ctx){
+  var c = ctx || emoCtx();
+  var items = emoCondList(cyc, c);
+  var soft = items.filter(function(x){ return x.soft; });
   var known = items.filter(function(x){ return !x.soft; });
-  var conf = known.length ? known.filter(function(x){ return x.ok; }).length / known.length : 1;
-  return { items: items, conf: conf, known: known.length };
+  var hits = known.filter(function(x){ return x.ok; }).length;
+  return { items: items, conf: known.length ? hits / known.length : 1, known: known.length,
+    soft: soft.length, hits: hits, total: items.length, all: (items.length > 0 && hits === items.length) };
+}
+/* ---------- 执行周期判定（单一事实源，此前 6 处复制粘贴 → 全部改用本函数） ----------
+   周期判定的全部逻辑已收口进 emotion()（八维评分 → 文档判定条件 → 文档特殊规则降档），
+   本函数只负责"取同一个结论 + 同一份仓位表 + 同一段可读原因"，杜绝各模块各算一套。
+   历史教训：旧版在 emotion() 之外又对"特征吻合度 <60%"降一档，导致「跌停多」这类信息被罚两次
+   （八维降档一次、大面率类特征必然不吻合又一次）→ 仓位过度保守且原因不明。现已彻底移除。 */
+function execStageOf(){
+  var e = emotion();
+  var chk = stageCheck(e.cyc);
+  var exec = e.cyc;
+  var st = STAGE[exec] || STAGE[e.cyc];
+  return { e: e, chk: chk, exec: exec, st: st, demoted: exec !== e.base, reason: e.reasonTxt || '' };
 }
 /* ---------- 板块池：按阶段允许等级筛选可操作板块 ---------- */
 function high10Set(){
@@ -5121,13 +5545,9 @@ var BPM = { key: '', loading: false };
 function renderM710(){
   var box = $('m7_10');
   if(!box) return;
-  var e = emotion();
-  var chk = stageCheck(e.cyc);
-  var idx = POS_ORDER.indexOf(e.cyc);
-  var exec = (chk.conf < 0.6 && idx > 0) ? POS_ORDER[idx - 1] : e.cyc;
-  var st = STAGE[exec] || STAGE[e.cyc];
+  var EX = execStageOf(), e = EX.e, chk = EX.chk, exec = EX.exec, st = EX.st;
   var bw = buyWindow(exec);
-  var downgraded = exec !== e.cyc;
+  var downgraded = exec !== e.base;   /* 与基准档不同 = 被文档判定条件 / 特殊规则调整过 */
   var secs = st.observe ? [] : planSectors(exec);
   if(!D.zt.length && !D.secAmt.length){
     box.innerHTML = '<div class="loading">等待数据（涨停池与板块资金未就绪，可能为非交易时段）…</div>';
@@ -5183,17 +5603,18 @@ function renderM710(){
     '<div class="sg"><div class="l">可做板块等级</div><div class="v" style="font-size:15px">' + (st.grades.length ? st.grades.join(' / ') : '仅观察') + '</div><div class="d">' + st.gradeTxt + '</div></div>' +
     '<div class="sg" style="flex:1.25"><div class="l">当前时段买点窗口</div><div class="v ' + (bw.ok ? 'up' : 'flat') + '" style="font-size:15px">' + (bw.ok ? '✓ ' + st.buyShort : '未到窗口') + '</div><div class="d">' + bw.txt + '</div></div>' +
   '</div>';
-  /* ② 降档 / 吻合度提示 */
-  if(chk.conf < 0.6){
-    h += '<div class="concl c-ora"><b>阶段特征吻合度 ' + (chk.conf * 100).toFixed(0) + '%（偏低）：</b>当前周期特征与实际盘面不完全吻合' +
-      (downgraded ? '，已<b>自动降档为「' + exec + '」</b>执行（仓位取更小值、买点更滞后、兑现更快）' : '，但由于已处于最保守档位（冰点）不再下调') +
-      '。请核对下方逐项特征后自行决定是否以「' + e.cyc + '」为准。</div>';
+  /* ② 周期核对提示：降档只在 emotion() 里发生一次（八维评分 \u2192 文档判定条件 \u2192 文档特殊规则），
+        这里只解释结论，绝不二次判定 —— 旧版曾在此再降一档，导致「跌停多」被罚两次、仓位过度保守 */
+  if(downgraded || chk.hits < (exec === '主升' ? chk.total : 2)){
+    h += '<div class="concl c-ora"><b>周期核对：</b>基准档 <b>' + e.base + '</b>（八维加权 ' + e.score.toFixed(1) + ' 分）' +
+      (downgraded ? '，经文档判定条件 / 特殊规则调整后执行档为 <b>' + exec + ' 期</b>' : '，该档判定条件命中 <b>' + chk.hits + '/' + chk.total + '</b> 条（' + (exec === '主升' ? '主升要求全部满足' : '要求 \u22652 条') + '）') +
+      '。仓位上限 ' + st.pos + '，买点与兑现规则同步按「' + exec + '」期执行。</div>';
   }
   /* ③ 阶段特征校验 */
-  h += '<div class="dim" style="margin-top:6px"><div class="dim-h"><b>阶段特征校验 · ' + exec + ' 期（总纲"可验证情绪特征"逐项对照）</b>' +
-    '<span class="dim-s ' + (chk.conf >= 0.8 ? 'up' : (chk.conf >= 0.6 ? 'yel' : 'dn')) + '">吻合 ' + (chk.conf * 100).toFixed(0) + '%</span></div>' +
+  h += '<div class="dim" style="margin-top:6px"><div class="dim-h"><b>阶段判定条件核对 · ' + exec + ' 期（文档第四章「五阶段判定条件」逐项对照，满足 2 条即成立）</b>' +
+    '<span class="dim-s ' + (chk.conf >= 0.8 ? 'up' : (chk.conf >= 0.6 ? 'yel' : 'dn')) + '">命中 ' + chk.hits + ' / ' + chk.total + ' 条</span></div>' +
     chk.items.map(function(o){ return chkRow(o.label, o, o.std); }).join('') +
-    '<div class="note">✓ 吻合 / ! 无样本（不计入吻合度）/ × 不吻合。吻合度 &lt;60% 时自动降档执行；无样本不参与计算，避免开盘初期误降档。</div></div>';
+    '<div class="note">✓ 命中 / × 未命中。文档口径：<b>主升要求条件全部满足，其余各档满足 2 条即成立</b>；不成立时沿保守序降一档（最多降到退潮，再往下必须由冰点特征或「跌停≥10 家」规则触发）。</div></div>';
   /* ④ 可买清单 */
   h += '<div style="margin-top:10px"><b style="font-size:12.5px;color:#f0453a">盘中可买清单（' + exec + '期 · 共 ' + candCnt + ' 只' + (loading ? ' · 成分股加载中，稍后自动刷新' : '') + '）</b></div>';
   if(st.observe){
@@ -5274,11 +5695,7 @@ function tgtRow(g, st, exec){
 /* 7.10 → 模块⑪ 共用：一句话可买结论（只读当前内存数据，不触发任何网络请求）
    保证 7.10 可买清单与 ⑪ 总结里的结论永远一致 */
 function buyPlanSummary(){
-  var e = emotion();
-  var chk = stageCheck(e.cyc);
-  var idx = POS_ORDER.indexOf(e.cyc);
-  var exec = (chk.conf < 0.6 && idx > 0) ? POS_ORDER[idx - 1] : e.cyc;
-  var st = STAGE[exec] || STAGE[e.cyc];
+  var EX = execStageOf(), e = EX.e, chk = EX.chk, exec = EX.exec, st = EX.st;
   var secs = st.observe ? [] : planSectors(exec);
   var picks = [];
   if(!st.observe){
@@ -5290,7 +5707,7 @@ function buyPlanSummary(){
       return (GRADE_ORDER[a.grade] == null ? 9 : GRADE_ORDER[a.grade]) - (GRADE_ORDER[b.grade] == null ? 9 : GRADE_ORDER[b.grade]) || (b.amt || 0) - (a.amt || 0);
     });
   }
-  return { e:e, chk:chk, exec:exec, st:st, downgraded:exec !== e.cyc, secs:secs, picks:picks, bw:buyWindow(exec) };
+  return { e:e, chk:chk, exec:exec, st:st, downgraded:exec !== e.base, reason:EX.reason, secs:secs, picks:picks, bw:buyWindow(exec) };
 }
 
 /* --- 模块8 五池 --- */
@@ -5678,7 +6095,7 @@ function renderM10(){
 function renderM11(){
   var a = D.analysis, e = emotion();
   if((!a || a.empty) && !D.zt.length){ $('m11body').innerHTML = '<div class="loading">等待数据（可能为非交易日）…</div>'; return; }
-  var v = (a && !a.empty) ? prevVerdict(a) : { name: e.cyc, cls: 'yel', pos: e.pos };
+  var v = (a && !a.empty) ? prevVerdict(a) : { name: '\u2014', cls: 'flat', grade: -1 };
   var gs = gradeSectors();
   var mains = gs.filter(function(g){ return ['S', 'A'].indexOf(g.grade) >= 0; }).slice(0, 3);
   var ml = D.ml, mlMain = (ml && ml.main) ? ml.main : [];
@@ -5708,7 +6125,7 @@ function renderM11(){
     sToday = '情绪处于 <b class="dn">冰点</b>期，<b class="dn">禁止买入</b>（空仓为主，仓位 0~5%）：' + bpSt.dir +
       '。仅当出现拐点确认信号（跌停不再新增、大面率回落、恐慌衰竭）后，方可在尾盘 14:40–14:55 以单票 0~1% 极小仓试错。';
   } else {
-    sToday = '执行档 <b class="ora">' + bp.exec + ' 期</b>（判定 ' + bp.e.cyc + ' · 吻合度 ' + (bp.chk.conf * 100).toFixed(0) + '%' + (bp.downgraded ? ' · 已降档' : '') + '）' +
+    sToday = '执行档 <b class="ora">' + bp.exec + ' 期</b>（判定 ' + bp.e.cyc + ' · 该档判定条件命中 ' + bp.chk.hits + '/' + bp.chk.total + ' 条' + (bp.reason ? ' ｜ ' + bp.reason : '') + '）' +
       '，仓位上限 <b class="ora">' + bpSt.pos + '</b>，买点 <b>' + bpSt.buyShort + '</b>' +
       (bp.bw.ok ? '（<b class="up">当前正处于买点窗口</b>）' : '（<b class="flat">当前未到买点窗口</b>）') +
       '；可做板块等级 <b>' + (bpSt.grades.join(' / ') || '仅观察') + '</b>';
@@ -5736,7 +6153,7 @@ function renderM11(){
   '<div class="concl ' + ((a && !a.empty && (a.avg || 0) > 0) ? 'c-red' : 'c-grn') + '"><b>③ 赚钱/亏钱效应：</b>' + s3 + '</div>' +
   '<div class="concl ' + (bpSt.observe ? 'c-grn' : 'c-red') + '"><b>④ 今日可买（周期策略）：</b>' + sToday + '</div>' +
   '<div class="concl c-grn"><b>⑤ 明日关注方向：</b>' + s4.join('；') + '。</div>' +
-  '<div class="concl c-red"><b>当前周期：</b><span class="tag tag-y">' + e.cyc + '</span> 情绪指数 <b class="mono">' + e.score.toFixed(1) + '</b>，建议仓位上限 <b class="ora">' + e.pos + '</b>（综合判定：' + v.name + '）。' + mlTag + '</div>';
+  '<div class="concl c-red"><b>当前周期：</b><span class="tag tag-y">' + e.cyc + '</span> 情绪指数 <b class="mono">' + e.score.toFixed(1) + '</b>，建议仓位上限 <b class="ora">' + e.pos + '</b>（昨涨停池承接质量：' + v.name + '）' + ' ｜ 背离：<b>' + emoDivergence(e).name + '</b>。' + mlTag + '</div>';
 }
 
 /* ================= 启动 ================= */

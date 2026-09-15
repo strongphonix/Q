@@ -280,7 +280,7 @@ section{scroll-margin-top:70px;}
     <button class="btn" onclick="manualRefresh()">手动刷新</button>
   </div>
   <div class="hlinks">
-    <a href="#m2">盯盘流程</a><a href="#m3">昨涨停分析</a><a href="#m4">指数</a><a href="#m5">涨停复盘</a><a href="#m6">情绪周期</a><a href="#m7">资金主线</a><a href="#m8">五池明细</a><a href="#m9">10日涨幅榜</a><a href="#m10">成交额榜</a><a href="#m11">自动总结</a>
+    <a href="#m2">盯盘流程</a><a href="#m3">昨涨停分析</a><a href="#m4">指数</a><a href="#m5">涨停复盘</a><a href="#m6">情绪周期</a><a href="#m7">资金主线</a><a href="#m8">五池明细</a><a href="#m9">10日涨幅榜</a><a href="#m10">成交额榜</a><a href="#m11">自动总结</a><a href="#m75">板块分级</a><a href="#m7_11">主线标的</a><a href="#m7top16">个人持仓</a>
   </div>
 </div>
 </header>
@@ -435,7 +435,7 @@ section{scroll-margin-top:70px;}
 <div id="m7_15"><div class="loading">数据加载中…</div></div>
 <h2 style="font-size:14px;margin-top:18px;border-color:#f0453a;color:#f0453a">7.10 情绪周期 × 买入策略（五阶段完整对照 · 盘中可买清单）</h2>
 <div id="m7_10"><div class="loading">数据加载中…</div></div>
-<h2 style="font-size:14px;margin-top:18px">7.11 主线标的筛选（龙头 / 中军 / 补涨 三档 · 范围=7.4主线判定 Top1 板块成分股）</h2>
+<h2 style="font-size:14px;margin-top:18px">7.11 主线标的筛选（龙头 / 中军 / 补涨 三档 · 范围=7.4主线判定 Top1 板块成分股 · 每日存档 → 次日胜率）</h2>
 <div id="m7_11"><div class="loading">数据加载中…</div></div>
 <h2 style="margin-top:18px;border-left:4px solid #f0453a;padding-left:8px;color:#f0453a">7.18 竞价定型：当日策略决策（09:25 起点）</h2>
 <div id="m7_18"><div class="loading">数据加载中…</div></div>
@@ -2740,7 +2740,132 @@ function renderM711(){
     '<th>#</th><th>名称</th><th>代码</th><th>涨幅</th><th>成交额(亿)</th><th>流通市值(亿)</th>', wh, !!stocks, true) +
   '</div>' +
   '<div class="concl c-blu" style="margin-top:8px"><b>使用原则：</b>龙头买不到→买中军；中军涨高→找补涨首板；跟风杂毛不做。' + cycTip + '。</div>' +
-  '<div class="note">范围严格取自 7.4 三维主线判定的 Top1 板块（资金&gt;持续性&gt;强度&gt;催化，含结构加验与环境联动）。龙头=连板最高(空间龙头)/封板最早(资金最先认可)/封单最大(多头最强)；中军=大成交额+大流通市值的机构趋势票，波动小容量大；补涨=低位小市值刚启动，行情纵深扩散时的弹性标的。成分股来自东财行业板块成分接口，非ST/非北交所，与 7.4 结构加验共用同一缓存，每轮刷新自动更新。</div>';
+  '<div class="note">范围严格取自 7.4 三维主线判定的 Top1 板块（资金&gt;持续性&gt;强度&gt;催化，含结构加验与环境联动）。龙头=连板最高(空间龙头)/封板最早(资金最先认可)/封单最大(多头最强)；中军=大成交额+大流通市值的机构趋势票，波动小容量大；补涨=低位小市值刚启动，行情纵深扩散时的弹性标的。成分股来自东财行业板块成分接口，非ST/非北交所，与 7.4 结构加验共用同一缓存，每轮刷新自动更新。</div>' +
+  '<div id="m711wr" style="margin-top:10px"><div class="loading">正在计算「每日存档 → 次日胜率」…</div></div>';
+  m711Archive(name, top.grade, main, lts, mids, lows, !!stocks);
+  m711WinRate();
+}
+/* ==================================================================
+   7.11b 主线标的「每日存档 → 次日胜率」（用户需求：把每天筛出的股票做成表格，
+        隔日盘中用真实行情实时对比涨跌、通知胜率）
+   ------------------------------------------------------------------
+   存储：
+     wb_m711_v1      = { 'YYYYMMDD': {date, sec, grade, isMainline, complete, stamp,
+                                      items:[{code,name,tier,lbc,fbt,fund,pct}]} }   保留 30 天
+     wb_m711_res_v1  = { 'YYYYMMDD'(选股日): {total, byTier, items, ts} }              隔日对比结果，
+                       供累计胜率使用。每次都按最新行情覆盖 → 收盘后最后一次即定稿。
+   判定口径：**次日涨幅 > 0 计胜**；无行情（北交所等无源）的标的计入"可对比数"之外，不拉低胜率。
+   通知：每日首次算出胜率时蜂鸣 + 桌面通知（wb_m711_notified_<date> 去重）。
+   为什么结果要落盘：行情接口只给最新价，无法事后回溯历史某日的涨幅 → 隔日对比必须当天完成并记录。
+   ================================================================== */
+var M711_TIER = { lead: '龙头（打板核心）', mid: '中军（趋势容量）', low: '补涨（低位弹性）' };
+function m711Store(){ var o = lsGet('wb_m711_v1', {}); return (o && typeof o === 'object') ? o : {}; }
+function m711Results(){ var o = lsGet('wb_m711_res_v1', {}); return (o && typeof o === 'object') ? o : {}; }
+/* 存档：同日覆盖（收盘那次即最终快照），保留最近 30 天 */
+function m711Archive(name, grade, isMainline, lts, mids, lows, complete){
+  if(!name) return;
+  var items = [];
+  (lts || []).forEach(function(x){ items.push({ code: String(x.c), name: x.n, tier: 'lead', lbc: num(x.lbc) || 1, fbt: num(x.fbt), fund: num(x.fund), pct: null }); });
+  (mids || []).forEach(function(x){ items.push({ code: String(x.f12), name: x.f14, tier: 'mid', lbc: null, fbt: null, fund: null, pct: num(x.f3) }); });
+  (lows || []).forEach(function(x){ items.push({ code: String(x.f12), name: x.f14, tier: 'low', lbc: null, fbt: null, fund: null, pct: num(x.f3) }); });
+  if(!items.length) return;
+  var st = m711Store();
+  st[D.date] = { date: D.date, sec: name, grade: grade || '—', isMainline: !!isMainline, complete: !!complete,
+    stamp: Date.now(), items: items };
+  var ks = Object.keys(st).sort();
+  while(ks.length > 30) delete st[ks.shift()];                      /* 只留 30 天 */
+  lsSet('wb_m711_v1', st);
+}
+/* 最近一个「早于今日」的存档日（周末/非交易日自然无存档，无需交易日历） */
+function m711PrevDate(){
+  var ks = Object.keys(m711Store()).filter(function(k){ return k < D.date; }).sort();
+  return ks.length ? ks[ks.length - 1] : null;
+}
+/* 一组标的的胜率汇总（只统计有行情的） */
+function m711Sum(items){
+  var win = 0, sum = 0, valid = 0;
+  (items || []).forEach(function(x){ if(x.pct1d == null || isNaN(x.pct1d)) return; valid++; sum += x.pct1d; if(x.pct1d > 0) win++; });
+  return { n: (items || []).length, valid: valid, win: win, lose: valid - win,
+    rate: valid ? (win / valid * 100) : null, avg: valid ? (sum / valid) : null };
+}
+/* 异步：取「上一存档日」标的的今日实时涨跌幅 → 渲染 */
+function m711WinRate(){
+  var box = $('m711wr'); if(!box) return;
+  var pd = m711PrevDate();
+  if(!pd){ box.innerHTML = '<div class="loading">暂无历史存档（今日已自动存档，明日此时即可看到「次日胜率」对比表）。</div>'; return; }
+  var snap = m711Store()[pd], items = (snap && snap.items) || [];
+  if(!items.length){ box.innerHTML = '<div class="loading">' + esc(pd) + ' 存档为空。</div>'; return; }
+  var codes = items.map(function(x){ return txCode(x.code); }).filter(Boolean);
+  if(!codes.length){ box.innerHTML = '<div class="loading">昨日标的无可用行情源（多为北交所），无法对比。</div>'; return; }
+  box.innerHTML = '<div class="loading">正在用今日实时行情对比 ' + esc(pd) + ' 的 ' + items.length + ' 只标的…</div>';
+  loadTxQuotes(codes).then(function(q){
+    var rows = items.map(function(x){
+      var tc = txCode(x.code), a = tc ? q[tc] : null;
+      var pct1d = (a && a[32] != null && a[32] !== '') ? num(a[32]) : null;
+      return { code: x.code, name: x.name, tier: x.tier, lbc: x.lbc, fbt: x.fbt, pct: x.pct,
+        pct1d: pct1d, win: (pct1d == null ? null : (pct1d > 0)) };
+    });
+    m711RenderWin(pd, snap, rows);
+  }).catch(function(){ box.innerHTML = '<div class="concl c-grn">行情获取失败（可能非交易时段或接口受限），下轮刷新自动重试。</div>'; });
+}
+function m711RenderWin(pd, snap, rows){
+  var box = $('m711wr'); if(!box) return;
+  var tiers = ['lead', 'mid', 'low'], by = {};
+  tiers.forEach(function(t){ by[t] = m711Sum(rows.filter(function(r){ return r.tier === t; })); });
+  var tot = m711Sum(rows);
+  /* 结果落盘：按最新行情覆盖（收盘后最后一次 = 定稿），供累计胜率使用 */
+  var res = m711Results();
+  res[pd] = { sec: snap.sec, grade: snap.grade, total: tot, byTier: by,
+    items: rows.map(function(r){ return { code: r.code, name: r.name, tier: r.tier, pct1d: r.pct1d, win: r.win }; }), ts: Date.now() };
+  var ks = Object.keys(res).sort();
+  while(ks.length > 30) delete res[ks.shift()];
+  lsSet('wb_m711_res_v1', res);
+  /* 累计胜率（所有已完成对比的选股日） */
+  var cumWin = 0, cumValid = 0, cumSum = 0, cumDays = 0;
+  Object.keys(res).forEach(function(k){
+    var t = res[k].total;
+    if(t && t.valid > 0){ cumDays++; cumValid += t.valid; cumWin += t.win; cumSum += t.avg * t.valid; }
+  });
+  var cumRate = cumValid ? (cumWin / cumValid * 100) : null;
+  var rateBadge = function(s){ return '<span class="badge ' + (s.rate == null ? 'b-b' : (s.rate >= 50 ? 'b-r' : 'b-g')) + '">' + (s.rate == null ? '无数据' : s.rate.toFixed(0) + '%') + '</span>'; };
+  var h = '<div class="kpi"><div class="t">📊 主线标的次日胜率（' + esc(pd) + ' 存档 → 今日实时对比）' + rateBadge(tot) + '</div>' +
+    '<div class="note" style="margin:2px 0 4px">存档板块 <b class="yel">' + esc(snap.sec) + '</b>' + (snap.grade && snap.grade !== '—' ? '（' + esc(snap.grade) + '级）' : '') +
+    (snap.isMainline ? ' <span class="tag tag-r">主线</span>' : ' <span class="tag tag-b">非主线</span>') +
+    (snap.complete === false ? ' <span class="flat">（成分股未就绪，仅存档龙头档）</span>' : '') +
+    ' · 共 <b class="mono">' + tot.n + '</b> 只（可对比 <b class="mono">' + tot.valid + '</b> 只）· 胜 <b class="up">' + tot.win + '</b> / 负 <b class="dn">' + tot.lose + '</b>' +
+    ' · 平均次日涨幅 <b class="' + pctCls(tot.avg) + '">' + fpct(tot.avg) + '</b> ｜ 判定口径：<b>次日涨幅 &gt;0 计胜</b>，无行情标的不计入（不拉低胜率）。</div>' +
+    '<div class="grid3">' + tiers.map(function(t){
+      var s = by[t];
+      return '<div class="kpi"><div class="t">' + M711_TIER[t] + ' ' + rateBadge(s) + '</div>' +
+        '<div class="v" style="font-size:15px">' + (s.rate == null ? '—' : s.rate.toFixed(0) + '%') + '</div>' +
+        '<div class="s">胜 <b>' + s.win + '</b> / ' + s.valid + ' 只 ｜ 平均 <b class="' + pctCls(s.avg) + '">' + fpct(s.avg) + '</b></div></div>';
+    }).join('') + '</div></div>';   /* 闭 grid3 + 闭最外层 kpi（漏了会把 twrap/note 吞进去） */
+  h += '<div class="twrap" style="margin-top:6px;max-height:340px;overflow-y:auto"><table class="mini-tbl"><thead><tr>' +
+    '<th>档位</th><th>名称</th><th>代码</th><th>' + esc(pd) + ' 筛选时</th><th>今日涨幅</th><th>结果</th></tr></thead><tbody>' +
+    rows.map(function(r){
+      var tag = r.tier === 'lead' ? '<span class="badge b-r">龙头</span>' : (r.tier === 'mid' ? '<span class="badge b-o">中军</span>' : '<span class="badge b-y">补涨</span>');
+      var base = r.tier === 'lead' ? ((r.lbc >= 2 ? r.lbc + '板' : '首板') + (r.fbt ? ' ' + fmtFbt(r.fbt) : '')) : (r.pct == null ? '—' : fpct(r.pct));
+      return '<tr><td>' + tag + '</td><td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + '</td><td class="mono">' + esc(r.code) + '</td>' +
+        '<td>' + base + '</td><td class="' + pctCls(r.pct1d) + ' mono">' + (r.pct1d == null ? '<span class="flat">无行情</span>' : fpct(r.pct1d)) + '</td>' +
+        '<td>' + (r.win == null ? '<span class="flat">—</span>' : (r.win ? '<span class="badge b-r">胜</span>' : '<span class="badge b-g">负</span>')) + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+  h += '<div class="note">近 <b>' + cumDays + '</b> 个交易日累计：<b class="mono">' + cumValid + '</b> 只可对比 · 胜 <b class="up">' + cumWin + '</b> · ' +
+    '累计胜率 <b class="' + (cumRate == null ? 'flat' : (cumRate >= 50 ? 'up' : 'dn')) + '">' + (cumRate == null ? '—' : cumRate.toFixed(1) + '%') + '</b>' +
+    ' ｜ 平均次日涨幅 <b class="' + pctCls(cumValid ? cumSum / cumValid : null) + '">' + fpct(cumValid ? cumSum / cumValid : null) + '</b>' +
+    '。每个交易日收盘后自动把当日结果定稿，因此累计胜率随使用天数增长而趋于真实（首日仅 1 个样本）。</div>';
+  box.innerHTML = h;
+  m711Notify(pd, tot, by);
+}
+/* 胜率通知（每个交易日只响一次） */
+function m711Notify(pd, tot, by){
+  if(tot.rate == null) return;
+  var key = 'wb_m711_notified_' + D.date;
+  if(lsGet(key, false) === true) return;
+  lsSet(key, true);
+  var f = function(s){ return s.rate == null ? '无' : s.rate.toFixed(0) + '%'; };
+  var txt = '总体 ' + tot.rate.toFixed(0) + '%（胜 ' + tot.win + '/' + tot.valid + '）· 龙头 ' + f(by.lead) + ' · 中军 ' + f(by.mid) + ' · 补涨 ' + f(by.low);
+  try{ ma5Beep(); }catch(e){}
+  try{ ma5Notify('7.11 ' + pd + ' 存档 → 次日胜率', txt); }catch(e){}
 }
 /* ==================================================================
    7.12 MA5 终极系统化交易策略（完整结构化版 · 可程序化）

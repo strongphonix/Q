@@ -322,7 +322,7 @@ section{scroll-margin-top:70px;}
 </section>
 <!-- 7.30 断板反包 · 分歧转一致·二波套利（候选=主线板块成分股；自扫日K，与 7.12/7.23 共享 30 分钟缓存） -->
 <section class="card" id="m7top30">
-<h2 style="border-color:#f0453a;color:#f0453a">7.30 断板反包 · 分歧转一致·二波套利（前置：情绪主升/修复 + 主线题材龙头强跟风 + 低位启动累计＜50%）</h2>
+<h2 style="border-color:#f0453a;color:#f0453a">7.30 断板反包 · 分歧转一致·二波套利（前置：情绪主升/修复 + 低位启动累计＜50% + 10 天内至少涨停一次）</h2>
 <div id="m7_30"><div class="loading">数据加载中…</div></div>
 </section>
 <section class="card" id="m7top16">
@@ -5004,17 +5004,18 @@ function renderM723(){
     xrefPickHtml(xb) + xrefPendingHtml(xb) + xrefDetailHtml(xb) + xrefRuleHtml();
 }
 /* ===================== 7.30 断板反包 · 分歧转一致·二波套利 ===================== */
-/* 原文阈值逐条编码（不臆造）；候选池 = 当前主线板块（STAGE 允许等级）成分股，复用 7.12/7.23 的 MLM 与日K 缓存（零额外接口）。
-   前置：情绪主升/修复期 + 主线题材龙头/强跟风 + 低位启动累计涨幅＜50%
+/* 原文阈值逐条编码（不臆造）；候选池 = 10日涨幅榜前 DB_RULE.scanTop（复用 ⑨/7.23 的 D.k10，零额外接口；势能榜最可能覆盖"近期涨停过"的票）。
+   前置：情绪主升/修复期 + 低位启动累计涨幅＜50% + 10 个交易日内至少涨停一次
    断板形态：假阴/长上影，实体＜3%，跌幅≤3%，收在 5 日线上；放量（较前日 +50%）；阶梯式下跌非瀑布
    调整期：1-3 天最佳，最长 6 天；量能快速萎缩（缩倍量最佳）；回踩 5 日线不破
    三档介入：①竞价试错 ≤10%（平开/小幅高开 + 竞价放量）②分时确认 20-30%（突破阴线实体一半）③封板确认 ≤40%（30 分钟内封死涨停）
    止损：跌破反包阳线最低价；低开 ≥3% 无抢筹 → 清仓 */
 var DB_RULE = { ztp: { '10cm': 9.7, '20cm': 19.5, '30cm': 29.5, '5cm': 4.8 },
+  ztWindow: 10,   /* 前置：最近一次涨停距今 ≤ 10 个交易日（10 天内至少涨停一次） */
+  scanTop: 100,   /* 候选池 = 10日涨幅榜前 100 */
   bodyMax: 3, dropMin: -3, volUpPct: 50, adjMax: 6, adjBest: 3, shrink: 1, shrinkBest: 0.5,
   gainMax: 50, openLow: -3, openHi: 3, sealBy: 100000 };
 var M730 = { key: '', running: false, done: false, ok: 0, fail: 0, rows: [], t: 0 };
-var DBLD = { key: '', loading: false };
 function dbMa5(bars, i){
   var s = 0, n = 0, k, c;
   for(k = Math.max(0, i - 4); k <= i; k++){ c = num(bars[k].c); if(c != null){ s += c; n++; } }
@@ -5027,10 +5028,16 @@ function dbIsZt(bars, i, lim){
   var need = (DB_RULE.ztp[lim] != null) ? DB_RULE.ztp[lim] : 9.7;
   return (c / pc - 1) * 100 >= need;
 }
-/* 最近一次涨停日 i 与其次日「断板日」t0（t0 为 null 表示今日才涨停、尚未断板） */
+/* 最近一次涨停日 i 与其次日「断板日」t0（t0 为 null 表示今日才涨停、尚未断板）
+   并给出 age（涨停距今交易日数）与 inWin（是否落在 10 日窗口内 = 前置「10 天内至少涨停一次」） */
 function dbFind(bars, lim){
-  for(var i = bars.length - 1; i >= 1; i--){ if(dbIsZt(bars, i, lim)) return { zt: i, t0: (i + 1 <= bars.length - 1 ? i + 1 : null) }; }
-  return { zt: -1, t0: null };
+  var last = bars.length - 1, i, age;
+  for(i = last; i >= 1; i--){
+    if(!dbIsZt(bars, i, lim)) continue;
+    age = last - i;
+    return { zt: i, t0: (i + 1 <= last ? i + 1 : null), age: age, inWin: (age <= DB_RULE.ztWindow) };
+  }
+  return { zt: -1, t0: null, age: null, inWin: false };
 }
 /* 断板日形态：实体% / 当日涨跌% / 上影% / 收在5日线上 / 放量% */
 function dbShape(bars, t0){
@@ -5091,6 +5098,7 @@ function dbJudge(c, bars, ctx){
   var lim = ztLimitOf(c.code, c.name);
   var f = dbFind(bars, lim);
   var out = { code: c.code, name: c.name, sec: c.sec, grade: c.grade, lim: lim, zt: f.zt, t0: f.t0,
+    ztAge: (f.age == null ? null : f.age), inWin: !!f.inWin,
     gapDays: (f.t0 == null ? null : bars.length - 1 - f.t0),
     shape: null, adj: null, gain: null, rev: null, seal: null };
   if(f.t0 == null) return out;
@@ -5106,6 +5114,9 @@ function dbJudge(c, bars, ctx){
 function dbChecks(r){
   var s = r.shape, a = r.adj, g = r.gain, v = r.rev, L = [];
   function it(t, ok, txt){ L.push({ t: t, ok: ok, txt: txt }); }
+  /* 前置：10 天内至少涨停一次（硬门槛） */
+  it('前置·' + DB_RULE.ztWindow + '日内至少涨停一次', !!r.inWin,
+    (r.ztAge == null ? ('近 ' + DB_RULE.ztWindow + ' 个交易日内无涨停') : ('最近涨停 T-' + r.ztAge + (r.inWin ? '（窗口内）' : '（已超窗）'))));
   if(s){
     it('断板·实体＜3%', s.okBody, '实体 ' + s.body.toFixed(2) + '%');
     it('断板·跌幅≤3%', s.okDrop, '当日 ' + fpct(s.chg));
@@ -5132,9 +5143,10 @@ function dbTier(r, stageOk){
   var adjOk = !!(r.adj && r.adj.n > 0 && r.adj.okDays && r.adj.okShrink && r.adj.holdMa5 !== false);
   var gainOk = !!(r.gain && r.gain.gain != null && r.gain.gain < DB_RULE.gainMax);
   var revOk = !!(r.rev && r.rev.overHalf);
-  /* 前置①（情绪主升/修复）是硬门槛：不满足时一律不得进入可介入/待确认档（表头会写明原因） */
-  if(stageOk && core && adjOk && gainOk && revOk) return { k: 'star', rank: 0, tag: '★ 可介入', cls: 'b-r' };
-  if(stageOk && core && adjOk && gainOk) return { k: 'wait', rank: 1, tag: '☆ 待确认', cls: 'b-y' };
+  var winOk = !!r.inWin;
+  /* 两条硬门槛：① 情绪主升/修复；② 10 日内至少涨停一次。不满足时一律不得进入可介入/待确认档（表头会写明原因） */
+  if(stageOk && winOk && core && adjOk && gainOk && revOk) return { k: 'star', rank: 0, tag: '★ 可介入', cls: 'b-r' };
+  if(stageOk && winOk && core && adjOk && gainOk) return { k: 'wait', rank: 1, tag: '☆ 待确认', cls: 'b-y' };
   return { k: 'no', rank: 2, tag: '✕ 不达标', cls: 'b-b' };
 }
 /* 三档介入（原文三档；①②按今开 / 过实体一半判定，③按今日涨停首封时间判定） */
@@ -5160,19 +5172,18 @@ function dbStopTxt(r){
   return out;
 }
 /* ---------- 7.30 渲染 ---------- */
-function dbHeadHtml(exec, stageOk, secs, cand){
-  var secTxt = secs.slice(0, 4).map(function(s){ return esc(s.name) + (s.grade && s.grade !== '—' ? s.grade : ''); }).join('、') || '无';
-  var h = '<div class="note">候选池 = 当前主线板块成分股（复用 7.12 / 7.23 的板块成分股与日K 缓存，<b>零额外接口</b>）。逐只回溯最近一次涨停日，判定其「断板形态 → 调整期 → 反包」是否满足原文条件。</div>';
+function dbHeadHtml(exec, stageOk, cand){
+  var h = '<div class="note">候选池 = <b>10日涨幅榜前 ' + DB_RULE.scanTop + ' 只</b>（复用 ⑨ / 7.23 的同一份 10日涨幅榜数据与日K 缓存，<b>零额外接口</b>）。逐只回溯最近一次涨停日，先校验前置（10 日内有涨停 / 低位启动＜50%），再判定「断板形态 → 调整期 → 反包」。</div>';
   h += '<div class="m730-gate">' +
     '<span class="m730-tag ' + (stageOk ? 'on' : 'off') + '">前置① 情绪周期：' + esc(exec) + (stageOk ? ' ✅ 主升/修复' : ' ✕ 非主升/修复') + '</span>' +
-    '<span class="m730-tag ' + (secs.length ? 'on' : 'off') + '">前置② 主线题材：' + secs.length + ' 个板块（' + secTxt + '）</span>' +
-    '<span class="m730-tag' + (cand ? '' : ' off') + '">候选成分股：' + (cand ? cand.length + ' 只' : '待加载') + '</span>' +
-    '<span class="m730-tag">前置③ 低位启动＜' + DB_RULE.gainMax + '%：见下表「累计」列</span></div>';
+    '<span class="m730-tag">前置② ' + DB_RULE.ztWindow + ' 日内至少涨停一次：见下表「10日涨停」列</span>' +
+    '<span class="m730-tag">前置③ 低位启动＜' + DB_RULE.gainMax + '%：见下表「累计」列</span>' +
+    '<span class="m730-tag' + (cand ? '' : ' off') + '">候选：' + (cand ? cand.length + ' 只' : '待加载') + '</span></div>';
   if(!stageOk) h += '<div class="concl c-ora"><b>前置①未满足：</b>当前执行周期为「' + esc(exec) + '」（非主升/修复期）—— 按原文此时不应参与断板反包，下表仅作观察与跟踪，<b>不宜据此开仓</b>。</div>';
   return h;
 }
 function dbTableHtml(rows, stageOk){
-  if(!rows.length) return '<div class="concl c-grn">7.30 断板反包：候选成分股的日K均未取到（接口受限或非交易时段），暂无可扫描标的。</div>';
+  if(!rows.length) return '<div class="concl c-grn">7.30 断板反包：候选股的日K均未取到（接口受限或非交易时段），暂无可扫描标的。</div>';
   var arr = rows.slice(), stat = { star: 0, wait: 0, no: 0 };
   arr.forEach(function(r){ var t = dbTier(r, stageOk); r._tier = t; stat[t.k]++; });
   arr.sort(function(a, b){
@@ -5183,7 +5194,7 @@ function dbTableHtml(rows, stageOk){
     '★ 可介入 <b class="up">' + stat.star + '</b> 只 ｜ ☆ 待确认 <b class="yel">' + stat.wait + '</b> 只 ｜ ✕ 不达标 <b class="flat">' + stat.no + '</b> 只（共 ' + arr.length + ' 只候选）' +
     (stageOk ? '' : '<br><b class="dn">注意：前置①（主升/修复期）未满足，全部仅作观察。</b>') + '</div>';
   h += '<div class="twrap"><table class="mini-tbl"><thead><tr>' +
-    '<th>名称</th><th>板块·级</th><th>断板日</th><th>实体%</th><th>当日%</th><th>收5线</th><th>放量%</th>' +
+    '<th>名称</th><th>行业</th><th>断板日</th><th>10日涨停</th><th>实体%</th><th>当日%</th><th>收5线</th><th>放量%</th>' +
     '<th>调整</th><th>累计%</th><th>反包</th><th>命中</th><th>档位</th></tr></thead><tbody>';
   h += arr.map(function(r){
     var s = r.shape, a = r.adj, g = r.gain, v = r.rev, ck = dbChecks(r), t = r._tier;
@@ -5200,6 +5211,7 @@ function dbTableHtml(rows, stageOk){
       '<td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + '</td>' +
       '<td class="yel">' + esc(r.sec || '—') + '</td>' +
       '<td class="mono">' + (r.gapDays == null ? '—' : ('T-' + r.gapDays)) + '</td>' +
+      '<td class="' + (r.inWin ? 'up' : 'dn') + '">' + (r.ztAge == null ? '✕ 无' : ('T-' + r.ztAge + (r.inWin ? ' ✅' : ' ✕超窗'))) + '</td>' +
       mid +
       '<td class="mono">' + (a && a.n > 0 ? (a.n + '天·' + (a.shrink == null ? '—' : a.shrink.toFixed(2)) + (a.holdMa5 === false ? '·破' : '·守')) : '—') + '</td>' +
       '<td class="mono ' + (g && g.gain != null && g.gain < DB_RULE.gainMax ? 'up' : 'flat') + '">' + (g && g.gain != null ? g.gain.toFixed(0) : '—') + '</td>' +
@@ -5231,46 +5243,26 @@ function dbTableHtml(rows, stageOk){
 }
 function dbRulesHtml(){
   return '<details class="m730-det" style="margin-top:10px"><summary>原文规则速查（前置条件 · 断板形态 · 调整期 · 三档介入 · 止损）<span style="color:#64748b;font-weight:400">（点击展开）</span></summary><div class="dbody note">' +
-    '<b>前置条件</b>：情绪主升/修复期 + 主线题材龙头/强跟风 + 低位启动累计涨幅＜50%。<br>' +
+    '<b>前置条件</b>：情绪主升/修复期 + 低位启动累计涨幅＜50% + ' + DB_RULE.ztWindow + ' 天内至少涨停一次（最近一次涨停距今 ≤ ' + DB_RULE.ztWindow + ' 个交易日）。<br>' +
     '<b>断板形态</b>：假阴/长上影，实体＜3%，跌幅≤3%，收在 5 日线上；放量（较前日 +50%）；阶梯式下跌非瀑布。<br>' +
     '<b>调整期</b>：1-3 天最佳，最长 6 天；量能快速萎缩（缩倍量最佳）；回踩 5 日线不破。<br>' +
     '<b>三档介入</b>：①竞价试错（≤10%）：平开/小幅高开 + 竞价放量；②分时确认（20-30%）：突破阴线实体一半；③封板确认（≤40%）：30 分钟内封死涨停。<br>' +
     '<b>止损</b>：跌破反包阳线最低价；低开 ≥3% 无抢筹 → 清仓。<br>' +
-    '<span class="flat">口径说明：「实体%」=｜收−开｜/昨收；「当日%」=收/昨收−1；「放量%」=量/前日量−1；「5日线」为断板日 5 日均线；「累计%」=断板日收盘/启动前一日收盘−1（启动=涨停前连续上涨段的起点）；断板日=最近一次涨停日的次日；调整期=断板日之后、最新交易日之前（最新交易日视为潜在反包日）。「阶梯式下跌非瀑布」「竞价放量」「无抢筹」原文未给数值，仅列客观数据由你自行判断。仅为交易体系梳理与数据可视化，<b>不构成任何投资建议</b>。</span></div></details>';
+    '<span class="flat">口径说明：「实体%」=｜收−开｜/昨收；「当日%」=收/昨收−1；「放量%」=量/前日量−1；「5日线」为断板日 5 日均线；「累计%」=断板日收盘/启动前一日收盘−1（启动=涨停前连续上涨段的起点）；断板日=最近一次涨停日的次日；调整期=断板日之后、最新交易日之前（最新交易日视为潜在反包日）；「10日涨停」=最近一次涨停距今的交易日数（≤ ' + DB_RULE.ztWindow + ' 为窗口内）。「阶梯式下跌非瀑布」「竞价放量」「无抢筹」原文未给数值，仅列客观数据由你自行判断。仅为交易体系梳理与数据可视化，<b>不构成任何投资建议</b>。</span></div></details>';
 }
 function renderM730(){
   var box = $('m7_30'); if(!box) return;
-  if(!D.zt.length && !D.secAmt.length){
-    box.innerHTML = '<div class="loading">等待数据（涨停池与板块资金未就绪，可能为非交易时段）…</div>';
-    return;
-  }
-  var EX = execStageOf(), exec = EX.exec;
+  var EX = execStageOf(), exec = EX.exec || '—';
   var stageOk = (exec === '主升' || exec === '修复');
-  var secs = planSectors(exec);
-  /* 成分股缓存缺失 → 加载后回填重渲染（与 7.10 / 7.12 同一 MLM 缓存） */
-  var need = secs.filter(function(s){
-    if(!s.bk) return false;
-    var c = MLM[D.date + '|' + s.name];
-    return !(c && Date.now() - c.t < 1800000);
-  });
-  if(need.length){
-    var pk = D.date + '|' + need.map(function(s){ return s.name; }).join(',');
-    if(DBLD.key !== pk || !DBLD.loading){
-      DBLD.key = pk; DBLD.loading = true;
-      Promise.all(need.slice(0, 6).map(function(s){ return loadSecMembers(s.name, s.bk).catch(function(){ return []; }); }))
-        .then(function(){ DBLD.loading = false; renderM730(); })
-        .catch(function(){ DBLD.loading = false; });
-    }
-  }
-  var cand = ma5Candidates(secs);
-  if(!cand.length){
-    var why = !secs.length
-      ? ('当前执行周期「' + esc(exec) + '」下无允许等级的主线板块（STAGE 允许等级），无候选')
-      : ('主线板块（' + secs.length + ' 个）暂无成分股缓存');
-    box.innerHTML = dbHeadHtml(exec, stageOk, secs, null) +
-      '<div class="concl c-grn">7.30 断板反包：' + why + '。开盘后随刷新自动加载。</div>' + dbRulesHtml();
+  var k10 = D.k10 || [];
+  if(!k10.length){
+    box.innerHTML = '<div class="loading">7.30 断板反包：等待 10日涨幅榜数据（与 ⑨ / 7.23 同一取数口径）…若刚打开页面请等本轮刷新完成。</div>';
     return;
   }
+  /* 候选池 = 10日涨幅榜前 scanTop（不再限定主线板块；前置「10 日内有涨停」在日K里逐个校验） */
+  var cand = k10.slice(0, DB_RULE.scanTop).map(function(x){
+    return { code: x.code, name: x.name, sec: x.ind || '—', grade: '—' };
+  });
   var key = D.date + '|' + cand.map(function(x){ return x.code; }).join(',');
   var expired = M730.done && (Date.now() - M730.t > 25 * 60 * 1000);
   if(M730.key !== key || !M730.done || expired){
@@ -5293,12 +5285,12 @@ function renderM730(){
         })).then(step);
       })();
     }
-    box.innerHTML = dbHeadHtml(exec, stageOk, secs, cand) +
-      '<div class="concl c-blu"><b>7.30 断板反包：扫描中…</b>正在对主线板块成分股 <b>' + cand.length +
+    box.innerHTML = dbHeadHtml(exec, stageOk, cand) +
+      '<div class="concl c-blu"><b>7.30 断板反包：扫描中…</b>正在对 10日涨幅榜前 <b>' + cand.length +
       '</b> 只逐批拉取 25 日前复权日K（与 7.12 / 7.23 共享 30 分钟缓存），完成后自动刷新本模块。</div>' + dbRulesHtml();
     return;
   }
-  box.innerHTML = dbHeadHtml(exec, stageOk, secs, cand) + dbTableHtml(M730.rows, stageOk) + dbRulesHtml();
+  box.innerHTML = dbHeadHtml(exec, stageOk, cand) + dbTableHtml(M730.rows, stageOk) + dbRulesHtml();
 }
 function renderM715(){
   var box = $('m7_15');

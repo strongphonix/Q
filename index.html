@@ -436,8 +436,6 @@ section{scroll-margin-top:70px;}
 <div class="grid2" id="m7_2"><div class="loading">数据加载中…</div></div>
 <h2 style="font-size:14px;margin-top:18px">7.3 板块五榜（净流入 / 净流出 / 涨幅 / 跌幅 / 涨停家数）</h2>
 <div class="grid3" id="m7_3"><div class="loading">数据加载中…</div></div>
-<h2 style="font-size:14px;margin-top:18px">7.4 主线判定（三维标准：资金 + 强度 + 催化 = S/A 级主线总纲）</h2>
-<div id="m7_4"><div class="loading">数据加载中…</div></div>
 <h2 style="font-size:14px;margin-top:18px">7.6 情绪周期 × 板块分级联动</h2>
 <div id="m7_6"><div class="loading">数据加载中…</div></div>
 <h2 style="font-size:14px;margin-top:18px">7.7 板块高低切 / 资金轮动跟踪</h2>
@@ -448,7 +446,7 @@ section{scroll-margin-top:70px;}
 <div id="m7_15"><div class="loading">数据加载中…</div></div>
 <h2 style="font-size:14px;margin-top:18px;border-color:#f0453a;color:#f0453a">7.10 情绪周期 × 买入策略（五阶段完整对照 · 盘中可买清单）</h2>
 <div id="m7_10"><div class="loading">数据加载中…</div></div>
-<h2 style="font-size:14px;margin-top:18px">7.11 主线标的筛选（龙头 / 中军 / 补涨 三档 · 范围=7.4主线判定 Top1 板块成分股 · 每日存档 → 次日胜率）</h2>
+<h2 style="font-size:14px;margin-top:18px">7.11 主线判定与标的筛选（龙头 / 中军 / 补涨 三档 · 范围=7.4三维主线判定 Top1 板块成分股 · 每日存档 → 次日胜率）</h2>
 <div id="m7_11"><div class="loading">数据加载中…</div></div>
 <h2 style="margin-top:18px;border-left:4px solid #f0453a;padding-left:8px;color:#f0453a">7.18 竞价定型：当日策略决策（09:25 起点）</h2>
 <div id="m7_18"><div class="loading">数据加载中…</div></div>
@@ -2128,7 +2126,7 @@ function renderM6(){
 
 /* --- 模块7 --- */
 function renderM7(){
-  renderM71(); renderM72(); renderM73(); renderM74(); renderM75(); renderM76();
+  renderM71(); renderM72(); renderM73(); renderM75(); renderM76();
   renderM77(); renderM78(); renderM79(); renderM710(); renderM711(); renderM712(); renderM712b(); renderM713(); renderM714(); renderM715(); renderM716(); renderM718(); renderM719(); renderM720();
   renderM722();   /* 7.22 周期女王：必须在此调度，否则容器永远停在"数据加载中…" */
   renderM723();   /* 7.23 交叉分析（10日涨幅榜前 60 × MA5 四状态；自扫日K，与 7.12/7.16 共享 kCache） */
@@ -2448,9 +2446,9 @@ function dimCard(title, score, max, inner, note){
   return '<div class="dim"><div class="dim-h"><b>' + title + '</b><span class="dim-s ' + cls + '">' + score + ' / ' + max + '</span></div>' +
     inner + (note ? '<div class="note" style="margin-top:5px">' + note + '</div>' : '') + '</div>';
 }
-function renderM74(){
-  var ml = D.ml, box = $('m7_4');
-  if(!ml || !ml.rows || !ml.rows.length){ box.innerHTML = '<div class="loading">主线判定数据准备中…（等待板块列表与涨停池数据）</div>'; return; }
+function m74Html(){
+  var ml = D.ml;
+  if(!ml || !ml.rows || !ml.rows.length) return '<div class="loading">主线判定数据准备中…（等待板块列表与涨停池数据）</div>';
   var env = ml.env, main = ml.main, top = ml.rows[0];
   var envCls = { '冰点': 'tag-b', '修复': 'tag-g', '主升': 'tag-r', '分歧': 'tag-y', '退潮': 'tag-o' }[env] || 'tag-b';
   var envBlock = (env === '冰点' || env === '退潮');
@@ -2513,7 +2511,7 @@ function renderM74(){
       '</div></details>';
   }).join('');
 
-  box.innerHTML =
+  return
   '<div class="concl ' + (main.length ? 'c-red' : 'c-ora') + '"><div style="margin-bottom:4px">' + verdictTag + '</div>' +
     '<div style="font-size:13.5px;line-height:1.9">' + hero + '</div>' +
     '<div class="note" style="margin-top:6px">' + envHtml + '</div></div>' +
@@ -2533,10 +2531,15 @@ function renderM74(){
   '<b>等级</b>：S=三维+结构全共振（总分≥7、结构≥5、有硬催化，且处于主升/修复期）；A=总分≥6且结构≥4（仅软催化时最高A级，可中仓做低位补位）；B=活口。<br>' +
   '<span class="flat">口径说明：放量以板块量比(f10)衡量（等同"较近期均量放大比例"）；"连续2日"优先用 T+1 板块效应（昨日涨停股今日晋级率/均价），其次用本机收盘快照积累，首个交易日显示"无历史样本"。本页仅为交易体系梳理，不构成投资建议。</span>' +
   '</div></details>';
-  /* 7.4 板块裁决明细：一键展开 / 收起（仅作用于本模块 sector 明细 #m74_dets，默认仍全部折叠） */
+}
+function m74Wire(){
   var eb = $('m74_exp'), cb = $('m74_col');
   if(eb) eb.onclick = function(){ m74SetOpen(true); };
   if(cb) cb.onclick = function(){ m74SetOpen(false); };
+}
+function renderM74(){
+  var box = $('m7_4'); if(!box) return;
+  box.innerHTML = m74Html(); m74Wire();
 }
 /* 展开/收起 7.4 全部板块裁决明细（open=true 展开 / false 收起） */
 function m74SetOpen(open){
@@ -2696,8 +2699,10 @@ function mlineStocks(name){
   return null;
 }
 function renderM711(){
+  var box = $('m7_11'); if(!box) return;
+  box.innerHTML = m74Html(); m74Wire();
   var top = mainlineTop();
-  if(!top){ $('m7_11').innerHTML = '<div class="loading">今日暂无候选板块（等待板块列表与涨停池数据），不进行主线标的筛选</div>'; return; }
+  if(!top){ box.innerHTML += '<div class="loading">今日暂无候选板块（等待板块列表与涨停池数据），不进行主线标的筛选</div>'; return; }
   var name = top.name, r = top.row, main = !!top.isMainline;
   var gCls = top.grade === 'S' ? 'tag-r' : (top.grade === 'A' ? 'tag-o' : 'tag-y');
   var gTxt = top.grade === '—' ? '非主线' : top.grade + '级';
@@ -2739,7 +2744,7 @@ function renderM711(){
   var cycTip = (cyc === '退潮' || cyc === '冰点')
     ? '<span class="dn"><b>当前' + cyc + '期：降仓/不追高</b>，仅观察龙头承接，三档标的仅供跟踪不宜追买</span>'
     : '当前<span class="yel">' + cyc + '</span>期：可按三档策略参与，买入前仍需结合盘口承接（分时均线、量价配合）判断';
-  $('m7_11').innerHTML =
+  var h711 =
   '<div class="concl ' + (main ? 'c-red' : 'c-ora') + '">筛选范围：7.4 主线判定 Top1 板块 <b class="yel">' + esc(name) + '</b> —— <span class="tag ' + gCls + '" style="font-weight:800">' + gTxt + '</span> ' +
     (r ? ('总分 <b class="mono">' + r.total + '/9</b>（资金' + r.fundScore + '/强度' + r.strScore + '/催化' + r.cataScore + '）· 结构加验 <b class="mono">' + r.struct.score + '/6</b> · ') : '') +
     '涨停 <b class="up">' + top.zt + '</b> 家 · 最高 <b class="mono">' + top.ml + '板</b> · 主力净流入 <b class="mono">' + pnum(top.f62) + '亿</b>' + (stocks ? ' · 成分股 <b class="mono">' + stocks.length + '</b> 只' : '') + '</div>' +
@@ -2755,6 +2760,7 @@ function renderM711(){
   '<div class="concl c-blu" style="margin-top:8px"><b>使用原则：</b>龙头买不到→买中军；中军涨高→找补涨首板；跟风杂毛不做。' + cycTip + '。</div>' +
   '<div class="note">范围严格取自 7.4 三维主线判定的 Top1 板块（资金&gt;持续性&gt;强度&gt;催化，含结构加验与环境联动）。龙头=连板最高(空间龙头)/封板最早(资金最先认可)/封单最大(多头最强)；中军=大成交额+大流通市值的机构趋势票，波动小容量大；补涨=低位小市值刚启动，行情纵深扩散时的弹性标的。成分股来自东财行业板块成分接口，非ST/非北交所，与 7.4 结构加验共用同一缓存，每轮刷新自动更新。</div>' +
   '<div id="m711wr" style="margin-top:10px"><div class="loading">正在计算「每日存档 → 次日胜率」…</div></div>';
+  box.innerHTML += h711;
   m711Archive(name, top.grade, main, lts, mids, lows, !!stocks);
   m711WinRate();
 }
@@ -5652,7 +5658,7 @@ function dbJudge(c, bars, ctx){
   var lim = ztLimitOf(c.code, c.name);
   var f = dbFind(bars, lim);
   var out = { code: c.code, name: c.name, sec: c.sec, grade: c.grade, lim: lim, zt: f.zt, t0: f.t0,
-    ztAge: (f.age == null ? null : f.age), inWin: !!f.inWin,
+    ztAge: (f.age == null ? null : f.age), inWin: !!f.inWin, zdp: num(c.zdp),
     gapDays: (f.t0 == null ? null : bars.length - 1 - f.t0),
     shape: null, pull: null, gain: null, seal: null, aucBase: dbAucBase(bars, ctx) };
   if(f.t0 == null) return out;
@@ -5746,7 +5752,7 @@ function dbTableHtml(rows, stageOk){
     '★ 二波候选 <b class="up">' + stat.star + '</b> 只 ｜ ☆ 蓄势中 <b class="yel">' + stat.wait + '</b> 只 ｜ ✕ 不达标 <b class="flat">' + stat.no + '</b> 只（共 ' + arr.length + ' 只候选）' +
     (stageOk ? '' : '<br><b class="dn">注意：情绪前置（主升/修复期）未满足，全部仅作蓄势跟踪。</b>') + '</div>';
   h += '<div class="twrap"><table class="mini-tbl"><thead><tr>' +
-    '<th>名称</th><th>行业</th><th>断板日</th><th>10日涨停</th><th>回调</th><th>回撤%</th><th>距突破%</th><th>累计%</th><th>竞价高开</th><th>竞价量/昨量</th><th>命中</th><th>档位</th></tr></thead><tbody>';
+    '<th>名称</th><th>行业</th><th>今日涨跌</th><th>断板日</th><th>10日涨停</th><th>回调</th><th>回撤%</th><th>距突破%</th><th>累计%</th><th>竞价高开</th><th>竞价量/昨量</th><th>命中</th><th>档位</th></tr></thead><tbody>';
   var aucSnap = aucToday();
   h += arr.map(function(r){
     var s = r.shape, p = r.pull, g = r.gain, ck = dbChecks(r), t = r._tier, ac = dbAucOf(r, aucSnap);
@@ -5761,6 +5767,7 @@ function dbTableHtml(rows, stageOk){
     return '<tr' + (t.k === 'star' ? ' style="background:rgba(240,69,58,.09)"' : (t.k === 'wait' ? ' style="background:rgba(251,191,36,.07)"' : '')) + '>' +
       '<td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + '</td>' +
       '<td class="yel">' + esc(r.sec || '—') + '</td>' +
+      '<td class="mono ' + pctCls(r.zdp) + '">' + (r.zdp == null ? '—' : fpct(r.zdp)) + '</td>' +
       '<td class="mono">' + (r.gapDays == null ? '—' : ('T-' + r.gapDays)) + '</td>' +
       '<td class="' + (r.inWin ? 'up' : 'dn') + '">' + (r.ztAge == null ? '✕ 无' : ('T-' + r.ztAge + (r.inWin ? ' ✅' : ' ✕超窗'))) + '</td>' +
       mid +
@@ -5817,7 +5824,7 @@ function renderM730(){
   }
   /* 候选池 = 10日涨幅榜前 scanTop（不再限定主线板块；前置「10 日内有涨停」在日K里逐个校验） */
   var cand = k10.slice(0, DB_RULE.scanTop).map(function(x){
-    return { code: x.code, name: x.name, sec: x.ind || '—', grade: '—', vol: x.vol };
+    return { code: x.code, name: x.name, sec: x.ind || '—', grade: '—', vol: x.vol, zdp: x.zdp };
   });
   var key = D.date + '|' + cand.map(function(x){ return x.code; }).join(',');
   var expired = M730.done && (Date.now() - M730.t > 25 * 60 * 1000);
@@ -5956,6 +5963,7 @@ function e731Judge(c, bars, ctx){
   var lb = (ctx && ctx.lb != null) ? num(ctx.lb) : null;
   var reso = (ctx && ctx.reso != null) ? num(ctx.reso) : null;
   var out = { code: c.code, name: c.name, board: c.board, lim: lim, shape: shape, scene: scene,
+    chg: (c.chg != null ? num(c.chg) : null),
     gap: gap, volPct: volPct, volRatio: volRatio, lb: lb, reso: reso,
     prevVol: prevVol, av: av, hasAuc: !!a, hasAucPrev: (avPrev != null),
     envOk: !!(ctx && ctx.envOk), envName: (ctx && ctx.envName) || '—',
@@ -6033,7 +6041,7 @@ function e731TableHtml(rows){
   var h = '<div class="concl c-' + (stat.star ? 'red' : (stat.wait ? 'ora' : 'grn')) + '"><b>命中概览：</b>' +
     '★ 高概率 <b class="up">' + stat.star + '</b> 只 ｜ ☆ 待确认 <b class="yel">' + stat.wait + '</b> 只 ｜ ✕ 不达标 <b class="flat">' + stat.no + '</b> 只（共 ' + arr.length + ' 只候选）</div>';
   h += '<div class="twrap"><table class="mini-tbl"><thead><tr>' +
-    '<th>名称</th><th>板块</th><th>昨日形态</th><th>竞价高开</th><th>竞价量/昨量</th><th>竞价量比</th><th>量比</th><th>板块共振</th><th>量价匹配</th><th>命中</th><th>档位</th></tr></thead><tbody>';
+    '<th>名称</th><th>板块</th><th>今日涨跌</th><th>昨日形态</th><th>竞价高开</th><th>竞价量/昨量</th><th>竞价量比</th><th>量比</th><th>板块共振</th><th>量价匹配</th><th>命中</th><th>档位</th></tr></thead><tbody>';
   h += arr.map(function(r){
     var ck = e731Checks(r), t = r._tier, m = r.match;
     var gTxt = (r.gap == null) ? '—' : ((r.okOpen ? '✅ ' : '✕ ') + fpct(r.gap));
@@ -6042,6 +6050,7 @@ function e731TableHtml(rows){
     return '<tr' + (t.k === 'star' ? ' style="background:rgba(240,69,58,.09)"' : (t.k === 'wait' ? ' style="background:rgba(251,191,36,.07)"' : '')) + '>' +
       '<td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + '<div class="flat" style="font-size:10px">' + esc(r.code) + '</div></td>' +
       '<td class="yel">' + esc(r.board || '—') + '</td>' +
+      '<td class="mono ' + pctCls(r.chg) + '">' + (r.chg == null ? '—' : fpct(r.chg)) + '</td>' +
       '<td>' + esc(r.shape ? r.shape.type : '—') + (r.shape && r.shape.chg != null ? ' <span class="' + pctCls(r.shape.chg) + '">' + fpct(r.shape.chg) + '</span>' : '') + '</td>' +
       '<td class="mono ' + (r.gap == null ? 'flat' : (r.okOpen ? 'up' : 'dn')) + '">' + gTxt + '</td>' +
       '<td class="mono ' + (r.volPct == null ? 'flat' : (r.okVolBest ? 'up' : 'dn')) + '">' + vTxt + '</td>' +
@@ -6107,7 +6116,7 @@ function e731MemberFetch(src, acc, done){
         prem = (o != null && p) ? (o / p - 1) * 100 : null;
         if(prem == null || prem < EARLY_RULE.preOpenMin) continue;
         acc.push({ code: x.f12, name: x.f14, board: name, lb: num(x.f10), tvol: num(x.f5),
-          openNow: o, prevClose: p, reso: strong });
+          openNow: o, prevClose: p, reso: strong, chg: num(x.f3) });
       }
       step();
     }).catch(function(){ step(); });

@@ -442,7 +442,7 @@ td.sc-c{white-space:nowrap;width:1%}
 
 <!-- 模块 7.5 板块五级分级（从模块7抽出，置于④之后） -->
 <section class="card" id="m75">
-<h2>7.5 板块五级分级 S/A/B/C/D + 板块情绪周期阶段<small>板块梯队实时评级 S/A/B/C/D ｜ 板块（题材）自身情绪周期：启动 / 确认 / 发酵 / 加速 / 分歧 / 反包 / 退潮（≠ 大盘情绪周期）</small></h2>
+<h2>7.5 板块五级分级 S/A/B/C/D + 板块情绪周期阶段<small>板块梯队实时评级 S/A/B/C/D ｜ 板块（题材）自身情绪周期：启动 / 确认 / 发酵 / 加速 / 分歧 / 反包 / 退潮（≠ 大盘情绪周期）｜ 判定标准：四锚点（家数 / 高度 / 晋级率 / 成交额占比）+ 五维复核</small></h2>
 <div id="m7_5"><div class="loading">数据加载中…</div></div>
 </section>
 
@@ -1795,62 +1795,142 @@ function newsSectorHits(){
      两者不可互相替代：板块阶段决定「做不做这个题材、怎么买」，
      大盘周期决定「今天整体仓位闸门」；两者冲突时取更严者（本列另给「参考仓位」）。
    ------------------------------------------------------------------
-   七阶段（用户《题材情绪周期变化策略》）：
-     启动 → 确认 → 发酵 → 加速 → 分歧 → 反包 → 退潮（龙回头）
-   全部读数由盘面既有数据现算（涨停池 / 炸板池 / 跌停池 / 昨日涨停池 + 跨日状态机
-   wb_secstage_v1），零额外网络请求；无法量化的项（资金惜售、伪题材、消息真伪）
-   不参与计数，界面如实标注「人工核对」。
+   判定标准（用户上传《板块题材七阶段判断策略（AI可执行版）》v1.0）：
+     · 三条铁律：事后确认（收盘后判定）/ 量化校准（四锚点说话）/ 跳跃预案（多数题材走不完七阶段）
+     · 七阶段顺序：启动 → 确认 → 发酵 → 加速 → 分歧 → 反包 → 退潮
+     · 四锚点（核心判断工具）：板块涨停家数 / 连板高度 / 晋级率 / 板块成交额占比
+     · 五维复核：板块盘面 / 龙头 / 中军 / 资金 / 情绪
+     · 特殊判断要点：确认期「三大件」（龙头3-4板 + 梯队雏形 + 中军站 MA20）；
+       分歧期「三看」（龙头扛住 / 中军抗跌 / 留活口，≥2 件向好=良性，否则恶性→直接按退潮）；
+       反包期看量能（放量收复=二波候选 / 无量反抽=逃命，默认按逃命）
+   全部读数由盘面既有数据现算（涨停池 / 炸板池 / 跌停池 / 昨日涨停池 / 板块行情 f6·f3·f62
+   + 跨日状态机 wb_secstage_v1 + 跨日板块快照 wb_secsnap），零额外网络请求；
+   无法量化的项（中军 MA20、封单撤单、竞价五档、消息真伪）不参与计数，界面如实标注「人工核对」。
    ================================================================== */
 var SECC_STAGES = {
-  start: { label: '启动', cycle: '低位试错期（混沌）', pos: '1-3 成',
-    short: '试错首板·不恋战·多标的分散',
-    feat: '连板龙头极少（1-2 板且无持续）；首板试盘频繁、题材轮动快；炸板率偏高（≥30%）',
-    act: '只做低位首板 / 1进2（优先 10:30 前上板、非一字板、换手充分）；小仓分散试错，错就止损',
-    risk: '不做中位股（3 板+）、不追高、不做杂毛；首板炸板次日不盲目补仓' },
-  confirm: { label: '确认', cycle: '低位试错末期→主升初期', pos: '3-4 成（确认主线后可加至 5 成）',
-    short: '打 2/3 板·跟市场选出的龙头',
-    feat: '出现换手 2~3 板龙头，带动板块内 3-5 家涨停（小范围涨停潮）；首板炸板率 <20%；量价齐升',
-    act: '打 2/3 板（优先与指数、情绪共振时上板）；锁定市场选出来的龙头，等分歧换手再加仓；补涨只做同题材龙二龙三',
-    risk: '只做市场选出来的龙头，不主观预判；龙头炸板果断止损' },
-  ferment: { label: '发酵', cycle: '主升初期→中期', pos: '5 成以上（确认龙头地位后可加重）',
-    short: '打龙头 3 板·高低切补涨',
-    feat: '龙头 3-5 板；板块内涨停家数 ≥8 家、联动性极强；龙二龙三跟随连板形成梯队；补涨开始出现',
-    act: '打龙头放量换手 3 板并坚定持仓；高低切做龙头带动的低位首板 / 1进2；潜伏主线内低位未涨标的',
-    risk: '不做支线题材、不做无辨识度跟风；眼里只有（总）龙头' },
-  accel: { label: '加速', cycle: '主升中期→末期', pos: '6-7 成（加速末期逐步减仓）',
+  start: { label: '启动', cycle: '① 启动期（题材刚冒头）', pos: '1-3 成（试错）',
+    short: '首板试错·小仓分散·常一日游',
+    feat: '盘面：题材刚冒头，前一日板块涨停 0-1 只、无成型梯队，总成交额从低位抬升；龙头：首板/二板，竞价或日内突发涨停，封板质量参差，常一日游；中军：大多未走出来；资金：少数先手资金试错；情绪：讨论度低、多数人质疑持续性',
+    act: '只做低位首板 / 1进2（优先 10:30 前上板、非一字、换手充分）；小仓分散试错，错就止损',
+    risk: '锚点：涨停 1-3 只｜高度 1-2 板｜成交额占比 <3%｜首板晋级率约 15%。不做中位股（3 板+）、不追高、不恋战；跳跃预案：昨日空→今日 1-3 只多为一日游' },
+  confirm: { label: '确认', cycle: '② 确认期（主线分水岭）', pos: '3-4 成（确认后可加至 5 成）',
+    short: '打 3-4 板龙头·三大件齐备才确认',
+    feat: '盘面：梯队雏形（龙头+中军+跟风），涨停家数增至 3-5 只+，成交额持续放大，题材开始被讨论；龙头：突破 3-4 板打开空间、有辨识度；中军：放量站稳 MA20、初步多头排列、同步上涨（主线成立硬验证）；资金：打板资金做龙头 + 大资金布局中军；情绪：形成「这波可能不是一日游」共识',
+    act: '打 3/4 板；锁定市场选出的龙头，等分歧换手再加仓；中军同步走强才是真主线',
+    risk: '锚点：涨停 3-5 只+｜高度 3-4 板｜成交额占比抬升｜首板开始有溢价。三大件（龙头 3-4 板 + 梯队雏形 + 中军站均线）缺一不确认；中军站 MA20 无稳定量化源，需人工核对' },
+  ferment: { label: '发酵', cycle: '③ 发酵期（赚钱效应扩散）', pos: '5 成以上',
+    short: '打龙头 4 板·高低切补涨',
+    feat: '盘面：赚钱效应扩散，涨停 5-10 只，低位补涨批量冒出，成交额持续走高，板块内部轮动上涨；龙头：继续连板、高度向上，断板后板块仍有标的能涨；中军：稳步上行，回踩 MA5/MA10 有承接，与龙头共振；资金：增量资金持续涌入、趋势资金集中做中军；情绪：股吧/社区明显升温、补涨股被挖掘',
+    act: '打龙头放量换手 4 板并坚定持仓；高低切做龙头带动的低位首板 / 1进2；潜伏主线内低位未涨标的',
+    risk: '锚点：涨停 5-10 只｜高度 4-6 板｜成交额占比 ≥5% 且连续 2 日｜晋级率走高。不做支线题材、不做无辨识度跟风' },
+  accel: { label: '加速', cycle: '④ 加速期（情绪冲顶）', pos: '6-7 成（末期逐步减仓）',
     short: '持仓不下车·末期提前减仓',
-    feat: '龙头 5-7 板、缩量加速（惜售）；情绪狂热、资金预期高度一致；出现卡位龙（龙头分歧时板块内首个涨停）',
-    act: '持仓者坚定持有、不轻易下车；卡位龙仅在「最先上板 + 封板坚决 + 量价健康」时小仓打板；加速末期提前减仓锁利',
-    risk: '不追高位缩量板；警惕一致预期后的集体出逃（炸板）' },
-  diverge: { label: '分歧', cycle: '高位震荡期（龙一断板期）', pos: '3-5 成（不新增高位仓位）',
-    short: '龙头减仓落袋·只做低位补涨',
-    feat: '龙一（板块总龙头）结束连板、首次分歧；炸板潮涌现、亏钱效应显现；成交放大；板块韧性分化',
-    act: '前期持仓龙头至少减仓 50% 落袋；重心转低位补涨（首板 / 1进2，按「低·先·量·识·活」筛）；仅温和断板的总龙头可尾盘低吸博反包',
-    risk: '不参与高位股接力（尤其 3-4 板中位股）；不切早、不切错、不盲目低吸非龙头炸板股' },
-  rebound: { label: '反包', cycle: '高位震荡末期（龙一反包期）', pos: '2-3 成（不重仓博弈）',
-    short: '低吸总龙头博反包·轻仓',
-    feat: '龙一首阴 / 断板后尝试反包（次日高开高走或盘中拉升），成交量不超过分歧阶段；逆反龙开始酝酿',
-    act: '仅对总龙头做尾盘低吸博反包溢价；逆反龙（换手充分、量价健康、能带板块）率先上板可小仓试错，确认封板后再介入',
-    risk: '爆量反包多为「假反包」；板块无跟风联动则大概率失败，果断止损；反包成功也不贪多，次日见好就收' },
-  ebb: { label: '退潮', cycle: '退潮 / 龙回头（调整期）', pos: '0-2 成（或直接空仓）',
+    feat: '盘面：情绪冲顶，批量涨停 10 只+，后排杂毛大面积冲高，成交额放出阶段天量；龙头：一字板/秒板、换手萎缩、封板极强、高度快速拔高；中军：短期急拉大阳甚至涨停（放量滞涨=分歧预警信号）；资金：投机资金疯狂追高、趋势资金悄悄减仓、增量衰竭；情绪：舆论狂热、「全民皆知」、风险提示出现',
+    act: '持仓者坚定持有、不轻易下车；卡位龙仅在「最先上板 + 封板坚决」时小仓打板；加速末期提前减仓锁利',
+    risk: '锚点：涨停 10 只+｜高度 6 板+｜成交额阶段天量｜晋级率极高但开始分化。不追高位缩量板；警惕一致预期后的集体出逃（炸板）' },
+  diverge: { label: '分歧', cycle: '⑤ 分歧期（最需精细判断）', pos: '3-5 成（不新增高位仓位）',
+    short: '龙头减仓落袋·三看判良性/恶性',
+    feat: '盘面：剧烈震荡，高位标的大跌/炸板、部分后排跌停，仍有一部分标的扛住，成交额维持高位放量；龙头：高位开板、巨量换手、可能收长阴；中军：良性=收阴但守住 MA10、急跌有承接；恶性=放量跌破 MA10/MA20、无承接；资金：老资金兑现 + 接力资金低吸博弈，多空激烈交战；情绪：从「一致看多」变「多空分歧」',
+    act: '前期持仓龙头至少减仓 50% 落袋；重心转低位补涨；仅良性分歧、且总龙头温和断板时可尾盘低吸博反包',
+    risk: '锚点：涨停骤降、炸板增多｜高位断板｜晋级率大幅回落｜高位放量。三看：①龙头是否扛住（回封=良性）②中军是否抗跌（守 MA10=良性）③板块是否留活口（有新涨停=良性）；≥2 件向好=良性，否则=恶性（直接按退潮处理）' },
+  rebound: { label: '反包', cycle: '⑥ 反包期（二波 vs 逃命）', pos: '2-3 成（不重仓博弈）',
+    short: '放量反包才算二波·默认逃命',
+    feat: '盘面：分歧后部分资金回流、重新冒出涨停，但涨停数/成交额大多弱于发酵期，多为局部修复；龙头：老龙头尝试反包涨停，更多是反抽一日后继续下行（「假反包真逃命」）；中军：二波版=放量收复分歧阴线、均线继续多头；逃命版=无量反抽、再度破位；资金：存量资金博弈、以老资金自救为主；情绪：期待「第二波」但实际强度弱于发酵期',
+    act: '仅对总龙头做尾盘低吸博反包溢价；逆反龙率先上板且放量可小仓试错；无量反抽一律不参与',
+    risk: '锚点：涨停局部回流（少于发酵期）｜老龙头尝试反包｜成交额缩量/持平｜晋级率分化。放量反包收复阴线=二波候选；无量反抽=逃命窗口——默认按逃命处理，除非放量确认' },
+  ebb: { label: '退潮', cycle: '⑦ 退潮期（板块瓦解）', pos: '0-2 成（或直接空仓）',
     short: '空仓 / 轻仓·只做龙回头',
-    feat: '主升彻底结束、题材深度调整；龙头「僵而不死」持续阴跌；补涨龙走 A 杀、跟风龙全面补跌',
+    feat: '盘面：持续杀跌、涨停家数萎缩、板块性集体杀跌、成交额萎缩；龙头：高位断板后连续回调、无新高度、连板高度持续压缩；中军：放量跌破 MA20、均线拐头向下、不再抗跌（板块正式退潮确认信号）；资金：资金持续出逃、小反弹无持续性（诱多）；情绪：热度快速降温、开始讨论新题材',
     act: '空仓或轻仓；仅总龙头调整 3-5 天、跌幅 10-20%、分时企稳且缩量时做龙回头（回马枪）；可小仓做老妖股二波「冷饭」',
-    risk: '退潮期抄底＝接飞刀；不做中位股、不抄底跟风龙；补涨龙不做首阴（见顶即走）' }
+    risk: '锚点：连板几乎消失｜高度压缩｜成交额持续萎缩｜晋级率极低。退潮期抄底＝接飞刀；不做中位股、不抄底跟风龙；补涨龙不做首阴（见顶即走）' }
 };
 /* 判定优先级：越靠前越保守（边界模糊取更保守阶段，与「个股生命周期」同原则） */
 var SECC_ORDER = ['ebb', 'rebound', 'diverge', 'accel', 'ferment', 'confirm', 'start'];
+/* 阈值全部照抄《板块题材七阶段判断策略（AI可执行版）》第三章「量化判定锚点表」；
+   该表未给出的两个平台自加指标（炸板率 / 退潮腰斩比）单独标注。 */
 var SECC_RULE = {
-  ebbZtRatio: 0.4,   /* 退潮：今日涨停家数 ≤ 昨日家数 ×0.4（腰斩） */
-  ebbZbRate: 0.3,    /* 退潮 / 启动 的炸板率阈值（文中：启动期炸板率 ≥30%） */
-  ztHi: 5,           /* 加速：最高连板 ≥5（文中 5-7 板） */
-  ztMid: 3,          /* 发酵：最高连板 ≥3（文中 3-5 板） */
-  ztFlood: 8,        /* 发酵：板块内涨停家数 ≥8 家（文中口径） */
-  ztConfirm: 3,      /* 确认：带动板块内 3-5 家涨停（文中口径） */
-  zbRateOk: 0.2,     /* 确认：首板炸板率 <20%（文中口径；未达则打 ⚠ 提示） */
-  zbRateHard: 0.3,   /* 确认的硬上限：炸板率 ≥30% 一律不算确认（那是文中启动/混沌的特征） */
+  /* ── 锚点一：板块涨停家数（只）── */
+  ztStartLo: 1, ztStartHi: 3,        /* 启动：1-3 只 */
+  ztConfirmLo: 3, ztConfirmHi: 5,    /* 确认：3-5 只+ */
+  ztFermentLo: 5, ztFermentHi: 10,   /* 发酵：5-10 只 */
+  ztFermentEntry: 4,                 /* 发酵初判的家数下沿（与高度带下沿 4 板对齐，处理 4板+4家 类边界） */
+  lbFermentStrong: 5,                /* 高度 ≥5 板即越过确认带（3-4 板），按发酵以上处理 */
+  ztAccel: 10,                       /* 加速：10 只+ */
+  /* ── 锚点二：连板高度（板）── */
+  lbStartHi: 2,                      /* 启动：1-2 板 */
+  lbConfirmLo: 3, lbConfirmHi: 4,    /* 确认：3-4 板 */
+  lbFermentLo: 4, lbFermentHi: 6,    /* 发酵：4-6 板 */
+  lbAccel: 6,                        /* 加速：6 板+ */
+  /* ── 锚点三：板块成交额占比（= 板块成交额 ÷ 全市场行业板块成交额合计）── */
+  amtShareStart: 3,                  /* 启动：<3% */
+  amtShareFerment: 5,                /* 发酵：≥5% 且连续 2 日 */
+  amtShareAccelX: 1.6,               /* 加速：较自身近期均量 ≥1.6× 视作「阶段天量」 */
+  /* ── 锚点四：晋级率（分板位；同板位历史水平对比）── */
+  promoFirst: 15, promoHigh: 62,     /* 参考：首板约 15% / 7 板以上约 62% */
+  /* ── 平台自加（原文未给该指标数值口径，仅用于混沌/分歧/退潮识别）── */
+  zbRateOk: 0.2,                     /* 炸板率 <20% = 确认期健康（原文） */
+  zbRateChaos: 0.3,                  /* 炸板率 ≥30% = 混沌 / 退潮特征（原文：启动期炸板率偏高） */
+  ebbZtRatio: 0.4,                   /* 退潮：今日家数 ≤ 昨日家数 ×0.4（腰斩） */
+  ebbLbCut: 2,                       /* 退潮：连板高度较昨日压缩 ≥2 层 */
+  divergeGoodNeed: 2,                /* 分歧三看：≥2 件向好=良性，否则恶性 → 直接按退潮 */
+  consensusShare: 0.15,              /* 参考口径：板块涨停占全市场 ≥15% = 资金共识 */
   logKey: 'wb_secstage_v1', logDays: 12
 };
+/* ── 锚点表初判（只看 家数 / 高度 两个锚点；其余两锚点做复核与 ⚠ 提示）──
+   保守优先：先判加速（极端），再发酵（双锚点齐备），再确认，其余启动。 */
+function seccAnchorStage(tZt, tMax){
+  if(tMax >= SECC_RULE.lbAccel || tZt >= SECC_RULE.ztAccel) return 'accel';                 /* 6 板+ 或 10 只+ */
+  if((tMax >= SECC_RULE.lbFermentLo && tZt >= SECC_RULE.ztFermentEntry) || tMax >= SECC_RULE.lbFermentStrong) return 'ferment';  /* 高度与家数均达发酵带下沿（4 板 / 4 只），或高度 ≥5 板 */
+  if(tMax >= SECC_RULE.lbConfirmLo || tZt >= SECC_RULE.ztConfirmLo) return 'confirm';       /* 3-4 板 或 3-5 只 */
+  return 'start';
+}
+/* 四锚点按「数组引用」缓存整市场合计 / 分板位晋级率（避免逐板块重复全表扫描） */
+var SECC_CTX = { amtSrc: null, amtTot: 0, prevSrc: null, mktPromo: null };
+function seccMktPromo(){
+  var m = {}, prev = D.prev || [];
+  prev.forEach(function(x){
+    var l = x.lbc || 1, k = (l >= 7 ? '7+' : (l >= 3 ? '3-6' : '1'));
+    if(!m[k]) m[k] = { n: 0, again: 0 };
+    m[k].n++;
+    if((D.zt || []).some(function(y){ return y.c === x.c; })) m[k].again++;
+  });
+  Object.keys(m).forEach(function(k){ m[k].rate = m[k].n ? m[k].again / m[k].n : null; });
+  return m;
+}
+function seccCtx(){
+  if(SECC_CTX.amtSrc !== D.secAmt){
+    SECC_CTX.amtSrc = D.secAmt;
+    var t = 0; (D.secAmt || []).forEach(function(x){ var v = num(x.f6); if(v != null && v > 0) t += v; });
+    SECC_CTX.amtTot = t;
+  }
+  if(SECC_CTX.prevSrc !== D.prev){ SECC_CTX.prevSrc = D.prev; SECC_CTX.mktPromo = seccMktPromo(); }
+  return SECC_CTX;
+}
+/* 锚点三：板块成交额占比（%）—— 全市场行业板块成交额分区合计≈全市场成交额 */
+function secAmtShare(name){
+  var ctx = seccCtx(), v = null, i, x;
+  for(i = 0; i < (D.secAmt || []).length; i++){ x = D.secAmt[i]; if(x && x.f14 === name){ v = num(x.f6); break; } }
+  if(v == null){ var r = secAnyExact(name); v = r ? num(r.f6) : null; }
+  return (v != null && ctx.amtTot > 0) ? (v / ctx.amtTot * 100) : null;
+}
+/* 板块成交额 ÷ 自身近 5 日快照均量（判「阶段天量」/「缩量」；无快照返回 null） */
+function secAmtBoost(name){
+  var all = {}; try{ all = lsGet('wb_secsnap', {}) || {}; }catch(e){ return null; }
+  var ds = Object.keys(all).filter(function(d){ return d < D.date; }).sort().reverse().slice(0, 5);
+  var row = secAnyExact(name), cv = row ? num(row.f6) : null;
+  if(cv == null) return null;
+  var s = 0, n = 0;
+  ds.forEach(function(d){ var o = all[d] && all[d][name], a = o ? num(o.amt) : null; if(a != null && a > 0){ s += a; n++; } });
+  return n ? (cv / (s / n)) : null;
+}
+/* 锚点四：本板块晋级率（昨日该板块涨停股 → 今日仍涨停的比例） */
+function seccPromo(name){
+  var pz = seccPrevMap()[name] || [];
+  if(!pz.length) return { n: 0, again: 0, rate: null };
+  var ag = 0;
+  pz.forEach(function(x){ if((D.zt || []).some(function(y){ return y.c === x.c; })) ag++; });
+  return { n: pz.length, again: ag, rate: ag / pz.length };
+}
 /* 跨日状态机：记录每个板块「当日阶段 + 当日最高标」，用于次日判「反包 / 阶段持续天数」 */
 function seccLogAll(){ try{ return lsGet(SECC_RULE.logKey, {}) || {}; }catch(e){ return {}; } }
 function seccHist(sec){
@@ -1884,7 +1964,10 @@ function seccPrevMap(){
   if(SECC_C.src !== D.prev){ SECC_C.src = D.prev; SECC_C.map = prevZtBySector(); }
   return SECC_C.map || {};
 }
-/* 核心判定：返回阶段 + 全部读数 + 判断依据 + 未达阈值提示（纯函数，异常时返回 null 由调用方降级） */
+/* 核心判定：返回阶段 + 全部读数 + 判断依据 + 未达阈值提示（纯函数，异常时返回 null 由调用方降级）
+   判定链（保守优先）：退潮 > 反包 > 分歧 > 加速 > 发酵 > 确认 > 启动。
+   四锚点初判（家数/高度）→ 五维复核（盘面/龙头/中军/资金/情绪，中军与情绪无源则标人工核对）
+   → 特殊要点（确认三大件 / 分歧三看 / 反包量能）。 */
 function seccJudge(name, o){
   o = o || {};
   var gz = (D.ztGroup || {})[name] || [];
@@ -1893,6 +1976,16 @@ function seccJudge(name, o){
   var zb = (o.zb != null) ? o.zb : (D.zb || []).filter(function(x){ return x.hybk === name; }).length;
   var dt = (o.dt != null) ? o.dt : (D.dt || []).filter(function(x){ return x.hybk === name; }).length;
   var denom = tZt + zb, zbRate = denom ? zb / denom : null;
+  /* ── 四锚点：家数 / 高度（上面已算）+ 成交额占比 / 晋级率 ── */
+  var ctx = seccCtx();
+  var share = secAmtShare(name);        /* 板块成交额占比（%） */
+  var boost = secAmtBoost(name);        /* 板块成交额 ÷ 自身近 5 日快照均量（天量倍数） */
+  var promo = seccPromo(name);          /* 本板块晋级率（昨涨停 → 今仍涨停） */
+  var mkPromo = ctx.mktPromo || {};     /* 全市场分板位晋级率参考 */
+  var mktZt = (D.zt || []).length, ztShare = mktZt ? tZt / mktZt : null;   /* 板块涨停占全市场 */
+  /* ── 五维复核用到的板块行情（东财原始字段：f3 涨幅 / f62 主力净流入）── */
+  var secRow = secAnyExact(name);
+  var secF3 = secRow ? num(secRow.f3) : null, secF62 = secRow ? num(secRow.f62) : null;
   /* 板块龙头 = 连板降序 → 首次封板时间升序 → 封单额降序 */
   var gs = gz.slice().sort(function(a, b){
     return (b.lbc || 1) - (a.lbc || 1) || (a.fbt || 999999) - (b.fbt || 999999) || (b.fund || 0) - (a.fund || 0);
@@ -1913,60 +2006,107 @@ function seccJudge(name, o){
   var yHi = yZt ? pz.filter(function(x){ return (x.lbc || 1) === yMax; }) : [];
   var yHiAlive = yHi.filter(function(x){ return gz.some(function(y){ return y.c === x.c; }); });
   var broken = yMax >= 3 && yHi.length > 0 && yHiAlive.length === 0;      /* 昨日最高标（≥3板）今日断板 */
+  var brokenNow = broken && tMax <= yMax;                                 /* 高位断板且未出现新高度（否则是换新龙） */
   var t1v = null;
   try{ t1v = t1Verify(name, seccPrevMap()); }catch(e){ t1v = null; }
   var hist = seccHist(name), prevRec = hist.length ? hist[hist.length - 1] : null;
   var lbBack = !!(prevRec && prevRec.hi && prevRec.hi.length && prevRec.hi.some(function(c){ return gz.some(function(y){ return y.c === c; }); }));
   var lbWasBroke = !!(prevRec && ['diverge', 'ebb'].indexOf(prevRec.stage) >= 0);
+  /* 反包期量能：放量=二波候选 / 无量=逃命窗口（默认逃命） */
+  var volDir = (boost == null) ? null : (boost >= 1.15 ? 1 : (boost <= 0.85 ? -1 : 0));
+  /* 分歧「三看」：①龙头是否扛住（断板回封）②中军是否抗跌（守 MA10；无 MA 源→用板块涨幅 ≥0 近似）
+     ③板块是否留活口（仍有涨停）。≥2 件向好=良性，否则恶性 → 直接按退潮。 */
+  var hold1 = (rb >= 1);
+  var hold2 = (secF3 == null) ? null : (secF3 >= 0);
+  var hold3 = tZt >= 1;
+  var goodCnt = (hold1 ? 1 : 0) + (hold2 === true ? 1 : 0) + (hold3 ? 1 : 0);
+  var benign = goodCnt >= SECC_RULE.divergeGoodNeed;
+  /* 确认三大件之二：梯队雏形（有连板龙头 + 至少跟风/中位层） */
+  var ladder = (tMax >= 2 && tZt >= 2 && (midCnt >= 1 || firstCnt >= 1));
   /* —— 判定：保守优先（退潮 > 反包 > 分歧 > 加速 > 发酵 > 确认 > 启动）—— */
   var stage, why = [], warns = [];
-  /* 退潮 = 题材「瓦解」：家数腰斩 / 出现跌停 / 龙一断板且原有梯队已塌（须有昨日家数作对比，
+  /* 退潮 = 题材「瓦解」：家数腰斩 / 出现跌停 / 高度压缩 / 恶性分歧（须有昨日数据作对比，
      否则「昨日只有龙一 1 家、今日断板」会被误判为退潮，实际那是分歧后转低位试错） */
+  var lbCut = (yMax >= 3 && tMax <= yMax - SECC_RULE.ebbLbCut);
+  /* 恶性分歧：三看中「可量化」的两件（①龙头是否扛住 ③是否留活口）同时转坏 = 强恶化信号。
+     中军抗跌无 MA 数据源，不参与「恶性」判定 —— 否则缺板块行情时会把普通分歧一律误判成退潮。 */
+  var malignant = (!hold1 && !hold3 && goodCnt <= 1);
   var ebbHit = (yZt >= 3 && tZt <= Math.max(1, Math.round(yZt * SECC_RULE.ebbZtRatio)))
             || (dt > 0 && yZt >= 2)
-            || (broken && yZt >= 3 && tZt <= 2 && zbRate != null && zbRate >= SECC_RULE.ebbZbRate);
+            || (lbCut && yZt >= 3 && tZt <= Math.max(2, Math.round(yZt * 0.5)))   /* 须昨日有梯队：否则「昨日只有龙一 1 家、今日断板」会被误判退潮 */
+            || (broken && yZt >= 3 && tZt <= 2 && zbRate != null && zbRate >= SECC_RULE.zbRateChaos)
+            || (brokenNow && malignant);        /* 恶性分歧 → 直接按退潮处理（标准口径） */
   if(ebbHit){
     stage = 'ebb';
-    why.push('昨涨停 ' + yZt + ' 家 → 今涨停 ' + tZt + ' 家（家数腰斩 / 断档）');
+    why.push('昨涨停 ' + yZt + ' 家 → 今涨停 ' + tZt + ' 家（家数萎缩 / 断档）');
+    if(lbCut) why.push('连板高度压缩：昨最高 ' + yMax + ' 板 → 今最高 ' + tMax + ' 板');
     if(dt > 0) why.push('板块内出现跌停 ' + dt + ' 家（补跌）');
     if(broken) why.push('昨日最高标 ' + yMax + ' 板已断板且无回封');
-    if(zbRate != null && zbRate >= SECC_RULE.ebbZbRate) why.push('炸板率 ' + (zbRate * 100).toFixed(0) + '%（文中 ≥30%，混沌/退潮特征）');
+    if(brokenNow && malignant) why.push('分歧三看中「龙头未扛住 + 无活口」同时成立（' + (hold1 ? '龙头扛住' : '龙头未扛住') + '·' + (hold2 === true ? '中军抗跌' : (hold2 === null ? '中军未知' : '中军破位')) + '·' + (hold3 ? '留活口' : '无活口') + '）→ 恶性分歧，直接按退潮');
+    if(zbRate != null && zbRate >= SECC_RULE.zbRateChaos) why.push('炸板率 ' + (zbRate * 100).toFixed(0) + '%（≥30%，混沌/退潮特征）');
   } else if((lbWasBroke && lbBack) || (broken && rb >= 1)){
     stage = 'rebound';
-    if(lbWasBroke && lbBack) why.push('昨日记录的板块最高标今日重回涨停（龙一反包）');
-    if(broken && rb >= 1) why.push('昨日最高标 ' + yMax + ' 板断板，今日板块内断板回封 ' + rb + ' 家（逆反龙酝酿）');
-  } else if(broken){
+    if(lbWasBroke && lbBack) why.push('昨日为' + (SECC_STAGES[prevRec.stage] ? SECC_STAGES[prevRec.stage].label : prevRec.stage) + '，今日该板块最高标重回涨停（老龙头反包）');
+    if(broken && rb >= 1) why.push('昨日最高标 ' + yMax + ' 板断板，今日断板回封 ' + rb + ' 家（资金回流）');
+    why.push('涨停 ' + tZt + ' 家（局部回流，少于发酵期）');
+    why.push('量能：' + (boost == null ? '无跨日快照' : boost.toFixed(2) + '× 自身近期均量') + ' → ' + (volDir == null ? '无法判放量/无量' : (volDir > 0 ? '放量反包（二波候选）' : (volDir < 0 ? '无量反抽（逃命窗口）' : '量能持平（偏逃命）'))));
+  } else if(brokenNow){
     stage = 'diverge';
-    why.push('龙一断板：昨日最高标 ' + yMax + ' 板今日未涨停（首次分歧）');
+    why.push('龙一断板：昨日最高标 ' + yMax + ' 板今日未涨停（高位首次分歧）');
     if(zb > 0) why.push('炸板 ' + zb + ' 家（炸板潮 / 板块韧性分化）');
     if(tZt > 0) why.push('板块仍有 ' + tZt + ' 家涨停（低位补涨还在）');
-  } else if(tMax >= SECC_RULE.ztHi && dt === 0){
-    stage = 'accel';
-    why.push('最高连板 ' + tMax + ' 板（文中 5-7 板加速区）且龙头未断板');
-    if(leader) why.push('龙头 ' + (leader.n || '') + ' 当日炸板 ' + (leader.zbc || 0) + ' 次');
-  } else if(tMax >= SECC_RULE.ztMid && tZt >= SECC_RULE.ztConfirm && dt === 0){
-    stage = 'ferment';
-    why.push('最高连板 ' + tMax + ' 板 + 板块内涨停 ' + tZt + ' 家（梯队扩散）');
-    if(multi >= 2) why.push('连板 ' + multi + ' 家 / 中位 ' + midCnt + ' 家（梯队成立）');
-  } else if(tMax >= 2 && tZt >= 2 && (zbRate == null || zbRate < SECC_RULE.zbRateHard) && (again >= 1 || yZt >= 1 || tMax >= 3)){
-    stage = 'confirm';
-    why.push('出现 ' + tMax + ' 板龙头 + 板块内 ' + tZt + ' 家涨停，炸板率 ' + (zbRate == null ? '—' : (zbRate * 100).toFixed(0) + '%'));
-    if(again >= 1) why.push('昨日涨停今日仍涨停 ' + again + ' 家（接力成立）');
+    why.push('三看：①龙头' + (hold1 ? '扛住' : '未扛住') + ' ②中军' + (hold2 === true ? '抗跌' : (hold2 === null ? '未知' : '破位')) + ' ③' + (hold3 ? '留活口' : '无活口') + ' → ' + (benign ? '良性分歧' : '恶性分歧'));
   } else {
-    stage = 'start';
-    if(tMax >= SECC_RULE.ztMid) why.push('板块内仅 ' + tZt + ' 家涨停（' + tMax + ' 板独走），未形成扩散梯队');
-    else why.push('无连板高度（最高 ' + tMax + ' 板）、涨停 ' + tZt + ' 家、其中首板 ' + firstCnt + ' 家');
-    if(zbRate != null && zbRate >= SECC_RULE.ebbZbRate) why.push('炸板率 ' + (zbRate * 100).toFixed(0) + '%（≥30%，典型试错期）');
-    if(yZt === 0) why.push('昨日该板块无涨停（无持续度）');
+    var base = seccAnchorStage(tZt, tMax), forced = '';
+    if(base === 'confirm' && !ladder){ stage = 'start'; forced = 'ladder'; }                        /* 缺梯队雏形（高标独走）→ 不确认 */
+    else if(base === 'confirm' && zbRate != null && zbRate >= SECC_RULE.zbRateChaos){ stage = 'start'; forced = 'chaos'; }  /* 混沌硬上限 */
+    else { stage = base; }
+    if(stage === 'accel'){
+      why.push('锚点：涨停 ' + tZt + ' 家 / 最高 ' + tMax + ' 板（加速带：10 只+ 或 6 板+）');
+      if(leader) why.push('龙头 ' + (leader.n || '') + ' ' + (leader.lbc || 1) + ' 板·当日炸板 ' + (leader.zbc || 0) + ' 次');
+      if(boost != null) why.push('成交额 ' + boost.toFixed(2) + '× 自身近期均量' + (boost >= SECC_RULE.amtShareAccelX ? '（阶段天量）' : '（未达天量）'));
+    } else if(stage === 'ferment'){
+      why.push('锚点：涨停 ' + tZt + ' 家 / 最高 ' + tMax + ' 板（发酵带：5-10 只、4-6 板）');
+      if(multi >= 2) why.push('连板 ' + multi + ' 家 / 中位 ' + midCnt + ' 家（梯队扩散）');
+      if(share != null) why.push('板块成交额占比 ' + share.toFixed(1) + '%');
+      if(promo.rate != null && promo.n) why.push('本板块晋级率 ' + (promo.rate * 100).toFixed(0) + '%（' + promo.again + '/' + promo.n + '）');
+    } else if(stage === 'confirm'){
+      why.push('锚点：涨停 ' + tZt + ' 家 / 最高 ' + tMax + ' 板（确认带：3-5 只+、3-4 板）');
+      if(again >= 1) why.push('昨日涨停今日仍涨停 ' + again + ' 家（接力成立）');
+      if(firstCnt >= 1) why.push('首板 ' + firstCnt + ' 家（首板溢价需人工核对）');
+      why.push('三大件：龙头 ' + tMax + ' 板 ' + (tMax >= 3 && tMax <= 4 ? '✅' : '⚠(非 3-4 板)') + ' ｜ 梯队雏形 ' + (ladder ? '✅' : '⚠(未成型)') + ' ｜ 中军站 MA20 ⚠(无源·人工核对)');
+    } else {
+      if(forced === 'ladder') why.push('板块内有 ' + tMax + ' 板活口，但仅 ' + tZt + ' 家涨停、未形成梯队（' + tMax + ' 板独走）→ 按锚点表「启动（试错）」对待，不做板块内接力');
+      else if(forced === 'chaos') why.push('涨停 ' + tZt + ' 家 / 最高 ' + tMax + ' 板（本可判确认），但炸板率 ' + (zbRate * 100).toFixed(0) + '%（≥30% 混沌阈值）→ 确认硬上限不成立，落回「启动（试错）」');
+      else why.push('锚点：涨停 ' + tZt + ' 家 / 最高 ' + tMax + ' 板（启动带：1-3 只、1-2 板）');
+      if(zbRate != null && zbRate >= SECC_RULE.zbRateChaos && forced !== 'chaos') why.push('炸板率 ' + (zbRate * 100).toFixed(0) + '%（≥30%，典型试错/混沌期）');
+      if(yZt === 0) why.push('昨日该板块无涨停（无持续度）');
+      if(yZt === 0 && tZt >= 1 && tZt <= 3) why.push('跳跃预案：昨日空 → 今日 1-3 只，属「一日游」高发形态（标准：多数题材走不完七阶段）');
+    }
   }
-  /* 文中阈值未满足 → 打 ⚠ 角标：框架照用户原文，差多少如实标出，不偷偷放宽 */
-  if(stage === 'ferment' && tZt < SECC_RULE.ztFlood) warns.push('文中发酵期要求板块涨停 ≥' + SECC_RULE.ztFlood + ' 家，当前 ' + tZt + ' 家（家数未达，仅高度/梯队达标）');
-  if(stage === 'confirm' && tZt < SECC_RULE.ztConfirm) warns.push('文中确认期要求带动 3-5 家涨停，当前 ' + tZt + ' 家');
-  if(stage === 'confirm' && zbRate != null && zbRate >= SECC_RULE.zbRateOk) warns.push('炸板率 ' + (zbRate * 100).toFixed(0) + '% 高于文中确认期的 <20%（但仍低于 30% 的混沌阈值，故未降到「启动」）');
-  if(stage === 'start' && tMax >= SECC_RULE.ztMid) warns.push('板块内有 ' + tMax + ' 板活口，但仅 ' + tZt + ' 家涨停、未形成梯队 → 按原文「启动（试错）」对待，不做板块内接力');
-  if(stage === 'accel' && leader && (leader.zbc || 0) >= 3) warns.push('龙头当日炸板 ' + leader.zbc + ' 次（非"缩量加速"，属高换手分歧加剧 → 仓位应比文中更保守）');
-  if(stage === 'diverge' && zb === 0) warns.push('本次断板日未同步出现炸板潮（文中分歧期特征之一）→ 需人工核对');
-  if(stage === 'ebb' && dt === 0) warns.push('本次未见板块内跌停（文中退潮特征之一）→ 需人工核对');
+  /* 锚点表阈值未满足 → 打 ⚠ 角标：标准照抄用户上传文件，差多少如实标出，不偷偷放宽 */
+  if(stage === 'ferment'){
+    if(!(tZt >= SECC_RULE.ztFermentLo && tZt <= SECC_RULE.ztFermentHi)) warns.push('锚点表发酵期：涨停 ' + SECC_RULE.ztFermentLo + '-' + SECC_RULE.ztFermentHi + ' 只，当前 ' + tZt + ' 家');
+    if(!(tMax >= SECC_RULE.lbFermentLo && tMax <= SECC_RULE.lbFermentHi)) warns.push('锚点表发酵期：连板 ' + SECC_RULE.lbFermentLo + '-' + SECC_RULE.lbFermentHi + ' 板，当前 ' + tMax + ' 板');
+    if(share != null && share < SECC_RULE.amtShareFerment) warns.push('锚点表发酵期：成交额占比 ≥' + SECC_RULE.amtShareFerment + '%（且连续 2 日），当前 ' + share.toFixed(1) + '%');
+  }
+  if(stage === 'confirm'){
+    if(!(tZt >= SECC_RULE.ztConfirmLo && tZt <= SECC_RULE.ztConfirmHi)) warns.push('锚点表确认期：涨停 ' + SECC_RULE.ztConfirmLo + '-' + SECC_RULE.ztConfirmHi + ' 只，当前 ' + tZt + ' 家');
+    if(!(tMax >= SECC_RULE.lbConfirmLo && tMax <= SECC_RULE.lbConfirmHi)) warns.push('锚点表确认期：连板 ' + SECC_RULE.lbConfirmLo + '-' + SECC_RULE.lbConfirmHi + ' 板，当前 ' + tMax + ' 板');
+    if(zbRate != null && zbRate >= SECC_RULE.zbRateOk) warns.push('锚点表确认期：炸板率应 <20%（确认期健康），当前 ' + (zbRate * 100).toFixed(0) + '%（仍低于 30% 混沌阈值，故未降到「启动」）');
+    if(!ladder) warns.push('确认期三大件之「梯队雏形」未成型（龙头+中军+跟风缺项）');
+    warns.push('确认期三大件之「中军放量站上 MA20」无稳定量化源，本引擎不自动判定 → 需人工核对');
+  }
+  if(stage === 'accel'){
+    if(boost == null) warns.push('锚点表加速期：成交额应为「阶段天量」，但无跨日成交额快照（需连续交易日在线积累 wb_secsnap）');
+    else if(boost < SECC_RULE.amtShareAccelX) warns.push('锚点表加速期：成交额应为「阶段天量」，当前仅自身近期均量的 ' + boost.toFixed(2) + '×');
+    if(leader && (leader.zbc || 0) >= 3) warns.push('龙头当日炸板 ' + leader.zbc + ' 次（非"缩量加速"，属高换手分歧加剧 → 仓位应比锚点更保守）');
+  }
+  if(stage === 'start' && tMax >= SECC_RULE.lbConfirmLo) warns.push('板块内有 ' + tMax + ' 板活口，但仅 ' + tZt + ' 家涨停、未形成梯队 → 按锚点表「启动（试错）」对待，不做板块内接力');
+  if(stage === 'diverge' && hold2 === null) warns.push('分歧三看之「中军是否抗跌（守 MA10）」无 MA 数据源 → 只能用板块涨幅近似，需人工核对');
+  if(stage === 'diverge' && zb === 0) warns.push('本次断板日未同步出现炸板潮（锚点表分歧期特征之一）→ 需人工核对');
+  if(stage === 'rebound' && volDir == null) warns.push('反包期「放量 vs 无量」缺跨日成交额快照（wb_secsnap）→ 无法自动区分二波/逃命，需人工核对');
+  if(stage === 'ebb' && dt === 0) warns.push('本次未见板块内跌停（锚点表退潮特征之一）→ 需人工核对');
   if(prevRec == null && broken) warns.push('昨日最高标已断板，但缺前一交易日记录（首次运行 / 该板块昨日未入榜）→「反包」与「分歧」只能按盘中近似判断，建议人工核对');
   /* 阶段持续天数：与最近一段历史记录连续相同 */
   var streak = 1, i = hist.length - 1;
@@ -1976,6 +2116,9 @@ function seccJudge(name, o){
     short: SECC_STAGES[stage].short, streak: streak, why: why, warns: warns,
     tZt: tZt, tMax: tMax, zb: zb, dt: dt, zbRate: zbRate, midCnt: midCnt, firstCnt: firstCnt, multi: multi,
     yZt: yZt, yMax: yMax, broken: broken, again: again, rb: rb, t1v: t1v,
+    share: share, boost: boost, ztShare: ztShare, volDir: volDir, secF3: secF3, secF62: secF62,
+    promo: promo, mkPromo: mkPromo, benign: benign, goodCnt: goodCnt, ladder: ladder,
+    hold1: hold1, hold2: hold2, hold3: hold3,
     leader: leader ? { n: leader.n, c: leader.c, lbc: leader.lbc || 1, zbc: leader.zbc || 0 } : null,
     prevStage: prevRec ? prevRec.stage : null, lbBack: lbBack
   };
@@ -1989,20 +2132,37 @@ function seccTag(name, r){
       + '｜红盘率 ' + (d.t1v.redRate == null ? '—' : (d.t1v.redRate * 100).toFixed(0) + '%')
       + '｜继续涨停 ' + d.t1v.promo + '/' + d.t1v.n + '（' + (d.t1v.promoRate * 100).toFixed(0) + '%）'
       + '｜跌超5% ' + d.t1v.mian + ' 家') : '\n  昨日涨停股今日表现：无样本';
-  var title = '【板块情绪周期】' + d.label + '（对应四大周期：' + d.stage.cycle + '）'
+  /* ── 四锚点（判据主表）── */
+  var mkt = d.mkPromo || {};
+  function pr(k){ var o = mkt[k]; return (o && o.rate != null && o.n) ? ((o.rate * 100).toFixed(0) + '%(' + o.again + '/' + o.n + ')') : '—'; }
+  var anchors = '【四锚点】'
+    + '\n  ① 板块涨停家数：' + d.tZt + ' 家（首板 ' + d.firstCnt + ' / 连板 ' + d.multi + ' / 中位 ' + d.midCnt + '）｜炸板 ' + d.zb + ' 家（率 ' + (d.zbRate == null ? '—' : (d.zbRate * 100).toFixed(0) + '%') + '）｜跌停 ' + d.dt + ' 家'
+    + '\n  ② 连板高度：' + d.tMax + ' 板（昨 ' + d.yMax + ' 板）｜板块涨停占全市场 ' + (d.ztShare == null ? '—' : (d.ztShare * 100).toFixed(0) + '%' + (d.ztShare >= SECC_RULE.consensusShare ? '（≥15% 资金共识）' : ''))
+    + '\n  ③ 晋级率：本板块 ' + (d.promo && d.promo.rate != null ? ((d.promo.rate * 100).toFixed(0) + '%（' + d.promo.again + '/' + d.promo.n + '）') : '无样本')
+    + '｜全市场参考 首板 ' + pr('1') + ' / 3-6板 ' + pr('3-6') + ' / 7板+ ' + pr('7+')
+    + '\n  ④ 成交额占比：' + (d.share == null ? '—' : d.share.toFixed(2) + '%') + '（板块成交额 ÷ 全市场行业板块合计）｜较自身近期均量 ' + (d.boost == null ? '—（无跨日快照）' : d.boost.toFixed(2) + '×');
+  /* ── 五维校验（可量化的量化，无源的标注人工核对）── */
+  var dims = '【五维校验】'
+    + '\n  板块盘面：涨停 ' + d.tZt + ' 家 / 梯队' + (d.ladder ? '雏形已成' : '未成型') + '｜昨日涨停 ' + d.yZt + ' 家｜今仍涨停 ' + d.again + ' 家｜断板回封 ' + d.rb + ' 家'
+    + '\n  龙头：' + (d.leader ? ((d.leader.n || '') + ' ' + d.leader.c + '（' + d.leader.lbc + ' 板，当日炸板 ' + d.leader.zbc + ' 次）') : '未识别')
+    + '\n  中军：板块涨幅 ' + (d.secF3 == null ? '—' : (d.secF3 >= 0 ? '+' : '') + d.secF3.toFixed(2) + '%') + '（近似「守 MA10」判断）｜「放量站上 MA20」无量化源 → 人工核对'
+    + '\n  资金：主力净流入 ' + (d.secF62 == null ? '—' : (d.secF62 / 1e8).toFixed(2) + ' 亿') + '（板块 f62）'
+    + '\n  情绪：题材热度 / 讨论度无稳定量化源 → 人工核对';
+  var readout = '【关键读数】今日涨停 ' + d.tZt + ' 家（首板 ' + d.firstCnt + ' / 连板 ' + d.multi + ' / 中位 ' + d.midCnt + '）｜最高 ' + d.tMax + ' 板｜炸板 ' + d.zb + ' 家（率 ' + (d.zbRate == null ? '—' : (d.zbRate * 100).toFixed(0) + '%') + '）｜跌停 ' + d.dt + ' 家'
+    + '\n  昨日涨停 ' + d.yZt + ' 家（昨最高 ' + d.yMax + ' 板' + (d.broken ? '·今日断板' : '') + '）｜今仍涨停 ' + d.again + ' 家｜断板回封 ' + d.rb + ' 家';
+  var title = '【板块情绪周期】' + d.label + '（阶段：' + d.stage.cycle + '）'
     + (d.streak > 1 ? '　持续 ' + d.streak + ' 日' : '')
     + '\n板块：' + name
+    + '\n\n' + anchors
+    + '\n\n' + dims
+    + '\n\n' + readout
     + '\n\n【判断依据】\n' + d.why.map(function(x){ return '· ' + x; }).join('\n')
-    + '\n\n【关键读数】今日涨停 ' + d.tZt + ' 家（首板 ' + d.firstCnt + ' / 连板 ' + d.multi + ' / 中位 ' + d.midCnt + '）'
-    + '｜最高 ' + d.tMax + ' 板｜炸板 ' + d.zb + ' 家（率 ' + (d.zbRate == null ? '—' : (d.zbRate * 100).toFixed(0) + '%') + '）｜跌停 ' + d.dt + ' 家'
-    + '\n  昨日涨停 ' + d.yZt + ' 家｜昨日最高 ' + d.yMax + ' 板' + (d.broken ? '（今日已断板）' : '') + '｜今仍涨停 ' + d.again + ' 家｜断板回封 ' + d.rb + ' 家'
-    + (d.leader ? '\n  板块龙头：' + (d.leader.n || '') + ' ' + d.leader.c + '（' + d.leader.lbc + ' 板，当日炸板 ' + d.leader.zbc + ' 次）' : '')
     + t1
     + '\n\n【操作要点】' + d.stage.act
     + '\n【参考仓位】' + d.stage.pos + '（板块自身节奏；最终仓位 = 本仓位与顶部大盘情绪周期仓位上限「取更严者」）'
     + '\n【风险 / 禁忌】' + d.stage.risk
     + w
-    + '\n\n【口径】本列＝板块（题材）自身情绪周期，非大盘情绪周期；读数由涨停池 / 炸板池 / 跌停池 / 昨日涨停池 + 跨日状态机现算，无法量化的项（惜售情绪、伪题材、消息真伪）未计入。仅为交易体系梳理，不构成投资建议。';
+    + '\n\n【口径】本列＝板块（题材）自身情绪周期，非大盘情绪周期；判定标准＝《板块题材七阶段判断策略（AI可执行版）》：四锚点（家数/高度/晋级率/成交额占比）定位阶段 + 五维（盘面/龙头/中军/资金/情绪）复核；确认期看三大件、分歧期看三看、反包期看量能。读数由涨停池 / 炸板池 / 跌停池 / 昨日涨停池 / 板块行情（f6·f3·f62）+ 跨日状态机（wb_secstage_v1）+ 跨日板块快照（wb_secsnap）现算，零额外请求；中军 MA20 / 惜售情绪 / 封单撤单 / 竞价五档 / 消息真伪无稳定量化源，未计入（标「人工核对」）。阶段须收盘后确认，盘中为近似。仅为交易体系梳理，不构成投资建议。';
   return '<span class="sc-tag ' + d.cls + (d.warns.length ? ' sc-warn' : '') + '" title="' + esc(title).replace(/\n/g, '&#10;') + '">' + d.label + '</span>';
 }
 /* 单元格：标签 + 一行操作备注（用户要的「备注」）+ 阶段持续天数 */
@@ -2015,9 +2175,11 @@ function seccCell(name, g){
 }
 /* 图例（表上方统一使用，避免用户把两套「阶段」读混） */
 function seccLegend(){
-  return '<div class="sc-legend">板块（题材）情绪周期 · <b>七阶段</b>（按周期顺序；悬停看【依据 / 操作 / 参考仓位 / 禁忌】）：' +
+  return '<div class="sc-legend">板块（题材）情绪周期 · <b>七阶段</b>（按周期顺序；悬停看【四锚点 / 五维校验 / 依据 / 操作 / 参考仓位 / 禁忌】）：' +
     SECC_ORDER.slice().reverse().map(function(k){ return '<span class="sc-tag sc-' + k + '">' + SECC_STAGES[k].label + '</span>'; }).join('') +
-    ' ｜ 判定引擎：涨停家数 + 最高连板 + 炸板率 + 跌停 + 昨日最高标断板/回封 + 跨日阶段记录（原文《题材情绪周期变化策略》）' +
+    ' ｜ 判定引擎：<b>四锚点</b>（板块涨停家数 + 连板高度 + 晋级率 + 成交额占比）→ 定位阶段，' +
+    '再用 <b>五维</b>（盘面 / 龙头 / 中军 / 资金 / 情绪）复核；确认期看三大件、分歧期看三看、反包期看量能' +
+    ' ｜ 标准：《板块题材七阶段判断策略（AI可执行版）》｜ 阶段须收盘后确认，盘中为近似' +
     ' ｜ ⚠ 与「个股生命周期阶段」「大盘情绪周期」是三套不同口径，勿混读</div>';
 }
 /* 分布 + 可优先关注（发酵/加速 > 确认 > 反包） */
@@ -2045,23 +2207,55 @@ function seccRulesHtml(){
       '<td style="white-space:normal">' + s.feat + '</td><td style="white-space:normal">' + s.act + '</td>' +
       '<td class="mono">' + s.pos + '</td><td style="white-space:normal">' + s.risk + '</td></tr>';
   }).join('');
-  return '<details><summary>板块情绪周期 · 七阶段规则速查（阶段 / 对应四大周期 / 文中特征阈值 / 操作 / 参考仓位 / 禁忌）</summary><div class="dbody">' +
-    '<div class="twrap"><table class="mini-tbl"><thead><tr><th>阶段</th><th>对应四大周期</th><th>文中特征 / 阈值</th><th>操作要点</th><th>参考仓位</th><th>风险 · 禁忌</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-    '<div class="twrap" style="margin-top:8px"><table class="mini-tbl"><thead><tr><th>判定读数</th><th>本平台取数口径（全部来自既有数据 · 零额外请求）</th></tr></thead><tbody>' +
-    '<tr><td class="up">板块内涨停家数 / 最高连板</td><td style="white-space:normal">东财涨停池 getTopicZTPool（当日）按 <b>hybk</b> 分组；最高连板取组内 max(lbc)。与 7.3 / 7.5 / 7.6 同一事实源。</td></tr>' +
-    '<tr><td class="up">首板 / 连板 / 中位家数</td><td style="white-space:normal">组内 lbc=1（且近 N 日涨停仅 1 次）为首板；lbc≥2 为连板；2 ≤ lbc ≤ 最高-1 为中位层（与 7.5 梯队判定同口径）。</td></tr>' +
-    '<tr><td class="up">炸板率</td><td style="white-space:normal">炸板池 getTopicZBPool（当日）同板块家数 ÷（涨停 + 炸板）。文中「炸板率 ≥30% / &lt;20%」用此近似（<b>全板块口径，非仅首板</b>）：≥30% 视为混沌/退潮特征（一律不得判「确认」），20%~30% 仍可判「确认」但会打 ⚠（未达文中 &lt;20%）。</td></tr>' +
-    '<tr><td class="up">跌停家数</td><td style="white-space:normal">跌停池 getTopicDTPool（当日）按 hybk 计数。</td></tr>' +
-    '<tr><td class="up">昨日涨停 / 昨日最高标</td><td style="white-space:normal">昨日涨停池 getTopicZTPool(pdate) 按 hybk 分组，最高标 = 组内 max(lbc)。「龙一断板」＝昨日最高标（≥3 板）今日不在涨停池。</td></tr>' +
+  /* 量化判定锚点表（标准第三章 · 照抄） */
+  var keys = { '启动': 'start', '确认': 'confirm', '发酵': 'ferment', '加速': 'accel', '分歧': 'diverge', '反包': 'rebound', '退潮': 'ebb' };
+  var anchorRows = [
+    ['启动', '1-3 只', '1-2 板', '首板晋级率约 15%（低）', '&lt;3%', '无'],
+    ['确认', '3-5 只+', '3-4 板', '首板溢价出现', '抬升', '雏形（龙头+中军+跟风）'],
+    ['发酵', '5-10 只', '4-6 板', '晋级率走高', '≥5% 且连续 2 日', '完整'],
+    ['加速', '10 只+', '6 板+', '极高但开始分化', '天量', '饱满'],
+    ['分歧', '骤降、炸板增多', '高位断板', '大幅回落', '高位放量', '瓦解'],
+    ['反包', '局部回流', '老龙头反包', '分化', '缩量 / 持平', '局部'],
+    ['退潮', '连板几乎消失', '高度压缩', '极低', '萎缩', '崩']
+  ].map(function(r){
+    return '<tr><td><span class="sc-tag sc-' + keys[r[0]] + '">' + r[0] + '</span></td>' +
+      '<td class="mono">' + r[1] + '</td><td class="mono">' + r[2] + '</td><td style="white-space:normal">' + r[3] + '</td>' +
+      '<td class="mono" style="white-space:normal">' + r[4] + '</td><td style="white-space:normal">' + r[5] + '</td></tr>';
+  }).join('');
+  return '<details><summary>板块情绪周期 · 规则速查（七阶段特征 / 量化锚点表 / 三大件·三看·量能 / 三铁律与边界 / 取数口径）</summary><div class="dbody">' +
+    '<div style="font-size:12.5px;color:#f0453a;font-weight:700;margin:2px 0 4px">① 七阶段识别特征（五维：板块盘面 / 龙头 / 中军 / 资金 / 情绪）</div>' +
+    '<div class="twrap"><table class="mini-tbl"><thead><tr><th>阶段</th><th>阶段定位</th><th>识别特征（五维）</th><th>操作要点</th><th>参考仓位</th><th>风险 · 禁忌</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '<div style="font-size:12.5px;color:#f0453a;font-weight:700;margin:12px 0 4px">② 量化判定锚点表（核心判断工具 · 判断阶段以本表为主，主观特征为辅）</div>' +
+    '<div class="twrap"><table class="mini-tbl"><thead><tr><th>阶段</th><th>板块涨停家数</th><th>连板高度</th><th>晋级率</th><th>板块成交额占比</th><th>梯队</th></tr></thead><tbody>' + anchorRows + '</tbody></table></div>' +
+    '<div class="note" style="margin-top:4px">参考口径：全市场涨停 &gt;60 家=情绪强 / 30-60=中性 / &lt;30=弱；板块涨停占全市场 ≥15%=资金共识；晋级率按板位分层比（首板约 15%，7 板以上约 62%），和同板位历史水平比。阈值应按所在市场近期均值微调。</div>' +
+    '<div style="font-size:12.5px;color:#f0453a;font-weight:700;margin:12px 0 4px">③ 三个特殊判断要点（本引擎已量化）</div>' +
+    '<div class="twrap"><table class="mini-tbl"><thead><tr><th>阶段</th><th>要点</th><th>判定</th></tr></thead><tbody>' +
+    '<tr><td><span class="sc-tag sc-confirm">确认</span></td><td style="white-space:normal"><b>三大件</b>：龙头 3-4 板 + 梯队雏形 + 中军站 MA20</td><td style="white-space:normal">龙头板位、梯队雏形已自动判定；<b>中军站 MA20 无稳定量化源 → 人工核对</b>（缺一不确认）</td></tr>' +
+    '<tr><td><span class="sc-tag sc-diverge">分歧</span></td><td style="white-space:normal"><b>三看</b>：①龙头是否扛住（回封=良性）②中军是否抗跌（守 MA10=良性）③板块是否留活口（有新涨停=良性）</td><td style="white-space:normal">≥2 件向好=良性；否则=恶性 → <b>直接按退潮处理</b>。中军抗跌暂用「板块涨幅 ≥0」近似，需人工核对</td></tr>' +
+    '<tr><td><span class="sc-tag sc-rebound">反包</span></td><td style="white-space:normal"><b>量能</b>：放量收复分歧阴线=二波候选；无量反抽=逃命窗口</td><td style="white-space:normal">用「板块成交额 ÷ 自身近期均量（wb_secsnap）」判放量/缩量；<b>默认按逃命处理，除非放量确认</b></td></tr>' +
+    '</tbody></table></div>' +
+    '<div style="font-size:12.5px;color:#f0453a;font-weight:700;margin:12px 0 4px">④ 取数口径自证（全部来自既有数据 · 零额外请求）</div>' +
+    '<div class="twrap"><table class="mini-tbl"><thead><tr><th>锚点 / 读数</th><th>本平台取数口径</th></tr></thead><tbody>' +
+    '<tr><td class="up">① 板块涨停家数 / ② 连板高度</td><td style="white-space:normal">东财涨停池 getTopicZTPool（当日）按 <b>hybk</b> 分组；最高连板取组内 max(lbc)。与 7.3 / 7.5 / 7.6 同一事实源。</td></tr>' +
+    '<tr><td class="up">③ 晋级率（分板位）</td><td style="white-space:normal">昨日涨停池按 <b>lbc</b> 分层（首板 / 3-6 板 / 7 板+），今日仍在涨停池即「晋级」；<b>板块内</b>晋级率 = 该板块昨涨停今仍涨停 ÷ 昨涨停家数。与 7.3 的 t1Verify 同源。</td></tr>' +
+    '<tr><td class="up">④ 板块成交额占比</td><td style="white-space:normal">板块行情 <b>f6（成交额）</b> ÷ 全市场行业板块 f6 合计（东财行业板块对全市场分区，合计≈全市场成交额）；「天量 / 缩量」用跨日快照 <b>wb_secsnap</b> 的自身近 5 日均量对比。</td></tr>' +
+    '<tr><td class="up">炸板率（平台自加）</td><td style="white-space:normal">炸板池 getTopicZBPool（当日）同板块家数 ÷（涨停 + 炸板）。原文「炸板率 &lt;20%（确认期健康）」用此近似（<b>全板块口径，非仅首板</b>）：≥30% 视为混沌/退潮特征（一律不得判「确认」）。</td></tr>' +
+    '<tr><td class="up">跌停 / 昨日最高标</td><td style="white-space:normal">跌停池 getTopicDTPool（当日）按 hybk 计数；昨日最高标 = 昨日涨停池组内 max(lbc)，「龙一断板」＝昨日最高标（≥3 板）今日不在涨停池。</td></tr>' +
     '<tr><td class="up">断板回封（反包近似）</td><td style="white-space:normal">当日涨停股的 <b>zttj</b> = {days, ct}（近 days 日内涨停 ct 次）；<b>ct≥2 且 days&gt;ct 且昨日未涨停</b> → 判为「断板后回封」。属<b>近似</b>：无法区分"回调反包"与"横盘再来一次"。</td></tr>' +
     '<tr><td class="up">阶段持续天数 / 反包确认</td><td style="white-space:normal">本机跨日状态机 <b>wb_secstage_v1</b>（每板块每日记录 阶段 + 当日最高标，保留 12 个交易日；同日覆盖＝盘中以最新一轮为准）。首次运行或昨日该板块未入榜时，「反包 / 持续天数」只能盘中近似，界面会打 ⚠ 说明。</td></tr>' +
-    '<tr><td class="up">昨日涨停股今日成绩</td><td style="white-space:normal">复用 7.3 的 <b>t1Verify</b>（腾讯实时行情 D.prevQ）：均涨 / 红盘率 / 继续涨停家数 / 跌超 5% 家数。</td></tr>' +
-    '<tr><td class="up">不计入的项（人工核对）</td><td style="white-space:normal">资金「惜售情绪」、竞价委买/委卖、盘口扫单、题材真伪、消息面催化真伪、卡位龙「最先上板」的分时判定 —— 均为文中提到但无稳定量化源 / 需逐只分时的项，<b>本列不臆造数值</b>。</td></tr>' +
+    '<tr><td class="up">不计入的项（人工核对）</td><td style="white-space:normal">中军「放量站上 MA20 / 守 MA10」、资金「惜售情绪」、竞价委买/委卖、盘口扫单、题材真伪、消息面催化真伪、卡位龙「最先上板」的分时判定 —— 均为标准提到但无稳定量化源 / 需逐只分时的项，<b>本列不臆造数值</b>（中军抗跌暂用板块涨幅近似）。</td></tr>' +
+    '</tbody></table></div>' +
+    '<div style="font-size:12.5px;color:#f0453a;font-weight:700;margin:12px 0 4px">⑤ 三条铁律 · 使用边界 · 常见误判纠偏</div>' +
+    '<div class="twrap"><table class="mini-tbl"><thead><tr><th>类别</th><th>要点</th></tr></thead><tbody>' +
+    '<tr><td class="up">铁律① 事后确认</td><td style="white-space:normal">阶段只能<b>收盘后</b>判定，不能盘中预判——必须等收盘复盘统计（涨停家数 / 连板高度 / 晋级率 / 成交额）后才能定阶段。本列盘中数值为「近似」。</td></tr>' +
+    '<tr><td class="up">铁律② 量化校准</td><td style="white-space:normal">不靠感觉、不掐日子，用四锚点说话（家数 / 高度 / 晋级率 / 成交额占比）。</td></tr>' +
+    '<tr><td class="up">铁律③ 跳跃预案</td><td style="white-space:normal">多数题材走不完七阶段：一日游=启动直接退潮；脉冲=启动→确认→分歧→退潮。每个阶段都是「候选」，等下一阶段信号确认才算数；默认按只走一半判断。</td></tr>' +
+    '<tr><td class="up">常见误判纠偏</td><td style="white-space:normal">孤板≠板块启动（看是否有 2-3 只同步放量上涨）；反抽≠反包二波（看量能，无量按逃命）；良性分歧≠退潮（三看龙头抗住+中军守 MA10+留活口）；恶性分歧=退潮前兆（直接按退潮）；确认期=上主仓闸门（三大件齐备即确认）；发酵≠加速（10 只+、天量、舆论狂热才是加速）。</td></tr>' +
     '</tbody></table></div>' +
     '<div class="note"><b>⚠ 口径边界：</b>本表是 <b>板块（题材）自身</b>的情绪周期，<b>不是大盘情绪周期</b>（大盘见页面顶部风控横幅与模块2 速查）。' +
-    '同一时刻，某题材可以处于「加速」而大盘处于「退潮」——这正是文中"退潮期只做高低切 / 空仓"的含义：<b>最终仓位取两者更严者</b>。' +
+    '同一时刻，某题材可以处于「加速」而大盘处于「退潮」——这正是标准中"退潮期只做高低切 / 空仓"的含义：<b>最终仓位取两者更严者</b>。' +
     '阶段判定按「保守优先」：退潮 &gt; 反包 &gt; 分歧 &gt; 加速 &gt; 发酵 &gt; 确认 &gt; 启动，边界模糊时取更保守阶段。' +
-    '以上仅为交易体系梳理与数据可视化，<b>不构成任何投资建议</b>。</div></div></details>';
+    '判定标准＝《板块题材七阶段判断策略（AI可执行版）》。以上仅为交易体系梳理与数据可视化，<b>不构成任何投资建议</b>。</div></div></details>';
 }
 
 /* ==================================================================
@@ -4530,8 +4724,10 @@ function renderM75(){
   '<div class="twrap"><table><thead><tr><th>等级</th><th>板块</th><th>情绪周期<small style="font-weight:400;color:#94a3b8">板块自身</small></th><th>涨停数</th><th>最高连板</th><th>炸板数</th><th>跌停数</th><th>梯队定性</th><th>催化类型</th><th>判定理由</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
   seccLegend() +
   '<div class="note"><b>「情绪周期」列＝该板块（题材）<u>自身</u>的情绪周期阶段</b>（启动→确认→发酵→加速→分歧→反包→退潮），' +
-    '<b>不是大盘情绪周期</b>（大盘见顶部风控横幅 / 模块2 速查）。悬停标签可见【判断依据 / 关键读数 / 操作要点 / 参考仓位 / 禁忌】；' +
-    '标签下小字＝该阶段的一句话操作备注与已持续天数。判定读数全部来自涨停池 / 炸板池 / 跌停池 / 昨日涨停池 + 跨日状态机，<b>零额外请求</b>。<br>' +
+    '<b>不是大盘情绪周期</b>（大盘见顶部风控横幅 / 模块2 速查）。判定标准＝《板块题材七阶段判断策略（AI可执行版）》：' +
+    '<b>四锚点</b>（板块涨停家数 / 连板高度 / 晋级率 / 板块成交额占比）定位阶段 + <b>五维</b>（盘面 / 龙头 / 中军 / 资金 / 情绪）复核；' +
+    '确认期看三大件、分歧期看三看、反包期看量能。悬停标签可见【四锚点 / 五维校验 / 判断依据 / 操作要点 / 参考仓位 / 禁忌】；' +
+    '标签下小字＝该阶段的一句话操作备注与已持续天数。判定读数全部来自涨停池 / 炸板池 / 跌停池 / 昨日涨停池 / 板块行情(f6·f3·f62) + 跨日状态机 + 跨日板块快照，<b>零额外请求</b>；中军 MA20 等无稳定量化源项标「人工核对」。<br>' +
     '等级列仍为原「梯队五级分级」：S=完整梯队+催化强，A=梯队单薄+催化在，B=活口轮动，C=零散脉冲，D=退潮；' +
     '梯队四层＝高标连板层(≥2板封板) / 中位连板层(2~最高-1板≥2家) / 首板层(≥4家) / 中军趋势层(板块涨幅≥1.5%)。' +
     '<b>两列口径不同、不要互相替代</b>：等级看"梯队结构完整度"，情绪周期看"题材走到哪一步、该怎么操作"。' +

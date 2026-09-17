@@ -317,7 +317,7 @@ td.sc-c{white-space:nowrap;width:1%}
     <button class="btn" onclick="manualRefresh()">手动刷新</button>
   </div>
   <div class="hlinks">
-    <a href="#m2">盯盘流程</a><a href="#m3">昨涨停分析</a><a href="#m4">指数</a><a href="#m7yz">游资看盘</a><a href="#m5">涨停复盘</a><a href="#m6">情绪周期</a><a href="#m7">资金主线</a><a href="#m8">五池明细</a><a href="#m9">10日涨幅榜</a><a href="#m10">成交额榜</a><a href="#m11">自动总结</a><a href="#m75">板块分级</a><a href="#m7_11">主线标的</a><a href="#m7_10">板块标的</a><a href="#m7top16">个人持仓</a>
+    <a href="#m2">盯盘流程</a><a href="#m3">昨涨停分析</a><a href="#m4">指数</a><a href="#m7yz">游资看盘</a><a href="#m5">涨停复盘</a><a href="#m6">情绪周期</a><a href="#m7">资金主线</a><a href="#m8">五池明细</a><a href="#m9">10日涨幅榜</a><a href="#m10">成交额榜</a><a href="#m11">自动总结</a><a href="#m75">板块分级</a><a href="#m7top34">板块强度</a><a href="#m7_11">主线标的</a><a href="#m7_10">板块标的</a><a href="#m7top16">个人持仓</a>
   </div>
 </div>
 </header>
@@ -450,6 +450,12 @@ td.sc-c{white-space:nowrap;width:1%}
 <section class="card" id="m7top24">
 <h2>7.24 轮动监控记录<small>每30分钟自动落点 · 板块评级前5 + 大盘情绪</small></h2>
 <div id="m7_24"><div class="loading">数据加载中…</div></div>
+</section>
+
+<!-- 7.34 板块强度五维评分（置于 7.24 之后）· 盘后复盘 / 集合竞价 / 盘中实时 三层 -->
+<section class="card" id="m7top34">
+<h2>7.34 板块强度 · 五维评分（1进2 专用）<small>①涨停梯队 ②涨停家数 ③赚钱效应 ④竞价强度 ⑤盘中进攻持续性（各 20 分）｜盘后复盘 → 集合竞价 → 盘中实时（9:30-10:30）三层判断｜板块弱则 1进2 大概率炸板</small></h2>
+<div id="m7_34"><div class="loading">数据加载中…</div></div>
 </section>
 
 <!-- 模块5 涨停复盘 -->
@@ -2532,6 +2538,286 @@ function renderYZ(){
   if(!YZ.done) yzEnsure(function(){ renderYZ(); });     /* 行情/昨日跌停池到位后补渲染一次 */
 }
 
+/* ==================================================================
+   7.34 板块强度 · 五维评分（盘后复盘 → 集合竞价 → 盘中实时 三层）
+   ------------------------------------------------------------------
+   方法论：用户《如何判断板块强度？》—— 适合 1进2 / 连板梯队选股。
+     核心命题：**板块强度决定二板能不能封住；个股再好，板块弱，1进2 大概率炸板。**
+     五个维度（各 20 分，合计 100）：①涨停梯队 ②涨停家数 ③赚钱效应（封板质量 + 昨日赚钱效应）
+                                    ④竞价强度 ⑤盘中进攻持续性
+     三层判断时点：盘后复盘（前一日收盘） → 集合竞价（9:25 后） → 盘中实时（9:30-10:30 黄金窗口）
+   ------------------------------------------------------------------
+   与前两张卡的分工（三套口径互不替代，冲突取更严者）：
+     · 7.5 板块五级分级 S/A/B/C/D = 梯队结构完整度 + 催化
+     · 7.5 板块情绪周期 SECC     = 题材自身走到哪一步（启动→…→退潮）
+     · 本卡 板块强度 五维         = **"这个板块今天能不能做 1进2"**（盘后 + 竞价 + 盘中三层打分）
+   取数：全部复用平台既有数据（D.ztGroup / D.zb / D.dt / D.prev / D.prevQ / wb_secsnap / 腾讯快照），
+        行情批次与「游资看盘」共享（yzEnsure），不新增额外请求。
+   ================================================================== */
+var SB_RULE = {
+  ztMain: 8, ztSub: 4,                 /* 涨停家数：≥8 主线强板块 / 4-7 支线轮动 / 1-3 脉冲一日游 */
+  earlyFbt: 100000, lateFbt: 143000,   /* 早盘封板（10:00 前） / 尾盘偷袭板（14:30 后） */
+  premHi: 70, premMid: 50,             /* 竞价溢价率（昨日涨停股今日高开比例）：≥70 强势 / ≥50 中性 / <50 弱势 */
+  premAvgStrong: 3, premAvgNorm: 1,    /* 板块竞价平均涨幅：≥+3 强溢价 / +1~+3 正常 / <+1 偏弱 / <0 走弱 */
+  burstBigOpen: 8, singlePoint: 9,     /* 一字或高开 ≥8% = 先锋加分；龙头高开 ≥9% 而其他集体低开 = 单点脉冲 */
+  sealEarlyPct: 0.5, sealLateMax: 0, sealBadPct: 0.2,
+  refillGood: 0.5, refillMid: 0.25,    /* 炸板回封率 */
+  spreadFast: 0.4, spreadMid: 0.25,    /* 10:00 前封板占比（涨停扩散速度） */
+  scoreStrong: 80, scoreMid: 60, scoreWeak: 40,
+  aucVolLift: 1.5                      /* 竞价爆量：前排龙头竞价换手 > 全市场中位 ×1.5 */
+};
+/* 上一交易日快照里的板块梯队轨迹（判「连续 2-3 日梯队向上拓展高度」） */
+function sbSnapSeries(name){
+  var all = lsGet('wb_secsnap', {}) || {}, out = [];
+  Object.keys(all).filter(function(d){ return d < D.date; }).sort().slice(-3).forEach(function(d){
+    var s = (all[d] || {})[name];
+    if(s) out.push({ date: d, zt: s.zt || 0, ml: s.ml || 0 });
+  });
+  return out;
+}
+/* 单板块五维打分（纯函数：分数 + 依据 + 陷阱） */
+function sbJudge(name){
+  var gz = (D.ztGroup || {})[name] || [];
+  if(!gz.length) return null;
+  var pz = (typeof seccPrevMap === 'function' ? seccPrevMap()[name] : null) || (prevZtBySector()[name] || []);
+  var ztCnt = gz.length;
+  function maxLbc(arr){ return (arr || []).reduce(function(m, x){ return Math.max(m, x.lbc || 1); }, 0); }
+  var hi = maxLbc(gz);
+  var midCnt = 0, firstCnt = 0, early = 0, late = 0, bad = 0, refilled = 0, spreadFast = 0;
+  gz.forEach(function(x){
+    var l = x.lbc || 1, fbt = x.fbt || 999999, zbc = x.zbc || 0;
+    if(hi >= 3 && l >= 2 && l <= hi - 1) midCnt++;
+    if(l === 1) firstCnt++;
+    if(fbt <= SB_RULE.earlyFbt) early++;
+    if(fbt >= SB_RULE.lateFbt) late++;
+    if(zbc >= 1){ bad++; refilled++; }                 /* 炸板后仍在涨停池 = 已回封 */
+    if(fbt <= SB_RULE.earlyFbt) spreadFast++;
+  });
+  var zbArr = (D.zb || []).filter(function(x){ return x.hybk === name; });
+  var dtArr = (D.dt || []).filter(function(x){ return x.hybk === name; });
+  var refillRate = (refilled + zbArr.length) ? refilled / (refilled + zbArr.length) : null;
+  /* 昨日该板块涨停股今日成绩（赚钱效应 + 竞价层；走 D.prevQ，零额外请求） */
+  var prem = [], pctsArr = [], mian = 0, hiOpen = 0, lowOpen = 0;
+  pz.forEach(function(x){
+    var q = D.prevQ ? D.prevQ[x.c] : null;
+    if(q && q.openPrem != null){ prem.push(q.openPrem); if(q.openPrem > 0) hiOpen++; else lowOpen++; }
+    if(q && q.pct != null){ pctsArr.push(q.pct); if(q.pct <= -5) mian++; }
+  });
+  var premAvg = mean(prem), pctAvg = mean(pctsArr);
+  var premRate = prem.length ? hiOpen / prem.length * 100 : null;
+  /* 竞价先锋：一字 / 大高开 / 竞价爆量（行情与游资看盘共享同一批次） */
+  var oneWord = 0, bigOpen = 0, frontAuc = 0, aucPer = [];
+  var auc = (typeof aucToday === 'function') ? (aucToday() || {}) : {};
+  (D.zt || []).forEach(function(x){
+    var q = yzQOf(x.c); if(!q) return;
+    if(q.ztp != null && q.open != null && q.low != null && q.open >= q.ztp - 0.001 && q.low >= q.ztp - 0.001) oneWord++;
+    if(q.openPrem != null && q.openPrem >= SB_RULE.burstBigOpen) bigOpen++;
+    var av = num(auc[x.c]);
+    if(av != null && q.price && x.ltsz) aucPer.push({ c: x.c, sec: x.hybk, v: av * 100 / (x.ltsz / q.price) * 100 });
+  });
+  var marketAucMed = median(aucPer.map(function(o){ return o.v; }));
+  var secAuc = aucPer.filter(function(o){ return o.sec === name; });
+  if(secAuc.length){
+    var mx = Math.max.apply(null, secAuc.map(function(o){ return o.v; }));
+    if(marketAucMed == null || mx >= marketAucMed * SB_RULE.aucVolLift) frontAuc = 1;
+  }
+  var lead = gz.slice().sort(function(a, b){ return (b.lbc || 1) - (a.lbc || 1) || (b.fund || 0) - (a.fund || 0); })[0];
+  var leadQ = lead ? yzQOf(lead.c) : null;
+  var singlePoint = !!(leadQ && leadQ.openPrem != null && leadQ.openPrem >= SB_RULE.singlePoint &&
+    prem.length >= 2 && (lowOpen / prem.length) >= 0.7);
+  var idx = D.idxList && D.idxList[0];
+  var idxPct = (idx && idx.pct != null) ? idx.pct : null;
+  /* ---- ① 涨停梯队（20） ---- */
+  var s1, why1;
+  if(hi >= 3 && midCnt >= 1 && firstCnt >= 4){ s1 = 20; why1 = '宝塔式：' + hi + ' 板 → 中层 ' + midCnt + ' 家 → 首板 ' + firstCnt + ' 家'; }
+  else if(hi >= 3 && (midCnt >= 1 || firstCnt >= 3)){ s1 = 14; why1 = '高标 ' + hi + ' 板，梯队层不全（中层 ' + midCnt + ' / 首板 ' + firstCnt + '）'; }
+  else if(hi >= 2 && firstCnt >= 3){ s1 = 12; why1 = '有 ' + hi + ' 板 + 首板 ' + firstCnt + ' 家'; }
+  else if(hi === 2 && firstCnt <= 2){ s1 = 8; why1 = '只有 2 板 + 首板寥寥（梯队单薄）'; }
+  else if(ztCnt === 1 && hi === 1){ s1 = 2; why1 = '孤板：仅 1 只首板、板块无同伴无连板 → 次日 1进2 大坑'; }
+  else { s1 = 6; why1 = '梯队残缺（最高 ' + hi + ' 板 / 首板 ' + firstCnt + ' 家）'; }
+  /* ---- ② 涨停家数（20） ---- */
+  var s2, why2;
+  if(ztCnt >= SB_RULE.ztMain){ s2 = 20; why2 = '涨停 ' + ztCnt + ' 家（≥' + SB_RULE.ztMain + '）= 主线强板块'; }
+  else if(ztCnt >= SB_RULE.ztSub){ s2 = 12; why2 = '涨停 ' + ztCnt + ' 家（' + SB_RULE.ztSub + '-' + (SB_RULE.ztMain - 1) + '）= 支线/轮动'; }
+  else { s2 = 4; why2 = '涨停 ' + ztCnt + ' 家（1-' + SB_RULE.ztPulse + '）= 脉冲一日游，次日极易兑现'; }
+  /* ---- ③ 赚钱效应（20 = 封板质量 10 + 昨日赚钱效应 10） ---- */
+  var earlyPct = early / ztCnt, badPct = bad / ztCnt;
+  var s3a, why3a;
+  if(earlyPct >= SB_RULE.sealEarlyPct && late <= SB_RULE.sealLateMax && badPct < SB_RULE.sealBadPct){ s3a = 10; why3a = '早盘封板 ' + early + '/' + ztCnt + '、无尾盘偷袭、烂板 ' + bad + ' 家（质量好）'; }
+  else if(earlyPct >= 0.3 && late <= 1){ s3a = 6; why3a = '早盘封板 ' + early + '/' + ztCnt + '、尾盘偷袭 ' + late + ' 家（中等）'; }
+  else { s3a = 2; why3a = '尾盘偷袭 ' + late + ' 家 / 烂板 ' + bad + ' 家（封板质量差 → 次日兑现概率大）'; }
+  var s3b, why3b;
+  if(!pctsArr.length){ s3b = 5; why3b = '昨日该板块无涨停样本 → 按中性处理（需连续两日在线）'; }
+  else if(pctAvg >= 3 && mian === 0){ s3b = 10; why3b = '昨日涨停股今日均涨 ' + fpct(pctAvg) + '、无闷杀（正向溢价）'; }
+  else if(pctAvg >= 0){ s3b = 6; why3b = '昨日涨停股今日均涨 ' + fpct(pctAvg) + '（弱正溢价）'; }
+  else { s3b = 2; why3b = '昨日涨停股今日均涨 ' + fpct(pctAvg) + '、闷杀 ' + mian + ' 家（亏钱效应 → 次日回避该板块 1进2）'; }
+  var s3 = s3a + s3b;
+  /* ---- ④ 竞价强度（20） ---- */
+  var s4a = premRate == null ? 3 : (premRate >= SB_RULE.premHi ? 8 : (premRate >= SB_RULE.premMid ? 5 : 2));
+  var s4b = premAvg == null ? 2 : (premAvg >= SB_RULE.premAvgStrong ? 6 : (premAvg >= SB_RULE.premAvgNorm ? 4 : (premAvg >= 0 ? 2 : 0)));
+  var s4c = (!secAuc.length ? 1 : (frontAuc ? 3 : 0));
+  var s4d = (oneWord > 0 || bigOpen > 0) ? (singlePoint ? 0 : 3) : 0;
+  var s4e = (idxPct == null || premAvg == null) ? 0 : ((idxPct < 0 && premAvg > 0) ? 2 : ((idxPct > 0.5 && premAvg < 0) ? -2 : 0));
+  var s4 = Math.max(0, Math.min(20, s4a + s4b + s4c + s4d + s4e));
+  /* ---- ⑤ 盘中进攻持续性（20 = 扩散 8 + 回封 8 + 抗跌 4） ---- */
+  var spreadPct = spreadFast / ztCnt;
+  var s5a = spreadPct >= SB_RULE.spreadFast ? 8 : (spreadPct >= SB_RULE.spreadMid ? 5 : 2);
+  var s5b = refillRate == null ? 8 : (refillRate >= SB_RULE.refillGood ? 8 : (refillRate >= SB_RULE.refillMid ? 5 : 2));
+  var s5c = dtArr.length ? 0 : (((zbArr.length / Math.max(1, ztCnt + zbArr.length)) < 0.3) ? 4 : 2);
+  var s5 = s5a + s5b + s5c;
+  var total = s1 + s2 + s3 + s4 + s5;
+  /* ---- 分类（原文第四节）+ 假强陷阱（原文第五节） ---- */
+  var series = sbSnapSeries(name), upTrend = false;
+  if(series.length >= 2){
+    var f0 = series[0], l0 = series[series.length - 1];
+    upTrend = (l0.ml > f0.ml) || (l0.zt >= 4 && series.every(function(s){ return s.zt >= 3; }));
+  }
+  var isMarketTop = !!(hi && hi === maxLbc(D.zt || []));
+  var mainHits = (upTrend ? 1 : 0) + (ztCnt >= 4 ? 1 : 0) + (isMarketTop ? 1 : 0);
+  var cls, clsWhy;
+  if(mainHits >= 2 && ztCnt >= SB_RULE.ztSub){
+    cls = '主线'; clsWhy = '主线特征 ' + mainHits + '/3（连续梯队向上' + (upTrend ? '✓' : '×') + ' / 每日新增涨停' + (ztCnt >= 4 ? '✓' : '×') +
+      ' / 市场最高板出自本板块' + (isMarketTop ? '✓' : '×') + '）→ 优先做 1进2';
+  } else if(ztCnt >= SB_RULE.ztSub){ cls = '支线'; clsWhy = '涨停 ' + ztCnt + ' 家、无高度龙头（最高 ' + hi + ' 板）→ 谨慎做 1进2、轻仓'; }
+  else {
+    cls = '一日游';
+    clsWhy = hi >= 2
+      ? '涨停仅 ' + ztCnt + ' 家（≤' + SB_RULE.ztPulse + '）= 脉冲，虽有 ' + hi + ' 板也属「独苗」、无梯队支撑 → 坚决回避 1进2'
+      : '涨停 ' + ztCnt + ' 家、无梯队 → 坚决回避 1进2';
+  }
+  var traps = [];
+  if(singlePoint) traps.push('单点行情：' + (lead ? lead.n : '龙头') + ' 高开 ' + fpct(leadQ && leadQ.openPrem) + ' 但板块 ' + (lowOpen / prem.length * 100).toFixed(0) + '% 低开 → 不要接力后排 1进2');
+  var prevLate = pz.filter(function(x){ return (x.fbt || 0) >= SB_RULE.lateFbt; }).length;
+  if(pz.length && prevLate / pz.length >= 0.5 && premAvg != null && premAvg < 0) traps.push('尾盘集体偷袭板：昨日 ' + prevLate + '/' + pz.length + ' 家 14:30 后拉板，今日竞价 ' + fpct(premAvg) + ' → 典型一日游');
+  if(ztCnt <= 3 && hi <= 1) traps.push('脉冲板块：仅 ' + ztCnt + ' 家涨停且无梯队');
+  /* 强度分级 + 纪律约束：脉冲一日游最高只能「弱」；命中假强陷阱直接「回避」
+     —— 防止出现"分数高就敢做"（原文明确：脉冲一日游坚决回避 1进2） */
+  var level = total >= SB_RULE.scoreStrong ? '强' : (total >= SB_RULE.scoreMid ? '中' : (total >= SB_RULE.scoreWeak ? '弱' : '回避'));
+  if(cls === '一日游' && (level === '强' || level === '中')) level = '弱';
+  if(traps.length) level = '回避';
+  return { name: name, ztCnt: ztCnt, hi: hi, midCnt: midCnt, firstCnt: firstCnt, early: early, late: late, bad: bad,
+    zb: zbArr.length, dt: dtArr.length, refillRate: refillRate, spreadPct: spreadPct,
+    premAvg: premAvg, premRate: premRate, pctAvg: pctAvg, mian: mian, sample: pz.length,
+    oneWord: oneWord, bigOpen: bigOpen, frontAuc: frontAuc, aucMed: marketAucMed, aucN: secAuc.length,
+    idxPct: idxPct, singlePoint: singlePoint, lead: lead, leadQ: leadQ,
+    s: { d1: s1, d2: s2, d3a: s3a, d3b: s3b, d3: s3, d4: s4, d4a: s4a, d4b: s4b, d4c: s4c, d4d: s4d, d4e: s4e,
+      d5: s5, d5a: s5a, d5b: s5b, d5c: s5c },
+    why: { d1: why1, d2: why2, d3a: why3a, d3b: why3b },
+    total: total, level: level, cls: cls, clsWhy: clsWhy, traps: traps, upTrend: upTrend, isMarketTop: isMarketTop, mainHits: mainHits };
+}
+function sbAll(){
+  var out = [];
+  Object.keys(D.ztGroup || {}).filter(function(k){ return k !== '其他'; }).forEach(function(n){
+    var r = null; try{ r = sbJudge(n); }catch(e){ r = null; }
+    if(r) out.push(r);
+  });
+  out.sort(function(a, b){ return b.total - a.total || b.ztCnt - a.ztCnt; });
+  return out;
+}
+function sbScoreCell(v, max){ return '<span class="mono ' + (v >= max * 0.8 ? 'up' : (v >= max * 0.5 ? 'yel' : 'dn')) + '">' + v + '</span>'; }
+function sbHtml(rows){
+  if(!rows.length) return '<div class="loading">暂无板块数据（等待涨停池）</div>';
+  var good = rows.filter(function(r){ return r.level === '强' && r.cls === '主线' && !r.traps.length; });
+  var watch = rows.filter(function(r){ return (r.cls === '支线' || r.level === '中') && !r.traps.length; });
+  var avoid = rows.filter(function(r){ return r.traps.length || r.cls === '一日游' || r.level === '回避'; });
+  var h = '';
+  h += '<div class="concl ' + (good.length ? 'c-red' : 'c-yel') + '"><b>板块强度五维评分（各 20 分 · 合计 100）</b>　' +
+    '三层判断：<b>盘后复盘</b>（梯队/家数/封板质量/赚钱效应）→ <b>集合竞价</b>（溢价率/平均涨幅/爆量先锋/一字高开/对大盘）→ <b>盘中实时</b>（扩散速度/回封率/抗跌）。' +
+    '<br><b>可做 1进2（主线 + 强度 ≥' + SB_RULE.scoreStrong + ' + 无假强陷阱）：</b>' +
+    (good.length ? good.slice(0, 6).map(function(r){ return '<span class="tag tag-r">' + esc(r.name) + ' ' + r.total + '分</span>'; }).join(' ') : '<span class="flat">当前无（宁可不做）</span>') +
+    '<br><b>谨慎（支线 / 中等）：</b>' + (watch.length ? watch.slice(0, 6).map(function(r){ return '<span class="tag tag-y">' + esc(r.name) + ' ' + r.total + '</span>'; }).join(' ') : '<span class="flat">—</span>') +
+    '<br><b>回避（一日游 / 假强陷阱）：</b>' + (avoid.length ? avoid.slice(0, 8).map(function(r){ return '<span class="tag tag-g">' + esc(r.name) + ' ' + r.total + '</span>'; }).join(' ') : '<span class="flat">—</span>') +
+    '<br><span class="note" style="margin:0">原文命题：<b>板块强度决定二板能不能封住；个股再好，板块弱，1进2 大概率炸板。</b>' +
+    '本卡与 7.5 分工不同：7.5 看「梯队结构 + 题材走到哪一步」，本卡回答「<b>这个板块今天能不能做 1进2</b>」。三套口径冲突时取更严者。</span></div>';
+  h += '<div class="twrap"><table class="mini-tbl"><thead><tr><th>板块</th><th>总分</th><th>强度</th><th>分类</th>' +
+    '<th>①梯队<br><span class="flat">/20</span></th><th>②家数<br><span class="flat">/20</span></th><th>③赚钱效应<br><span class="flat">/20</span></th>' +
+    '<th>④竞价<br><span class="flat">/20</span></th><th>⑤盘中<br><span class="flat">/20</span></th><th>关键读数</th><th>陷阱</th></tr></thead><tbody>' +
+    rows.map(function(r){
+      return '<tr><td><b>' + esc(r.name) + '</b>' + (r.isMarketTop ? ' <span class="badge b-r">市场最高板</span>' : '') + '</td>' +
+        '<td class="mono" style="font-weight:800">' + r.total + '</td>' +
+        '<td><span class="tag ' + (r.level === '强' ? 'tag-r' : (r.level === '中' ? 'tag-y' : (r.level === '弱' ? 'tag-o' : 'tag-g'))) + '">' + r.level + '</span></td>' +
+        '<td><span class="tag ' + (r.cls === '主线' ? 'tag-r' : (r.cls === '支线' ? 'tag-y' : 'tag-g')) + '">' + r.cls + '</span></td>' +
+        '<td>' + sbScoreCell(r.s.d1, 20) + '</td><td>' + sbScoreCell(r.s.d2, 20) + '</td><td>' + sbScoreCell(r.s.d3, 20) + '</td>' +
+        '<td>' + sbScoreCell(r.s.d4, 20) + '</td><td>' + sbScoreCell(r.s.d5, 20) + '</td>' +
+        '<td class="flat" style="white-space:normal;min-width:200px">涨停 ' + r.ztCnt + ' 家（早封 ' + r.early + ' / 尾偷袭 ' + r.late + ' / 烂板 ' + r.bad + '）｜最高 ' + r.hi + ' 板' +
+        (r.sample ? '｜昨涨停今均涨 ' + fpct(r.pctAvg) + '、高开率 ' + (r.premRate == null ? '—' : r.premRate.toFixed(0) + '%') : '｜昨日无涨停样本') +
+        '｜炸板 ' + r.zb + '、回封率 ' + (r.refillRate == null ? '无炸板' : (r.refillRate * 100).toFixed(0) + '%') + '</td>' +
+        '<td style="white-space:normal;min-width:160px">' + (r.traps.length ? r.traps.map(function(t){ return '<span class="dn">' + esc(t) + '</span>'; }).join('<br>') : '<span class="flat">—</span>') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+  h += '<details style="margin-top:10px"><summary>① 五维阈值速查（原文口径 → 本卡阈值 → 分值）</summary><div class="dbody">' +
+    '<div class="twrap"><table class="mini-tbl"><thead><tr><th>维度</th><th>原文口径</th><th>本卡阈值 / 分值</th></tr></thead><tbody>' +
+    '<tr><td class="up">① 涨停梯队<br><span class="flat">20 分</span></td><td style="white-space:normal">✅强势：4板→3板→2板→一堆首板，层层往上（宝塔式）｜⚠️一般：只有 2-3 个 2板、首板寥寥，梯队单薄｜❌弱势：孤零零 1 只首板、无连板（孤板）→ 次日 1进2 大坑</td>' +
+    '<td style="white-space:normal">宝塔式（≥3板 + 中层≥1 + 首板≥4）<b>20</b>｜高标但层不全 <b>14</b>｜有 2板 + 首板≥3 <b>12</b>｜2板且首板≤2 <b>8</b>｜孤板 <b>2</b></td></tr>' +
+    '<tr><td class="up">② 涨停家数<br><span class="flat">20 分</span></td><td style="white-space:normal">主线强板块 ≥8 只｜支线/轮动 4-7 只｜脉冲一日游 1-3 只（次日极易兑现，尽量不做 1进2）。须剔除转债/北交所/新股</td>' +
+    '<td style="white-space:normal">按涨停池 <b>hybk</b> 分组计数（已剔 ST/退市；北交所无日K源本就未纳入）：≥8 → <b>20</b>｜4-7 → <b>12</b>｜1-3 → <b>4</b></td></tr>' +
+    '<tr><td class="up">③ 赚钱效应<br><span class="flat">20 分<br>= 10 + 10</span></td>' +
+    '<td style="white-space:normal">质量：好＝多只实体板、早盘封板多、烂板少；差＝一堆尾盘偷袭板、炸板回封烂板多 → 次日兑现概率大<br>昨日赚钱效应：板块昨天的连板股今天高开吃肉＝正向溢价；低开闷杀/核按钮＝亏钱效应 → 次日回避该板块 1进2</td>' +
+    '<td style="white-space:normal">封板质量（10）：早封 ≥50% 且无尾盘偷袭 且烂板 <20% → 10｜中等 → 6｜否则 2<br>昨日赚钱效应（10）：昨涨停股今均涨 ≥+3% 且无闷杀 → 10｜≥0 → 6｜<0 或闷杀 ≥2 → 2（无样本按中性 5）</td></tr>' +
+    '<tr><td class="up">④ 竞价强度<br><span class="flat">20 分</span></td>' +
+    '<td style="white-space:normal">溢价率（核心）：≥70% 强势 / 一半高开 中性 / >50% 低开 弱势 → 放弃该板块 1进2<br>平均竞价涨幅：≥+3% 强 / +1~+3% 正常 / <+1% 偏弱 / 负 → 走弱<br>爆量先锋：前排龙头竞价量放大、竞昨比健康；全是后排小票异动＝假强<br>一字 / 高开 8%+ 先锋＝加分；⚠ 只有一只大高开＝单点脉冲，不是板块行情<br>板块 vs 大盘：大盘低开板块逆势高开＝加分；大盘大涨板块集体低开＝减分</td>' +
+    '<td style="white-space:normal">溢价率 8/5/2 ｜平均竞价涨幅 6/4/2/0 ｜爆量先锋 3（无竞价量数据按中性 1）｜一字或高开≥8% 3（单点脉冲记 0）｜对大盘 ±2（最终裁剪到 0-20）</td></tr>' +
+    '<tr><td class="up">⑤ 盘中进攻持续性<br><span class="flat">20 分</span></td>' +
+    '<td style="white-space:normal">涨停扩散速度：开盘 15-30 分钟内不断有新票冲涨停＝真强；冲一波后排跟不上＝孤龙虚强<br>抗跌性（分歧检验）：大盘跳水时板块红盘守住、涨停不炸＝强；跟跌 + 大量炸板＝弱<br>炸板回封能力：炸板后很快被拉回＝承接强；一路回落＝资金撤退<br>成交量持续放大：逐波增量＝真；冲高缩量＝容易冲高回落</td>' +
+    '<td style="white-space:normal">扩散（8）：10:00 前封板占比 ≥40% → 8 / ≥25% → 5 / 否则 2<br>回封（8）：回封率 ≥50% → 8 / ≥25% → 5 / 否则 2（无炸板给 8）<br>抗跌（4）：无跌停且炸板率 <30% → 4 / 有跌停 → 0 / 否则 2（<b>近似</b>，指数跳水时刻需人工核对）</td></tr>' +
+    '</tbody></table></div>' +
+    '<div class="concl c-blu"><b>分类判定（原文第四节）：</b><b>主线</b>（优先做 1进2）＝ 连续 2-3 个交易日梯队向上拓展高度 + 每天都有新增涨停 + 市场最高高度板出自本板块（命中 ≥2 条）；' +
+    '<b>支线轮动</b>（谨慎、轻仓）＝ 涨停 4-7 家且无高度龙头；<b>一日游脉冲</b>（坚决回避）＝ 突发消息刺激、当天 2-3 只涨停无梯队。' +
+    '<br><b>强度等级已叠加纪律约束（防止"分数高就敢做"）：</b>分类为「一日游」的，等级最高只能到「弱」；命中假强陷阱的一律「回避」，即使五项得分很高。</div>' +
+    '</div></details>';
+  h += '<details><summary>② 集合竞价层专表（9:25 后最有价值 · 1进2 最关键）</summary><div class="dbody">' +
+    '<div class="note" style="margin-top:0">原文：开盘 9:25 结束，立刻看这 5 项判定今天板块强不强。<b>溢价率</b>＝昨天板块涨停股今天高开的比例；<b>平均竞价涨幅</b>＝板块内昨天涨停个股竞价涨幅的平均值。</div>' +
+    '<div class="twrap"><table class="mini-tbl"><thead><tr><th>板块</th><th>溢价率<br><span class="flat">≥70 强 / ≥50 中</span></th><th>平均竞价涨幅<br><span class="flat">≥+3 强 / +1~3 正常</span></th>' +
+    '<th>一字 / 高开≥8%<br><span class="flat">先锋</span></th><th>竞价爆量先锋<br><span class="flat">前排龙头</span></th><th>板块 vs 大盘<br><span class="flat">大盘 ' + (idx0Pct() == null ? '—' : fpct(idx0Pct())) + '</span></th><th>结论</th></tr></thead><tbody>' +
+    rows.filter(function(r){ return r.sample >= 1; }).slice(0, 20).map(function(r){
+      var prem = r.premRate == null ? '—' : r.premRate.toFixed(0) + '%';
+      var verdict = r.singlePoint ? '<span class="dn">单点脉冲 → 不做</span>'
+        : ((r.premRate != null && r.premRate < SB_RULE.premMid) ? '<span class="dn">弱势（>50% 低开）→ 放弃 1进2</span>'
+          : (r.s.d4 >= 14 ? '<span class="up">强 → 可做 1进2</span>' : '<span class="yel">中性 → 观察</span>'));
+      var vsIdx = (r.idxPct == null || r.premAvg == null) ? '—' : ((r.idxPct < 0 && r.premAvg > 0) ? '<span class="up">逆势高开（加分）</span>'
+        : ((r.idxPct > 0.5 && r.premAvg < 0) ? '<span class="dn">大盘涨而板块低开（减分）</span>' : '<span class="flat">同步</span>'));
+      return '<tr><td><b>' + esc(r.name) + '</b></td><td class="mono ' + (r.premRate == null ? 'flat' : (r.premRate >= SB_RULE.premHi ? 'up' : (r.premRate >= SB_RULE.premMid ? 'yel' : 'dn'))) + '">' + prem + '</td>' +
+        '<td>' + pcts(r.premAvg) + '</td><td class="mono">' + (r.oneWord + r.bigOpen) + ' 只</td>' +
+        '<td>' + (r.aucN ? (r.frontAuc ? '<span class="up">有（' + r.aucN + ' 只含竞价量）</span>' : '<span class="flat">未见爆量</span>') : '<span class="flat">无竞价量数据</span>') + '</td>' +
+        '<td style="white-space:normal">' + vsIdx + '</td><td style="white-space:normal">' + verdict + '</td></tr>';
+    }).join('') + '</tbody></table></div>' +
+    '<div class="note"><b>竞价量口径：</b>平台 <b>wb_auc_&lt;日期&gt;</b>（9:25–9:30 在线抓取，或用东财分时首根 09:30 回填，机制见 7.30 / 7.31）。' +
+    '本卡用「竞价量×100 ÷ 流通股」近似 <b>竞价换手</b>，与全市场涨停股中位比较判「爆量先锋」——原文的「竞昨比」需要昨日成交量，免费源不稳定，故用换手近似并在此如实标注；' +
+    '无竞价量数据时该项按中性 1 分，不额外扣分。</div></div></details>';
+  h += '<details><summary>③ 假强板块陷阱 + 取数口径自证</summary><div class="dbody">' +
+    '<div class="concl c-yel"><b>原文「1进2 最容易踩坑的假强板块」（本卡已自动检测前两类）：</b><br>' +
+    '① <b>单只大龙头带不动板块</b>：龙头高开 9%、板块其他全部低开 → 单点行情，不要接力后排 1进2（<b>已量化</b>：龙头竞价涨幅 ≥' + SB_RULE.singlePoint + '% 且板块低开比例 ≥70%）<br>' +
+    '② <b>尾盘集体偷袭板</b>：昨天一堆票最后几分钟拉板，第二天竞价全部低开 → 典型一日游（<b>已量化</b>：昨日 14:30 后封板占比 ≥50% 且今日竞价平均为负）<br>' +
+    '③ <b>消息一次性刺激</b>：政策落地、公告利好，利好兑现即高点 → 【人工核对】无稳定量化源</div>' +
+    (function(){
+      var t = [];
+      rows.forEach(function(r){ r.traps.forEach(function(x){ t.push({ sec: r.name, txt: x, total: r.total }); }); });
+      return t.length ? '<div class="twrap"><table class="mini-tbl"><thead><tr><th>板块</th><th>强度分</th><th>命中陷阱</th></tr></thead><tbody>' +
+        t.map(function(x){ return '<tr><td><b>' + esc(x.sec) + '</b></td><td class="mono">' + x.total + '</td><td class="dn" style="white-space:normal">' + esc(x.txt) + '</td></tr>'; }).join('') +
+        '</tbody></table></div>' : '<div class="note">当前未检测到假强陷阱（两类可量化的）。</div>';
+    })() +
+    '<div class="twrap" style="margin-top:8px"><table class="mini-tbl"><thead><tr><th>读数</th><th>取数口径</th></tr></thead><tbody>' +
+    '<tr><td class="up">板块涨停梯队 / 家数 / 封板质量</td><td style="white-space:normal">涨停池按 <b>hybk</b> 分组；早盘封板 = <b>fbt ≤ 10:00</b>；尾盘偷袭 = <b>fbt ≥ 14:30</b>；烂板 = <b>zbc ≥ 1</b>（炸板次数）</td></tr>' +
+    '<tr><td class="up">昨日赚钱效应</td><td style="white-space:normal">昨日涨停池按 hybk 分组 → 今日表现取平台 <b>D.prevQ</b>（腾讯快照，与 7.3 同源）：均涨、闷杀（≤ -5%）、跌停数</td></tr>' +
+    '<tr><td class="up">竞价溢价率 / 平均涨幅</td><td style="white-space:normal">竞价溢价 = 今开 ÷ 昨收 − 1（<b>全天可得</b>，与游资看盘同源）；溢价率 = 高开家数 ÷ 昨日该板块涨停家数</td></tr>' +
+    '<tr><td class="up">一字 / 大高开先锋</td><td style="white-space:normal">一字 = 今开 ≥ 涨停价 且 最低 ≥ 涨停价；大高开先锋 = 竞价溢价 ≥ ' + SB_RULE.burstBigOpen + '%</td></tr>' +
+    '<tr><td class="up">炸板回封率</td><td style="white-space:normal">回封 = 涨停池中 <b>zbc ≥ 1</b> 的家数（炸过又被拉回）；回封率 = 回封 ÷（回封 + 炸板池家数）</td></tr>' +
+    '<tr><td class="up">连续梯队 / 每日新增</td><td style="white-space:normal">本机快照 <b>wb_secsnap</b>（收盘后落盘，保留 12 日）：比较最近 2-3 日的 <b>zt / ml</b> 变化</td></tr>' +
+    '<tr><td class="up">【人工核对】</td><td style="white-space:normal">消息一次性刺激的真伪、指数跳水时刻板块是否「红盘守住」（需分时逐笔）、封单撤单过程、竞价五档委买委卖</td></tr>' +
+    '</tbody></table></div>' +
+    '<div class="note">⚠️ 本页三个「板块」口径并存，判据不同、<b>不可互相替代</b>：7.5 的 S/A/B/C/D 看梯队结构完整度，7.5 的情绪周期看题材走到哪一步，' +
+    '本卡看「今天能不能做 1进2」。三者冲突时<b>取更严者</b>。仅为交易体系梳理与数据可视化，<b>不构成任何投资建议</b>。</div>' +
+    '</div></details>';
+  return h;
+}
+function idx0Pct(){ var x = D.idxList && D.idxList[0]; return (x && x.pct != null) ? x.pct : null; }
+function renderM734(){
+  var box = $('m7_34'); if(!box) return;
+  if(!D.zt.length){ box.innerHTML = '<div class="loading">暂无涨停池数据（可能为非交易日或接口受限）</div>'; return; }
+  var rows = sbAll();
+  box.innerHTML = sbHtml(rows);
+  if(!YZ.done) yzEnsure(function(){ renderM734(); });   /* 行情到位后补渲染一次（判一字/爆量先锋用） */
+}
+
 /* 板块五级分级 */
 function gradeSectors(){
   var zc = ztCountBySector();
@@ -2588,6 +2874,7 @@ function renderAll(){
   renderM3(); renderM4(); renderM5(); renderM6();
   renderM7(); renderM8(); renderM9(); renderM721(); renderM10(); renderM11();
   renderYZ();    /* 游资看盘（独立卡片，置于 ④ 之后；数据随本函数每轮刷新，自身只补 2 批行情 + 1 次昨日跌停池） */
+  renderM734();  /* 7.34 板块强度五维（置于 7.24 之后；复用涨停池 + D.prevQ + 与游资看盘共享的行情批次，零额外请求） */
   renderDiv();   /* 置顶风控信号：指数 vs 情绪 背离判断（置顶横幅，每刷新实时更新） */
   renderCyc();   /* 置顶风控信号：大盘情绪完整大周期（置顶横幅，每刷新实时更新） */
 }

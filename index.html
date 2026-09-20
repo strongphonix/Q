@@ -733,161 +733,17 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
 .m11s-pur{color:#c084fc}
 </style>
 <div id="m11static" class="m11s-wrap">
-  <div class="m11s-head">
-    <span class="m11s-date">盘面全面总结 · 20260918</span>
-    <button id="m11copyBtn" class="m11s-btn" onclick="(function(){var ta=document.createElement('textarea');ta.value=document.getElementById('m11static').innerText;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);var b=document.getElementById('m11copyBtn');var o=b.innerHTML;b.innerHTML='✓ 已复制';setTimeout(function(){b.innerHTML=o;},1500);})()">📋 复制复盘</button>
+
+  <h3 class="m11s-h3">九、市场复盘小结<button id="m11recapBtn" class="m11s-btn" style="margin-left:10px" onclick="genDailyRecap()">🔄 生成今日复盘小结</button><button id="m11copyBtn" class="m11s-btn" style="margin-left:6px" onclick="(function(){var ta=document.createElement('textarea');ta.value=document.getElementById('m11static').innerText;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);var b=document.getElementById('m11copyBtn');var o=b.innerHTML;b.innerHTML='✓ 已复制';setTimeout(function(){b.innerHTML=o;},1500);})()">📋 复制复盘</button><span id="m11recapStat" style="margin-left:8px;font-weight:400;font-size:11px;color:#94a3b8"></span></h3>
+  <div id="m11recapStatic">
+  <div class="m11s-verdict"><span class="m11s-strong">一句话</span>：情绪偏暖但高度被压、主力单点突破芯片链、电网设备是新合力候选——明日重低位低吸、轻高位追板，盯竞价定生死。</div>
+  <p class="m11s-p"><span class="m11s-strong">情绪：进攻日，但只敢在低位进攻。</span>指数普涨（科创50 +2.88% 领涨），涨停 78 家、跌停 0 家，昨日涨停今日平均溢价 +2.05%、红盘率 68%——打板有肉、无人闷杀。但两个降温信号：空间板 5 板压到 4 板、最高标澳弘电子断板；晋级率仅 26%、首板占 85%。合起来读：情绪的"面"是热的，"高度"是压着的——资金愿进攻，但只在低位进攻。</p>
+  <p class="m11s-p"><span class="m11s-strong">主力方向：不是轮动，是单点突破。</span>全天净流入高度集中——电子+半导体+数字芯片+封测合计约 500 亿全砸在芯片链，通信/光互连约 160 亿跟随；剔除宽基概念后国产芯片 +230 亿、先进封装 +94 亿，仍指向同一处。催化三层：华为昇腾 960 超节点（事件）、黄仁勋"明年销量翻倍、瓶颈在产能"（海外映射）、"十五五"规划+CoWoS 紧缺+存储涨价（政策与产业）。三力共振才有持续性，芯片链三条全占——这就是主力的答案，且大概率不是一天行情。</p>
+  <p class="m11s-p"><span class="m11s-strong">硬指标筛合力：值得看的只有两个方向。</span>按"涨停&gt;5 只 + 成交占比≥10%"筛：电网设备（涨停 6 只）唯一过线，还是新面孔——AI 耗电给电力设备开了新叙事；半导体（涨停 5 只、板块成交约 2359 亿 ≈ 全市场近一成）踩线达标。反面教材是汽车链：昨日零部 8 家涨停最拥挤，今天只剩 2 家、盘中整车领跌——拥挤后无催化就退潮，先放一边。</p>
+  <p class="m11s-p"><span class="m11s-strong">次日盯四件事。</span>① 芯片链竞价：昨日涨停芯片股溢价仍 &gt;+2%、中军（华天科技/博通集成）高开不破均线 → 主线继续；集体低开且炸板率上 35% → 情绪透支，先减后看。② 电网设备 1 进 2：走出 2~3 家晋级即新主线确认，孤板按一日游处理。③ 2 板梯队 8 只是最厚一层，明日 1 进 2 主战场；空间板 4 板（华瓷/锡华）若放量分歧，全市场高度预期下修。④ 风控开关：若明天跌停扩散或竞价大面（≤-5%）明显增多，无论主线与否先降仓——退潮期主线也补跌，活着才有下一轮。</p>
+  <div class="m11s-note">本小结基于 2026-09-18 收盘数据与公开资讯（昇腾 960 超节点、英伟达指引、"十五五"规划等）撰写，逻辑推演仅供参考，<span class="m11s-ora">不构成投资建议</span>。</div>
   </div>
-  <div class="m11s-src">数据来源：东方财富涨停/炸板/跌停池（push2ex）、板块资金（push2delay clist）、腾讯实时快照；复盘基准日（昨日）= 20260917。口径：涨停=涨停池家数；连板高度按东财 lbc（1=首板）；一字/竞价涨停＝首封 09:25:00（fbt=92500）；炸板率=炸板/(涨停+炸板)。</div>
-
-  <h3 class="m11s-h3">一、大盘环境</h3>
-  <ul class="m11s-ul">
-    <li><span class="m11s-up">科创50</span> +2.88%（领涨：—）</li>
-    <li><span class="m11s-up">创业板指</span> +2.25%（领涨：—）</li>
-    <li><span class="m11s-up">深证成指</span> +1.72%（领涨：—）</li>
-    <li><span class="m11s-up">上证指数</span> +0.94%（领涨：—）</li>
-    <li>涨跌停：<span class="m11s-up">涨停 78 只</span> / <span class="m11s-dn">跌停 0 只</span> / 炸板 25 只（炸板率 24.3%）</li>
-    <li>全市场无跌停、涨停接近 80 家 → <span class="m11s-strong">短线情绪偏暖、亏钱效应极低</span>，属多头占优的一天。</li>
-  </ul>
-
-  <h3 class="m11s-h3">二、集合竞价与开盘定调</h3>
-  <ul class="m11s-ul">
-    <li>今日竞价/一字涨停（开盘即封板）<span class="m11s-up">3 只</span>，其中 10:00 前封板 43 只 → 早盘资金抢筹意愿强。</li>
-    <li>昨日涨停股今日<span class="m11s-strong">竞价平均溢价 +2.05%</span>；红盘率 68%，平均收盘 +2.78%。</li>
-    <li>竞价定调：<span class="m11s-up">昨日打板资金今日普遍有溢价、闷杀稀少（≤-5% 仅 1 只）</span>，开盘即确认赚钱效应延续。</li>
-  </ul>
-
-  <h3 class="m11s-h3">三、涨停高度与宽度（连板梯队）</h3>
-  <ul class="m11s-ul">
-    <li>宽度：<span class="m11s-up">78 只涨停</span>（剔除 ST 0 只）。</li>
-    <li>高度：<span class="m11s-strong">空间板 4 板</span> → 华瓷股份(001216)、锡华科技(603248)（封单0.98亿、封单0.49亿）。</li>
-    <li>连板梯队（板位数→家数）：4板×2，3板×2，2板×8，1板×66</li>
-    <li>特征：<span class="m11s-strong">首板占 85%、连板仅 12 只</span>，配合晋级率 26% → 典型“高度压、宽度在”，资金偏好低位套利，高位接力意愿弱。</li>
-    <li>一字板 3 只（百通能源、华软科技、经纬股份…）；炸板 25 只（炸板率 24.3%，回封质量尚可）。</li>
-  </ul>
-
-  <h3 class="m11s-h3">四、昨日涨停复盘（20260917，共 47 只）</h3>
-  <ul class="m11s-ul">
-    <li><span class="m11s-strong">晋级率 26%</span>（12/47）：首板晋级 8/38（21%），连板晋级 4/9（44%）。</li>
-    <li>首板今日平均竞价溢价 +1.94% / 平均收盘 +2.52%；连板今日平均竞价溢价 +2.54% / 平均收盘 +3.88%。</li>
-    <li>红盘率 68%，闷杀（≤-5%）1 只，跌停 0 只。</li>
-    <li>昨日最高标 <span class="m11s-up">5 板</span> → 澳弘电子(605058)；<span class="m11s-ora">今日断板</span>（澳弘电子）→ 高度压制信号，注意高位分歧。</li>
-  </ul>
-  <table class="m11s-tbl">
-    <thead><tr><th>个股</th><th>代码</th><th>板/行业</th><th>竞价</th><th>收盘</th><th>结果</th></tr></thead>
-    <tbody>
-      <tr><td>经纬股份</td><td>301390</td><td>1板·工程咨询</td><td class="m11s-up">+20.00%</td><td class="m11s-up">+20.00%</td><td>晋级</td></tr>
-      <tr><td>华软科技</td><td>002453</td><td>1板·化学制品</td><td class="m11s-up">+10.10%</td><td class="m11s-up">+10.10%</td><td>晋级</td></tr>
-      <tr><td>内蒙新华</td><td>603230</td><td>2板·出版</td><td class="m11s-up">+10.04%</td><td class="m11s-up">+10.04%</td><td>晋级</td></tr>
-      <tr><td>华瓷股份</td><td>001216</td><td>3板·家居用品</td><td class="m11s-up">+5.53%</td><td class="m11s-up">+10.01%</td><td>晋级</td></tr>
-      <tr><td>科森科技</td><td>603626</td><td>1板·消费电子</td><td class="m11s-up">+3.95%</td><td class="m11s-up">+10.00%</td><td>晋级</td></tr>
-      <tr><td>南华生物</td><td>000504</td><td>1板·医疗服务</td><td class="m11s-up">+7.25%</td><td class="m11s-up">+10.00%</td><td>晋级</td></tr>
-      <tr><td>金健米业</td><td>600127</td><td>1板·农产品加</td><td class="m11s-up">-0.92%</td><td class="m11s-up">+9.98%</td><td>晋级</td></tr>
-      <tr><td>锡华科技</td><td>603248</td><td>3板·风电设备</td><td class="m11s-up">+0.94%</td><td class="m11s-up">+9.98%</td><td>晋级</td></tr>
-      <tr><td>华宝股份</td><td>—</td><td>闷杀</td><td class="m11s-dn">-7.43%</td><td class="m11s-dn">—</td><td>闷杀</td></tr>
-    </tbody>
-  </table>
-
-  <h3 class="m11s-h3">五、资金进攻的板块（主力净流入 / 涨幅）</h3>
-  <p class="m11s-p"><span class="m11s-strong">行业板块——主力净流入 TOP</span></p>
-  <table class="m11s-tbl">
-    <thead><tr><th>#</th><th>行业</th><th>净流入</th><th>涨幅</th><th>涨/跌</th><th>领涨</th></tr></thead>
-    <tbody>
-      <tr><td>1</td><td>电子</td><td class="m11s-blu">198.54亿</td><td class="m11s-up">+2.81%</td><td>465/49</td><td>远望谷</td></tr>
-      <tr><td>2</td><td>半导体</td><td class="m11s-blu">182.20亿</td><td class="m11s-up">+4.35%</td><td>182/4</td><td>博通集成</td></tr>
-      <tr><td>3</td><td>数字芯片设计</td><td class="m11s-blu">75.35亿</td><td class="m11s-up">+4.68%</td><td>53/1</td><td>诚邦股份</td></tr>
-      <tr><td>4</td><td>通信网络设备及器件</td><td class="m11s-blu">67.53亿</td><td class="m11s-up">+2.86%</td><td>35/2</td><td>阿莱德</td></tr>
-      <tr><td>5</td><td>集成电路封测</td><td class="m11s-blu">50.83亿</td><td class="m11s-up">+4.43%</td><td>13/0</td><td>华天科技</td></tr>
-      <tr><td>6</td><td>通信设备</td><td class="m11s-blu">46.28亿</td><td class="m11s-up">+2.15%</td><td>79/12</td><td>共进股份</td></tr>
-      <tr><td>7</td><td>通信</td><td class="m11s-blu">46.00亿</td><td class="m11s-up">+1.81%</td><td>106/23</td><td>共进股份</td></tr>
-      <tr><td>8</td><td>机械设备</td><td class="m11s-blu">39.58亿</td><td class="m11s-up">+1.93%</td><td>519/94</td><td>航天动力</td></tr>
-      <tr><td>9</td><td>电力设备</td><td class="m11s-blu">33.12亿</td><td class="m11s-up">+2.10%</td><td>369/41</td><td>中电鑫龙</td></tr>
-      <tr><td>10</td><td>计算机</td><td class="m11s-blu">31.75亿</td><td class="m11s-up">+1.90%</td><td>301/49</td><td>海量数据</td></tr>
-      <tr><td>11</td><td>有色金属</td><td class="m11s-blu">23.03亿</td><td class="m11s-up">+1.54%</td><td>127/17</td><td>春光集团</td></tr>
-      <tr><td>12</td><td>光学光电子</td><td class="m11s-blu">21.72亿</td><td class="m11s-up">+1.84%</td><td>85/9</td><td>惠科股份</td></tr>
-    </tbody>
-  </table>
-  <p class="m11s-p"><span class="m11s-strong">行业板块——涨幅 TOP</span></p>
-  <table class="m11s-tbl">
-    <thead><tr><th>#</th><th>行业</th><th>涨幅</th><th>净流入</th><th>领涨</th></tr></thead>
-    <tbody>
-      <tr><td>1</td><td>其他医疗服务</td><td class="m11s-up">+6.72%</td><td class="m11s-blu">1.97亿</td><td>南华生物</td></tr>
-      <tr><td>2</td><td>房产租赁经纪</td><td class="m11s-up">+4.86%</td><td class="m11s-blu">1.00亿</td><td>世联行</td></tr>
-      <tr><td>3</td><td>半导体设备</td><td class="m11s-up">+4.83%</td><td class="m11s-blu">18.20亿</td><td>托伦斯</td></tr>
-      <tr><td>4</td><td>数字芯片设计</td><td class="m11s-up">+4.68%</td><td class="m11s-blu">75.35亿</td><td>诚邦股份</td></tr>
-      <tr><td>5</td><td>集成电路制造</td><td class="m11s-up">+4.59%</td><td class="m11s-blu">12.40亿</td><td>盛合晶微</td></tr>
-      <tr><td>6</td><td>光伏加工设备</td><td class="m11s-up">+4.52%</td><td class="m11s-blu">0.63亿</td><td>拉普拉斯</td></tr>
-      <tr><td>7</td><td>分立器件</td><td class="m11s-up">+4.46%</td><td class="m11s-blu">11.32亿</td><td>东微半导</td></tr>
-      <tr><td>8</td><td>集成电路封测</td><td class="m11s-up">+4.43%</td><td class="m11s-blu">50.83亿</td><td>华天科技</td></tr>
-      <tr><td>9</td><td>模拟芯片设计</td><td class="m11s-up">+4.42%</td><td class="m11s-blu">1.27亿</td><td>博通集成</td></tr>
-      <tr><td>10</td><td>半导体</td><td class="m11s-up">+4.35%</td><td class="m11s-blu">182.20亿</td><td>博通集成</td></tr>
-      <tr><td>11</td><td>资产管理</td><td class="m11s-up">+4.31%</td><td class="m11s-blu">1.21亿</td><td>华金资本</td></tr>
-      <tr><td>12</td><td>诊断服务</td><td class="m11s-up">+3.97%</td><td class="m11s-blu">0.91亿</td><td>华大基因</td></tr>
-    </tbody>
-  </table>
-  <p class="m11s-p"><span class="m11s-strong">概念板块——主力净流入 TOP</span></p>
-  <table class="m11s-tbl">
-    <thead><tr><th>#</th><th>概念</th><th>净流入</th><th>涨幅</th><th>领涨</th></tr></thead>
-    <tbody>
-      <tr><td>1</td><td>融资融券</td><td class="m11s-blu">383.50亿</td><td class="m11s-up">+1.73%</td><td>经纬股份</td></tr>
-      <tr><td>2</td><td>MSCI中国</td><td class="m11s-blu">280.91亿</td><td class="m11s-up">+1.47%</td><td>华天科技</td></tr>
-      <tr><td>3</td><td>深股通</td><td class="m11s-blu">245.57亿</td><td class="m11s-up">+1.61%</td><td>百通能源</td></tr>
-      <tr><td>4</td><td>国产芯片</td><td class="m11s-blu">229.91亿</td><td class="m11s-up">+2.87%</td><td>远望谷</td></tr>
-      <tr><td>5</td><td>富时罗素</td><td class="m11s-blu">213.59亿</td><td class="m11s-up">+1.09%</td><td>福龙马</td></tr>
-      <tr><td>6</td><td>半导体概念</td><td class="m11s-blu">207.28亿</td><td class="m11s-up">+3.07%</td><td>肯特催化</td></tr>
-      <tr><td>7</td><td>深成500</td><td class="m11s-blu">196.30亿</td><td class="m11s-up">+1.40%</td><td>华天科技</td></tr>
-      <tr><td>8</td><td>科技风格</td><td class="m11s-blu">184.83亿</td><td class="m11s-up">+2.90%</td><td>惠科股份</td></tr>
-      <tr><td>9</td><td>大盘股</td><td class="m11s-blu">177.61亿</td><td class="m11s-up">+1.24%</td><td>长电科技</td></tr>
-      <tr><td>10</td><td>百元股</td><td class="m11s-blu">160.19亿</td><td class="m11s-up">+3.17%</td><td>托伦斯</td></tr>
-      <tr><td>11</td><td>HS300_</td><td class="m11s-blu">148.06亿</td><td class="m11s-up">+1.05%</td><td>万  科Ａ</td></tr>
-      <tr><td>12</td><td>基金重仓</td><td class="m11s-blu">145.26亿</td><td class="m11s-up">+2.14%</td><td>华峰测控</td></tr>
-    </tbody>
-  </table>
-  <p class="m11s-p"><span class="m11s-strong">概念板块——涨幅 TOP（题材热度）</span></p>
-  <table class="m11s-tbl">
-    <thead><tr><th>#</th><th>概念</th><th>涨幅</th><th>净流入</th><th>领涨</th></tr></thead>
-    <tbody>
-      <tr><td>1</td><td>第四代半导体</td><td class="m11s-up">+4.96%</td><td class="m11s-blu">1.22亿</td><td>东微半导</td></tr>
-      <tr><td>2</td><td>次新股</td><td class="m11s-up">+4.66%</td><td class="m11s-blu">36.68亿</td><td>海安集团</td></tr>
-      <tr><td>3</td><td>昨日打二板以上表现</td><td class="m11s-up">+4.03%</td><td class="m11s-dn">-1.67亿</td><td>锡华科技</td></tr>
-      <tr><td>4</td><td>昨日连板_含一字</td><td class="m11s-up">+3.88%</td><td class="m11s-dn">-3.77亿</td><td>锡华科技</td></tr>
-      <tr><td>5</td><td>汽车芯片</td><td class="m11s-up">+3.85%</td><td class="m11s-blu">57.50亿</td><td>博通集成</td></tr>
-      <tr><td>6</td><td>AI芯片</td><td class="m11s-up">+3.74%</td><td class="m11s-blu">17.39亿</td><td>云天励飞-U</td></tr>
-      <tr><td>7</td><td>时空大数据</td><td class="m11s-up">+3.70%</td><td class="m11s-blu">3.17亿</td><td>经纬股份</td></tr>
-      <tr><td>8</td><td>先进封装</td><td class="m11s-up">+3.57%</td><td class="m11s-blu">93.87亿</td><td>华天科技</td></tr>
-      <tr><td>9</td><td>氦气概念</td><td class="m11s-up">+3.49%</td><td class="m11s-blu">12.72亿</td><td>和远气体</td></tr>
-      <tr><td>10</td><td>光刻机</td><td class="m11s-up">+3.46%</td><td class="m11s-blu">21.60亿</td><td>国林科技</td></tr>
-      <tr><td>11</td><td>华为欧拉</td><td class="m11s-up">+3.45%</td><td class="m11s-blu">2.93亿</td><td>浩瀚深度</td></tr>
-      <tr><td>12</td><td>氮化镓</td><td class="m11s-up">+3.44%</td><td class="m11s-blu">46.31亿</td><td>华天科技</td></tr>
-    </tbody>
-  </table>
-  <div class="m11s-note">注：概念净流入榜中的「融资融券 / MSCI中国 / 深股通 / 富时罗素 / 大盘股 / 基金重仓」为<strong>宽基/全市场代理</strong>，反映今日整体放量普涨；剔除后，<strong>真正题材主线 = 国产芯片(+229.9亿)、半导体概念(+207亿)、先进封装(+93.9亿)、汽车芯片、AI芯片、光刻机、氮化镓</strong>等「芯片半导体链条」，与行业榜（电子+198.5亿、半导体+182.2亿）完全共振。</div>
-
-  <h3 class="m11s-h3">六、涨停集中度与板块轮动（新老交替）</h3>
-  <ul class="m11s-ul">
-    <li>今日涨停最集中行业（按涨停家数）：电网设备×6、半导体×5、家居用品×4、服装家纺×4、通用设备×4、化学制品×3、一般零售×3、电力×2、出版×2、医疗服务×2、风电设备×2、汽车零部×2</li>
-    <li>昨日涨停最集中行业：汽车零部×8、半导体×2、出版×2、消费电子×2、医疗服务×2、种植业×2、化学制品×2、风电设备×2、工程咨询×1、房地产服×1、家居用品×1、元件×1</li>
-    <li><span class="m11s-strong">延续（老主线仍强）</span>：半导体、家居用品、化学制品、出版、医疗服务、风电设备、汽车零部</li>
-    <li><span class="m11s-up">新崛起（今日新进集中榜）</span>：电网设备、服装家纺、通用设备、一般零售、电力</li>
-    <li>解读：资金今日主攻方向见上文行业/概念净流入与涨幅榜；新崛起板块若与指数共振、且龙头封单厚，可视为接力候选。</li>
-  </ul>
-
-  <h3 class="m11s-h3">七、明日可操作方向（参考）</h3>
-  <div class="m11s-verdict"><span class="m11s-strong">总判断</span>：今日「高度压、宽度在」——空间板从昨日 5 板压到 4 板且最高标断板，但涨停 78 家、首板占 66 家(85%)，说明资金<strong>从高位切向低位首板套利</strong>，连板晋级率仅 26%。因此明日策略应「重低位、轻追高」。</div>
-  <ul class="m11s-ul">
-    <li><span class="m11s-strong">核心资金主线（半导体/芯片链条）</span>：电子+半导体行业净流入合计≈380 亿、半导体板块 +4.35%、涨停 5 家，且为延续主线。操作上<strong>沿中军/龙头做分歧低吸</strong>（封测、先进封装、汽车芯片），不追缩量加速板。</li>
-    <li><span class="m11s-up">新崛起方向（电网设备 + 电力）</span>：今日涨停最多(×6)且为新进集中榜，对应电力设备净流入 +33 亿——属事件/政策驱动的新面孔，重点看竞价与 10:00 前封板确认强度，确认后做 1 进 2 或中军。</li>
-    <li><span class="m11s-strong">大消费制造低位轮动</span>：家居(延续)/服装(新)/通用设备(新)/一般零售(新)/汽车零部(延续) 涨停分散但家数多，适合<strong>首板/1进2 套利</strong>，不重仓单一细分。</li>
-    <li><span class="m11s-strong">梯队博弈</span>：空间板 4 板（华瓷股份、锡华科技）为情绪锚；2 板梯队 8 只最厚，是明日「1进2」重点池；3→4 板仅 2 只，高位接力需严控仓位。</li>
-  </ul>
-
-  <h3 class="m11s-h3">八、风险提示</h3>
-  <ul class="m11s-ul">
-    <li>空间板已至 4 板，且昨日最高标断板：<span class="m11s-ora">高位股分歧加大，追高需谨慎</span>，严格看竞价与封单。</li>
-    <li>炸板率 24.3%：回封质量中等，<span class="m11s-ora">避免参与“烂板/尾盘偷板”</span>。</li>
-    <li>全市场无跌停≠无风险：一旦明日出现<strong>跌停扩散或竞价大面（≤-5% 增多）</strong>，应降仓。</li>
-    <li>板块轮动快：若集中度（前几行业占涨停比）骤降，说明无主线，应<strong>轻仓轮动、不重仓单方向</strong>。</li>
-    <li>本总结为基于公开行情数据的量化复盘，<span class="m11s-ora">不构成投资建议</span>；短线波动大，请结合自身风控执行。</li>
-  </ul>
+  <div id="m11recapDyn" style="display:none"></div>
 </div></div>
 </section>
 
@@ -6500,7 +6356,83 @@ function renderM72(){
   setHtml($('m7_2'), barsHtml('涨幅前50 · 行业分布', indCount(D.top100, 50), '#f0453a') +
     barsHtml('跌幅前50 · 行业分布', indCount(D.bot100, 50), '#10b981') +
     barsHtml('10日涨幅前100 · 行业分布' + k10Hint(), indCount(D.k10, 100), '#f59e0b') +
-    barsHtml('成交额&gt;10亿个股 · 行业分布', indCount(amt10, 100), '#60a5fa'));
+    barsHtml('成交额&gt;10亿个股 · 行业分布', indCount(amt10, 100), '#60a5fa') +
+    '<div style="font-size:11.5px;color:var(--txt);background:rgba(245,158,11,.08);border-left:3px solid #f59e0b;padding:8px 10px;margin:10px 0 0;border-radius:4px;line-height:1.75;white-space:normal">' + m72Analysis() + '</div>');
+}
+/* ---------- 7.2 实时逻辑分析（2026-09-20）----------
+   不复述柱状图，回答"变化背后的逻辑"：
+   ① 双榜共振（涨幅前50 ∩ 成交额>10亿）= 赚钱效应与大资金同向的主战场；
+   ② 与 10 日榜交叉 → 主线延续还是当日新脉冲；
+   ③ 盘中资金动向（wb_snap_<date> 半点桶，最近时段主力净流入增量方向）→ 加码还是分歧；
+   ④ 涨跌两榜同现 = 板块内部分化；只在跌幅榜集中 = 撤离方向；
+   ⑤ 与上次渲染的分布快照对比 → 边际增强/减弱/新进/掉出（盘中轮动的边际方向）；
+   ⑥ 新闻催化（newsSectorHits）点名事件驱动行业。 */
+function m72Top(arr, n){ return arr.slice(0, n).map(function(x){ return x.name; }); }
+function m72Analysis(){
+  var zt50 = indCount(D.top100, 50), dt50 = indCount(D.bot100, 50);
+  var k10 = indCount(D.k10, 100);
+  var amt10 = D.amtTop.filter(function(x){ return (x.f6 || 0) > 1e9; });
+  var amtD = indCount(amt10, 100);
+  if(!zt50.length && !amtD.length) return '等待行情数据（点右上角刷新后自动生成逻辑分析）…';
+  var hm = (typeof hmNow === 'function') ? hmNow() : new Date().toTimeString().slice(0, 5);
+  var L = [];
+  /* ① 双榜共振 = 主战场 */
+  var amtTopNames = {}, ztNames = {};
+  m72Top(amtD, 8).forEach(function(n){ amtTopNames[n] = 1; });
+  zt50.forEach(function(x){ ztNames[x.name] = x.cnt; });
+  var both = zt50.filter(function(x){ return amtTopNames[x.name]; });
+  var bothTxt = both.length ? both.map(function(x){ return x.name + '（涨 ' + x.cnt + ' 家）'; }).join('、') : '暂无（涨幅榜与成交额榜未形成交集）';
+  L.push('① 主战场：' + bothTxt + ' 同时出现在涨幅前50与成交额>10亿榜——赚钱效应与大资金同向，双榜共振的行业才是当日真正的主攻；只在涨幅榜、不在成交额榜的行业多为小资金脉冲，持续性存疑。');
+  /* ② 与 10 日榜交叉 → 延续 vs 新脉冲 */
+  var k10Names = {};
+  m72Top(k10, 8).forEach(function(n){ k10Names[n] = 1; });
+  var cont = both.filter(function(x){ return k10Names[x.name]; });
+  var fresh = both.filter(function(x){ return !k10Names[x.name]; });
+  if(both.length){
+    L.push('② 主线延续性：' + (cont.length ? cont.map(function(x){ return x.name; }).join('、') + ' 也在 10 日涨幅榜前列 → 当日进攻是中期主线的延续，顺势为主；' : '') +
+      (fresh.length ? fresh.map(function(x){ return x.name; }).join('、') + ' 不在 10 日榜 → 属当日新起的脉冲，次日须重新确认（竞价 + 封单），不能当主线惯性追。' : ''));
+  }
+  /* ③ 盘中资金动向（半点桶增量） */
+  var flowTxt = [];
+  both.slice(0, 4).forEach(function(x){
+    var f = (typeof secSessionFlow === 'function') ? secSessionFlow(x.name) : null;
+    if(f === true) flowTxt.push(x.name + ' 最近时段主力净流入仍在增加（加码，惯性大概率延续）');
+    else if(f === false) flowTxt.push(x.name + ' 最近时段净流入增量转弱（高位分歧苗头，盯尾盘是否回封）');
+  });
+  L.push('③ 盘中资金动向：' + (flowTxt.length ? flowTxt.join('；') + '。' : '暂无盘中资金快照（非交易时段或尚未积累半点桶），此条收盘后复看。'));
+  /* ④ 分化与退潮 */
+  var dtNames = {};
+  dt50.forEach(function(x){ dtNames[x.name] = x.cnt; });
+  var split = zt50.filter(function(x){ return dtNames[x.name] >= 2; });
+  var retreat = dt50.filter(function(x){ return x.cnt >= 2 && !ztNames[x.name] && !amtTopNames[x.name]; }).slice(0, 3);
+  L.push('④ 分化与退潮：' +
+    (split.length ? split.map(function(x){ return x.name + ' 涨跌两榜同现（' + ztNames[x.name] + ' 涨 / ' + dtNames[x.name] + ' 跌）→ 板块内部个股分化，涨的是分支逻辑、跌的是纯跟风，只做分支龙头；'; }) : '') +
+    (retreat.length ? retreat.map(function(x){ return x.name + '（跌 ' + x.cnt + ' 家）只在跌幅榜集中 → 资金撤离方向，日内不接、不抄底'; }).join('；') + '。' : '跌幅榜未见单行业集中撤离。'));
+  /* ⑤ 边际变化（对比上次渲染的分布快照） */
+  var snapKey = 'wb_m72_prev';
+  var prev = lsGet(snapKey, null);
+  var curZt = {};
+  zt50.forEach(function(x){ curZt[x.name] = x.cnt; });
+  var delta = [];
+  if(prev && prev.zt){
+    Object.keys(curZt).forEach(function(n){
+      var p = prev.zt[n];
+      if(p == null) delta.push(n + ' 新进涨幅榜');
+      else if(curZt[n] > p) delta.push(n + ' 家数 ' + p + '→' + curZt[n] + '（边际增强）');
+      else if(curZt[n] < p) delta.push(n + ' 家数 ' + p + '→' + curZt[n] + '（边际减弱）');
+    });
+    Object.keys(prev.zt).forEach(function(n){
+      if(curZt[n] == null) delta.push(n + ' 掉出涨幅榜（转弱）');
+    });
+  }
+  L.push('⑤ 边际变化（盘中轮动看这个方向）：' + (prev && prev.ts ? '较上次观测 ' + esc(prev.ts) + '：' : '首次观测，下次刷新开始对比：') +
+    (delta.length ? delta.slice(0, 6).join('；') + '。' : '分布无明显变化，主攻格局稳定。'));
+  lsSet(snapKey, { ts: hm, zt: curZt });
+  /* ⑥ 新闻催化 */
+  var ns = (typeof newsSectorHits === 'function') ? newsSectorHits() : {};
+  var cata = Object.keys(ns).filter(function(n){ return ns[n] > 0 && ztNames[n]; });
+  L.push('⑥ 催化：' + (cata.length ? cata.map(function(n){ return n + '（快讯命中 ' + ns[n] + ' 条，事件驱动）'; }).join('、') + '——事件驱动的行业看"催化还在不在"，催化不落地别恋战。' : '快讯暂未命中涨幅榜行业，当日进攻以资金行为为主、事件叙事为辅。'));
+  return '<b>【实时逻辑分析 · ' + esc(hm) + '】</b>（数据：涨幅前50 / 跌幅前50 / 10日榜 / 成交额>10亿 · 随每轮刷新自动更新）<br>' + L.join('<br>');
 }
 function renderM73(){
   var fundTop = D.secUp.slice().sort(function(a, b){ return (b.f62 || 0) - (a.f62 || 0); }).slice(0, 10);
@@ -14172,6 +14104,292 @@ if(typeof document === 'undefined' || !document.hidden){
   if(isTradingHours()){ wasTrading = true; refreshAll(); }
   else { wbResolveBase(function(){ refreshAll(); }); }
 }
+/* ================= 九 · 市场复盘小结：手动生成 + 持久化（2026-09-20） =================
+   工作流：每个交易日收盘后点一次「生成今日复盘」→ 页面自行完成：
+     ① 走一遍全量刷新（涨停/炸板/跌停池、昨日涨停池对比、板块行情 f3/f6/f62、两市成交额、新浪 7x24 快讯）
+     ② 用与手写版（20260918）完全相同的四段式框架生成 500~1000 字小结：
+        情绪 / 主力方向（板块链归并 + 快讯催化线索）/ 两条硬指标筛合力 / 次日盯什么
+     ③ 写入 localStorage(wb_recap_v1)：**不点刷新就永远显示上一次生成的记录**（页面重开也不丢）。
+   设计取舍：
+   · "搜索全网"落地为 新浪 7x24 财经直播接口（fetchNews，页面既有通道）+ 板块关键词匹配 →
+     抽出与主攻方向相关的快讯作"催化线索"；纯浏览器跨域无法做全网检索，这是不引代理前提下的最优解。
+   · 板块成交占比用 f6 / D.amtToday（两市成交额）**精确**计算，不再近似。
+   · 生成失败/超时不动已有记录 —— 失败绝不能把上一次的复盘冲掉。 */
+var RECAP = { key: 'wb_recap_v1', busy: false };
+function rcSleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+function recapStat(msg){ var s = $('m11recapStat'); if(s) s.textContent = msg || ''; }
+/* 板块名 → 链：净流入榜前几名常是同一条链的二三级行业，按单板块排名会把 500 亿拆成三截 */
+var RC_CHAINS = [
+  { name: '芯片半导体链',  kw: ['半导体','芯片','集成电路','封测','分立器件','印制电路','PCB','元件','光学光电子','电子','光刻'] },
+  { name: '通信/光互连链', kw: ['通信','光模块','光器件','网络设备'] },
+  { name: '电力/电网链',   kw: ['电网','电力','风电','光伏','电源','电池'] },
+  { name: '汽车链',        kw: ['汽车','整车','零部'] },
+  { name: '医药医疗链',    kw: ['医疗','医药','生物','中药','诊断'] },
+  { name: '金融链',        kw: ['银行','证券','保险','多元金融'] },
+  { name: '有色/贵金属链', kw: ['有色','贵金属','黄金','稀土','能源金属','小金属','工业金属'] },
+  { name: '泛消费链',      kw: ['零售','食品','饮料','服装','家居','旅游','酒店','美容','农业','种植','养殖','出版'] }
+];
+function rcChainOf(name){
+  name = String(name || '');
+  for(var i = 0; i < RC_CHAINS.length; i++)
+    for(var j = 0; j < RC_CHAINS[i].kw.length; j++)
+      if(name.indexOf(RC_CHAINS[i].kw[j]) >= 0) return RC_CHAINS[i].name;
+  return '其他';
+}
+function buildRecapHTML(spread){
+  spread = Array.isArray(spread) ? spread : [];   /* 涨停前5板块的"涨幅>5%扩散度"（genDailyRecap 异步算好传入） */
+  var zt = D.zt || [], zb = D.zb || [], dt = D.dt || [], an = D.analysis || {};
+  var zbRate = (zt.length + zb.length) ? zb.length / (zt.length + zb.length) : null;
+  var firstN = zt.filter(function(x){ return (x.lbc || 1) === 1; }).length;
+  var lb2N = zt.filter(function(x){ return (x.lbc || 1) === 2; }).length;
+  var maxLb = zt.reduce(function(m, x){ return Math.max(m, x.lbc || 1); }, 0);
+  var pct = function(v, d){ return (v == null || isNaN(v)) ? '—' : ((v > 0 ? '+' : '') + (+v).toFixed(d == null ? 2 : d)); };
+  var yi = function(v){ return (v == null || isNaN(v)) ? '—' : (v / 1e8).toFixed(1) + '亿'; };
+  var idxTxt = (D.idxList || []).slice(0, 4).map(function(x){ return x.name + ' ' + pct(x.pct) + '%'; }).join('、');
+  /* ① 板块链归并（净流入） */
+  var secs = (D.secAmt || []).map(function(x){ return { name: x.f14, f62: num(x.f62) || 0, f3: num(x.f3), f6: num(x.f6) || 0, lead: x.f128 || '' }; }).filter(function(x){ return x.name && (x.f62 || x.f6); });
+  var chains = [], cmap = {};
+  secs.forEach(function(x){
+    var c = rcChainOf(x.name);
+    if(!cmap[c]){ cmap[c] = { name: c, f62: 0, top: null }; chains.push(cmap[c]); }
+    cmap[c].f62 += x.f62;
+    if(!cmap[c].top || x.f62 > cmap[c].top.f62) cmap[c].top = x;
+  });
+  chains.sort(function(a, b){ return b.f62 - a.f62; });
+  var top3 = chains.slice(0, 3);
+  /* ①b 占比口径：f6 是"元"、amtToday 是"亿" → 先换算再除（否则占比出天文数字）。
+     涨幅/净流入/成交额榜单不再罗列进复盘（2026-09-20 用户：素材榜没人看，且一般素材不改变逻辑）；
+     仅保留 涨幅前5/净流入前5 两个名单，用于圈定"强势板块池"（重点线索的匹配范围）。 */
+  var amt = D.amtToday;
+  var shareOf = function(x){ return (amt && x.f6) ? (x.f6 / 1e8) / amt : null; };   /* f6 是"元"，amtToday 是"亿" → 先换算再除（否则占比出天文数字） */
+  var byGain = secs.slice().sort(function(a, b){ return (b.f3 == null ? -999 : b.f3) - (a.f3 == null ? -999 : a.f3); }).slice(0, 5);
+  var byIn   = secs.slice().sort(function(a, b){ return b.f62 - a.f62; }).slice(0, 5);
+  /* ② 两条硬指标（用户口径）：板块涨停>5 只 ＋ 板块成交占全市场≥10%（f6/两市成交额，精确） */
+  var grp = D.ztGroup || {};
+  var pass = [], near = [];
+  Object.keys(grp).forEach(function(k){
+    var n = (grp[k] || []).length; if(n < 4) return;
+    /* 优先直接匹配 D.secAmt（f14），不走 secByName（其依赖 buildSecAll 填充的 secAll，
+       时序不稳时会整块查不到 → 占比全变"—"，硬指标静默失效） */
+    var sec = null;
+    (D.secAmt || []).forEach(function(x){ if(x.f14 === k && !sec) sec = x; });
+    if(!sec) sec = secByName(k, true) || secByName(k);
+    var share = (sec && num(sec.f6) != null && amt) ? num(sec.f6) / 1e8 / amt : null;   /* f6 是"元"，amt 是"亿" → 必须换算（2026-09-20 二次踩坑：shareOf 修了这份没修，导致硬指标段占比爆表） */
+    var it = { name: k, zt: n, share: share, f62: sec ? num(sec.f62) : null, f6: sec ? num(sec.f6) : null };
+    if(n > 5 && share != null && share >= 0.10) pass.push(it);
+    else if(n > 5 || (share != null && share >= 0.08)) near.push(it);
+  });
+  pass.sort(function(a, b){ return b.zt - a.zt; }); near.sort(function(a, b){ return b.zt - a.zt; });
+  var hiPct = function(x){ return x.share == null ? '占比—' : '占比 ' + (x.share * 100).toFixed(1) + '%（成交 ' + yi(x.f6) + '）'; };
+  /* ③ 拥挤度瓦解（连续拥挤后无催化 → 退潮，点名放一边） */
+  var prevG = {};
+  (D.prev || []).forEach(function(x){ var k = x.hybk || '其他'; prevG[k] = (prevG[k] || 0) + 1; });
+  var collapsed = Object.keys(prevG).filter(function(k){ return prevG[k] >= 4 && (grp[k] || []).length <= Math.ceil(prevG[k] / 4); })
+    .sort(function(a, b){ return prevG[b] - prevG[a]; }).slice(0, 3)
+    .map(function(k){ return esc(k) + '（昨 ' + prevG[k] + ' → 今 ' + (grp[k] || []).length + ' 家涨停）'; });
+  /* ④ 催化线索（两级）：强势板块（过线∪踩线∪涨幅前5∪净流入前5）的【涨停股名】直接命中快讯 = 重点线索；
+     否则退回 主攻链关键词（板块名）+ 催化域关键词（华为/昇腾/算力/英伟达…）匹配。
+     —— 只认板块名关键词会漏掉"华为发布昇腾960"这类不含行业词的事件快讯（jsdom 实测踩中），
+        只认链关键词也会漏掉"某涨停股被点名"的个股级消息（本轮补上）。 */
+  var kws = [];
+  top3.forEach(function(c){ RC_CHAINS.forEach(function(cc){ if(cc.name === c.name) kws = kws.concat(cc.kw); }); });
+  kws = kws.concat(['华为','昇腾','英伟达','算力','AI','人工智能','存储','光刻','机器人','超节点']);
+  var newsAll = D.news || [];
+  var strongNames = {};
+  pass.concat(near).forEach(function(x){ strongNames[x.name] = 1; });
+  byGain.forEach(function(x){ strongNames[x.name] = 1; });
+  byIn.forEach(function(x){ strongNames[x.name] = 1; });
+  var strongStocks = [], sseen = {};
+  Object.keys(strongNames).forEach(function(sn){
+    Object.keys(grp).forEach(function(gk){
+      if(gk === sn || gk.indexOf(sn) >= 0 || sn.indexOf(gk) >= 0){
+        (grp[gk] || []).forEach(function(s){
+          var nm = String(s.n || '');
+          if(nm && !sseen[nm]){ sseen[nm] = 1; strongStocks.push({ name: nm, sector: gk }); }
+        });
+      }
+    });
+  });
+  var stockHits = [];
+  strongStocks.forEach(function(s){
+    for(var i = 0; i < newsAll.length && stockHits.length < 3; i++){
+      var x = newsAll[i], tx = String(x.text || '');
+      if(tx.indexOf(s.name) >= 0 && !stockHits.some(function(h){ return h.text === tx; }))
+        stockHits.push({ stock: s.name, sector: s.sector, text: tx.slice(0, 36), time: x.time || '' });
+    }
+  });
+  /* ④b 新闻重要性门槛（用户口径 2026-09-20）：不是每条沾边快讯都能当素材——
+     只有足以改变主攻逻辑的"重要新闻"（政策/订单/发布/涨价/获批等产业级事件）才采纳；
+     券商观点、行情播报、一般沾边报道一律丢弃 —— 复盘逻辑不能被噪音快讯牵着走。
+     涨停股名命中（stockHits）是"点名级"线索，不受此门槛限制。 */
+  var rcNewsHi  = /(发布|出台|印发|获批|中标|订单|签约|量产|扩产|投产|涨价|提价|上调|突破|超预期|规划|工信部|发改委|国务院|部委)/;
+  var rcNewsLow = /(券商|研报|观点|评级|目标价|建议|看好|收评|收盘|涨跌幅|指数收|截至收盘|盘中直击)/;
+  var hits = newsAll.filter(function(x){
+    var tx = String(x.text || '');
+    return kws.some(function(k){ return tx.indexOf(k) >= 0; }) && rcNewsHi.test(tx) && !rcNewsLow.test(tx);
+  }).slice(0, 3);
+  var hasClue = stockHits.length > 0 || hits.length > 0;   /* 是否存在"点名级线索 / 重要催化"（正文概括与附录共用） */
+  /* ── 组装 ── */
+  var mood = (zt.length >= 60 && (dt.length <= 2) && (zbRate == null || zbRate < 0.30)) ? '偏暖、偏进攻'
+    : (zt.length < 40 || dt.length > 5 || (zbRate != null && zbRate > 0.40)) ? '转弱、谨慎'
+    : '中性、分化';
+  var h = '';
+  h += '<div class="m11s-verdict"><span class="m11s-strong">一句话</span>：情绪' + mood + '、主力主攻 ' + esc(top3.length ? top3[0].name : '—') +
+    (pass.length ? '，「' + esc(pass.map(function(x){ return x.name; }).join('、')) + '」过合力硬指标' : (near.length ? '，「' + esc(near.map(function(x){ return x.name; }).join('、')) + '」踩线' : '，暂无板块过合力硬指标')) +
+    '——明日重低位低吸、轻高位追板，盯竞价定生死。</div>';
+  h += '<p class="m11s-p"><span class="m11s-strong">情绪：' + (zt.length >= 60 && dt.length <= 2 ? '进攻日' : (zt.length < 40 || dt.length > 5 ? '转弱日' : '分化日')) + '。</span>' +
+    '涨停 ' + zt.length + ' 家、跌停 ' + dt.length + ' 家、炸板 ' + zb.length + ' 家（炸板率 ' + (zbRate != null ? (zbRate * 100).toFixed(1) : '—') + '%）；' + idxTxt + '。' +
+    (an.empty ? '昨日涨停对比数据缺失。' :
+      '昨日涨停今日平均溢价 ' + pct(an.avgOpenPrem) + '%、红盘率 ' + (an.redRate != null ? (an.redRate * 100).toFixed(0) + '%' : '—') +
+      '，晋级率 ' + (an.promoRate != null ? (an.promoRate * 100).toFixed(0) + '%' : '—') + '，首板 ' + firstN + ' 家占 ' + (zt.length ? Math.round(firstN / zt.length * 100) : 0) + '%，空间板 ' + maxLb + ' 板。') +
+    '合起来读：打板' + (an.avg != null && an.avg > 0 ? '有肉、赚钱效应在' : '被闷、亏钱效应扩散') + '，资金' +
+    ((an.promoRate != null && an.promoRate < 0.3) ? '只愿意在低位进攻，追高接力意愿弱。' : '仍敢接力高位，但需盯封单质量。') + '</p>';
+  var chainTxt = top3.map(function(c, i){
+    return (i + 1) + '）' + esc(c.name) + ' ≈' + yi(c.f62) + '（代表板块 ' + esc(c.top ? c.top.name : '—') + ' ' + yi(c.top ? c.top.f62 : 0) + '，领涨 ' + esc(c.top && c.top.lead ? c.top.lead : '—') + '）';
+  }).join('；');
+  h += '<p class="m11s-p"><span class="m11s-strong">主力方向：净流入高度集中在哪，答案就在哪。</span>' + chainTxt + '。' +
+    (hasClue ? '重要线索 ' + (stockHits.length + hits.length) + ' 条见文末附录（一般沾边快讯不改复盘逻辑）。' : '本日无足以改变复盘逻辑的重要新闻。') +
+    '榜首链占比越高、行业与概念榜越互相印证，越接近单点突破——单点突破才值得分歧低吸。</p>';
+  h += '<p class="m11s-p"><span class="m11s-strong">两条硬指标筛合力（涨停&gt;5 只 + 成交占全市场≥10%）：' +
+    (pass.length ? '过线「' + esc(pass.map(function(x){ return x.name + '（涨停 ' + x.zt + '、' + hiPct(x) + '）'; }).join('、')) + '」——值得重点看。'
+      : '今日无板块双过线。') +
+    (near.length ? ' 踩线：' + esc(near.slice(0, 4).map(function(x){ return x.name + '（涨停 ' + x.zt + '、' + hiPct(x) + '）'; }).join('、')) + '。' : '') +
+    (collapsed.length ? ' 反面教材（拥挤度瓦解，先放一边）：' + esc(collapsed.join('、')) + '。' : '') + '</p>';
+  /* 资金扩散度（用户指定）：涨停前5板块内涨幅>5% 的家数。
+     扩散度高 = 资金从涨停票蔓延到板块内非涨停票（合力强，可做跟风/中军）；
+     扩散度低 = 只有龙头孤军深入（一日游风险高）。数据由 genDailyRecap 异步抓成分股现算。 */
+  if(spread.length){
+    var spreadTxt = spread.map(function(x){
+      var denom = x.total || x.members;   /* 分母用板块成分总数（接口 total），不被分页截断 */
+      var pct = denom ? Math.round(x.gt5 / denom * 100) + '%' : '—';
+      return esc(x.name) + '｜涨停 <b>' + x.zt + '</b> 只' +
+        (denom ? '｜涨幅&gt;5% 共 <b>' + x.gt5 + '</b> 只｜成分 ' + denom + ' 只｜扩散度 ' + pct : '｜成分股数据缺失（—）') +
+        (x.covered === false ? '<span class="m11s-ora">⚠️成分过多，统计截断</span>' : '');
+    }).join('；');
+    h += '<p class="m11s-p"><span class="m11s-strong">资金扩散度（涨停前5板块内涨幅&gt;5% 家数）：</span>' + spreadTxt + '。扩散度高=合力强（资金蔓延到非涨停票，可做跟风/中军）；扩散度低=龙头孤军深入（一日游风险，只看不动）。</p>';
+  }
+  var nexts = [];
+  nexts.push('① ' + (top3.length ? esc(top3[0].name) + '竞价定生死：昨日涨停溢价 ' + pct(an.avgOpenPrem) + '%，仍 &gt;+2% 且中军高开不破分时均线 → 主线继续；集体低开且炸板率上 35% → 先减后看' : '主线未明，先看竞价与涨停家数'));
+  if(lb2N) nexts.push('② 2 板梯队 ' + lb2N + ' 只是最厚一层，明日 1 进 2 主战场；空间板 ' + maxLb + ' 板若放量分歧，高度预期下修');
+  if(pass.length) nexts.push('③ 过线方向（' + esc(pass.map(function(x){ return x.name; }).join('、')) + '）盯 1 进 2 确认，走出 2~3 家晋级才算新主线');
+  nexts.push((pass.length ? '④' : '③') + ' 风控开关：今日跌停 ' + dt.length + ' 家、炸板率 ' + (zbRate != null ? (zbRate * 100).toFixed(1) : '—') + '%；若明日跌停扩散或竞价大面（≤-5%）明显增多，无论主线与否先降仓——退潮期主线也补跌。');
+  h += '<p class="m11s-p"><span class="m11s-strong">次日盯什么。</span>' + nexts.join(' ') + '</p>';
+  /* 文末附录：只放"点名级"线索（涨停股名命中）与"重要催化"（产业级事件）。
+     素材榜已删（用户：没人看）；一般沾边快讯不采纳（不改变复盘逻辑就不写进来）。
+     两者皆空 → 附录只留一行口径说明。 */
+  h += '<div class="m11s-note">' +
+    (stockHits.length ? '<b>【重点线索 · 强势板块涨停股×快讯同名】</b>' +
+      stockHits.map(function(x){ return '「' + esc(x.stock) + '·' + esc(x.sector) + '」' + esc(x.time) + ' ' + esc(x.text) + '…'; }).join('；') + '<br>' : '') +
+    (hits.length ? '<b>【重要催化 · 足以影响主攻逻辑的快讯】</b>' +
+      hits.map(function(x){ return '「' + esc(String(x.text).slice(0, 40)) + '…」'; }).join('；') + '<br>' : '') +
+    (hasClue ? '采纳口径：仅收录足以改变主攻逻辑的重要消息（政策/订单/发布/涨价等产业级事件，点名级线索不受限）；一般沾边快讯不改复盘结论。'
+             : '本日无足以改变复盘逻辑的重要新闻，上述结论不因一般快讯调整。') + '</div>';
+  h += '<div class="m11s-note">数据基准日 ' + esc(D.date) + '（' + (isTradingHours() ? '盘中实时' : '收盘/复盘口径') + '）；催化线索来自新浪 7x24 快讯' + (amt ? '；板块成交占比 = 板块成交额 / 两市成交额（两市合计 ' + yi(amt * 1e8) + '），精确口径' : '；两市成交额缺失，成交占比未计算') + '。逻辑推演仅供参考，<span class="m11s-ora">不构成投资建议</span>。</div>';
+  var chars = h.replace(/<[^>]+>/g, '').length;
+  return { html: h, chars: chars };
+}
+/* 涨停前5板块的"涨幅>5% 扩散度"：
+   准确口径（2026-09-20）：不再用 loadSecMembers 的"两页并集"近似（大板块会漏掉
+   涨幅>5% 但不在前 100 的票 → 低估），改为 **按 f3 涨幅降序分页拉全量**——
+   页序天然从高到低，一旦页尾涨幅 ≤5%，后面所有页必然 ≤5% → 提前终止，
+   既精确（遍历全部 >5% 票）又省请求（弱市日 1~2 页完事）。缓存 30 分钟。 */
+var RC_GT5 = {};
+function countGt5BySector(name, bk){
+  var key = D.date + '|' + name, c = RC_GT5[key];
+  if(c && Date.now() - c.t < 1800000) return Promise.resolve(c.v);
+  if(!bk) return Promise.resolve({ members: 0, gt5: 0, covered: true, total: 0 });
+  var pn = 1, gt5 = 0, members = 0, total = 0, covered = true;
+  function step(){
+    /* ⚠️ 不能用 clistUrl()：它的第一参数是排序方向(po)，pn 恒为 1 —— 用它"翻页"每页拉的都是
+       同一批前 100 名（实测 gt5 被重复计数 12 倍）。必须自己拼带 pn 的 URL。 */
+    var u = 'https://push2delay.eastmoney.com/api/qt/clist/get?pn=' + pn + '&pz=100&po=1&np=1&fltt=2&invt=2&fid=f3&fs=' + encodeURIComponent('b:' + bk) + '&fields=f3,f12,f14';
+    return jsonp(u, 'cb').then(function(r){
+      var d = (r && r.data) || {};
+      if(pn === 1) total = d.total || 0;
+      var a = d.diff ? Object.keys(d.diff).map(function(k){ return d.diff[k]; }).filter(Boolean) : [];
+      if(!a.length) return;
+      a.forEach(function(x){
+        if(!x || !x.f12 || !/^[036]/.test(String(x.f12))) return;      /* 排除北交所/新三板 */
+        if(/ST|退/i.test(String(x.f14 || ''))) return;                 /* 排除 ST/退市 */
+        var v = num(x.f3); if(v == null) return;                       /* 停牌等异常值 */
+        members++; if(v > 5) gt5++;
+      });
+      var last = num(a[a.length - 1].f3);
+      if(a.length < 100) return;                                  /* 末页（成分不足 100） */
+      if(last != null && last <= 5) return;                       /* 涨幅降序 → 页尾≤5% 即提前终止 */
+      pn++;
+      if(pn > 12){ covered = false; return; }                     /* 1200 只上限，行业板块远小于此 */
+      return rcSleep(150).then(step);                             /* 轻微间隔，避免触发限流 */
+    });
+  }
+  return step().then(function(){
+    var v = { members: members, gt5: gt5, covered: covered, total: total };
+    RC_GT5[key] = { t: Date.now(), v: v };
+    return v;
+  });
+}
+/* 涨停前5板块的"涨幅>5% 扩散度"：拉成分股（loadSecMembers，30 分钟缓存）现算。
+   失败/无 BK 代码的板块 → members=0 → 展示为"—"，不阻断复盘生成。 */
+async function buildRecapSpread(){
+  var zc = ztCountBySector();
+  var tops = Object.keys(zc).sort(function(a, b){ return zc[b] - zc[a]; }).slice(0, 5);
+  var out = [];
+  for(var i = 0; i < tops.length; i++){
+    var k = tops[i];
+    var sec = secByName(k, true) || secByName(k);
+    var bk = (sec && /^BK/i.test(String(sec.f12 || ''))) ? sec.f12 : '';
+    var r5 = { members: 0, gt5: 0, covered: true, total: 0 };
+    try{ r5 = bk ? await countGt5BySector(k, bk) : r5; }catch(e){}
+    out.push({ name: k, zt: zc[k], members: r5.members, gt5: r5.gt5, covered: r5.covered, total: r5.total || 0 });
+  }
+  return out;
+}
+async function genDailyRecap(){
+  if(RECAP.busy) return;
+  RECAP.busy = true;
+  var btn = $('m11recapBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ 正在抓数据…'; }
+  recapStat('正在全量刷新行情与资讯（涨停池 / 板块资金 / 7x24 快讯）…');
+  try{
+    var seq0 = RENDER_SEQ;
+    if(!refreshing) manualRefresh();               /* 点按钮 = 手动刷新：全量抓最新数据 */
+    var t0 = Date.now();
+    while((refreshing || RENDER_SEQ === seq0) && Date.now() - t0 < 120000) await rcSleep(400);
+    if(!(D.zt || []).length && !(D.secAmt || []).length){
+      recapStat('❌ 行情抓取失败（网络/接口），上一次复盘记录保持不变'); return;
+    }
+    recapStat('正在统计涨停前5板块的资金扩散度（拉成分股）…');
+    var spread = [];
+    try{ spread = await buildRecapSpread(); }catch(e){ spread = []; }
+    recapStat('正在按四段式框架生成小结…');
+    var r = buildRecapHTML(spread);
+    var rec = { d: D.date, at: new Date().toLocaleString('zh-CN', { hour12: false }), chars: r.chars, html: r.html };
+    lsSet(RECAP.key, rec);
+    renderRecap(rec);
+    recapStat('✅ 已生成 ' + D.date + ' 复盘（' + r.chars + ' 字 · ' + rec.at + '），再点一次可重新生成');
+    if(btn) btn.textContent = '🔄 重新生成今日复盘';
+  }catch(e){
+    recapStat('❌ 生成失败：' + ((e && e.message) || e) + '（上一次复盘记录保持不变）');
+  }finally{
+    RECAP.busy = false;
+    if(btn){ btn.disabled = false; if(String(btn.textContent).indexOf('重新生成') < 0) btn.textContent = '🔄 生成今日复盘小结'; }
+  }
+}
+function renderRecap(rec){
+  var st = $('m11recapStatic'), dy = $('m11recapDyn');
+  if(!dy) return;
+  dy.innerHTML = rec.html;
+  dy.style.display = '';
+  if(st) st.style.display = 'none';
+}
+function initRecap(){
+  /* 启动时：有历史生成记录就优先显示它（跨页面重开保持"前一日复盘不变"）；没有则保留手写默认版 */
+  try{
+    var rec = lsGet(RECAP.key, null);
+    if(rec && rec.html && rec.d){ renderRecap(rec); recapStat('当前显示 ' + rec.d + ' 复盘（生成于 ' + rec.at + '）'); }
+  }catch(e){}
+}
+initRecap();
 wbBadgeUpdate();
 </script>
 </body>

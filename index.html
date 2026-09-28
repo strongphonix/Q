@@ -928,8 +928,8 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
     <span class="st-item" id="tradeState"></span>
     <span class="st-item" id="baseState"></span>
     <span class="st-item" id="lsState"></span>
-    <button class="btn" onclick="manualRefresh()">手动刷新</button>
-    <button class="btn" style="background:#7c3aed;border-color:#7c3aed" onclick="manualScanAll()" title="自动刷新不执行自扫任务（7.12 / 7.16节点策略 / 7.30 / 7.31 / 7.32 / 7.33 / 7.35 / 游资 / 生命周期列）。点击立即强制全部重扫">⟳ 手动刷新自扫</button>
+    <!-- 2026-09-27（用户要求）：取消所有手刷 —— 数据全靠自动刷新（3 分钟 / 定点定格 / 竞价 9:29 定格），
+         原顶栏「手动刷新」「⟳ 手动刷新自扫」两按钮已删除（manualRefresh 函数保留：复盘生成内部仍用）。 -->
   </div>
   <!-- 2026-09-26 升级：hlinks 由「一排平铺链接」改为「分组 + scrollspy 高亮」
        （参考《A股主线与情绪复盘》的粘性顶栏 .modnav）。
@@ -950,7 +950,6 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
     <a href="#m75" data-sec="m75" title="7.5 板块总表 · 分级 S/A/B/C + 风险否决">7.5 板块分级</a>
     <a href="#m710b" data-sec="m710b" title="7.10B 可买入组合清单">7.10B 可买组合</a>
     <a href="#m741" data-sec="m741" title="7.41 个股 12 维复盘">7.41 12维复盘</a>
-    <a href="#m7top42" data-sec="m7top42" title="7.42 题材热度 · 连板与资金共振方向">7.42 题材热度</a>
     <a href="#m7top43" data-sec="m7top43" title="7.43 主线识别 · 属性聚合 × 行为指纹（谁是真主线 / 谁是轮动支线）">7.43 主线识别</a>
     <a href="#m7top16" data-sec="m7top16" title="7.16 个人持仓 · 四指标 v3 实时监控">7.16 个人持仓</a>
     <span class="hl-gap" aria-hidden="true"></span>
@@ -980,7 +979,7 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
 <section class="card" id="wtop">
 <h2 style="border-color:#22d3ee;color:#22d3ee">🎯 实时盯盘工作区<small>按《盘中实时盯盘策略 · AI执行版》五个时间节点自动出结论（主线 / 龙头 / 中军 / 情绪 / 仓位 / 风险）｜<b>盘前与收盘后只定格「盘前（竞价）口径」、数据固定不刷新</b>｜<b style="color:#9fb4ff">第七/八/九节联动 ⑥ 大盘情绪周期 · ⑦ 全市场资金与主线 · 7.5 板块分级 S/A/B/C + ⛔ 风险否决</b></small></h2>
 <div class="wt-toolbar">
-  <button class="btn" id="wtRefresh" title="重新取数并重算（交易日盘中每 3 分钟自动刷新一次）">⟳ 刷新盯盘</button>
+  <!-- 2026-09-27（用户要求）：「⟳ 刷新盯盘」按钮已删除 —— 本卡盘前 30 秒采样、盘中每 3 分钟自动刷新，无需手刷 -->
   <span class="wt-clock off" id="wtClock">--:--:--</span>
   <span class="wt-mode" id="wtMode">初始化…</span>
   <span class="wt-status" id="wtStatus"></span>
@@ -1022,10 +1021,10 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
 
 <!-- ===== JJ-TOP 顶部工作区：集合竞价全景 ===== -->
 <section class="card" id="jjtop">
-  <h2 style="border-color:#f0453a;color:#f0453a">🔥 集合竞价全景 · 每日可参与板块实时筛选<small>顶部工作区（移植自「个股生命周期工作台」）｜ <b>表格默认折叠</b>：点每张表的摘要行展开 ｜ 竞价取数<b>只在点「⟳ 立即刷新竞价数据」后执行</b>，本平台不自动发起竞价请求（与 7.30/7.34 同一规矩）</small></h2>
+  <h2 style="border-color:#f0453a;color:#f0453a">🔥 集合竞价全景 · 每日可参与板块实时筛选<small>顶部工作区（移植自「个股生命周期工作台」）｜ <b>表格默认折叠</b>：点每张表的摘要行展开 ｜ <b>交易日自动取数</b>：9:15-9:30 竞价窗口自动采样，<b>9:29 起当日竞价数据定格不变</b>（落盘本地，重开页面/非交易日均显示定格快照，方便复盘查询）</small></h2>
 
   <div class="call-toolbar">
-    <button class="btn" id="callRefresh">⟳ 刷新竞价数据</button>
+    <!-- 2026-09-27（用户要求）：「⟳ 刷新竞价数据」按钮已删除 —— 竞价取数全自动（9:15-9:30 采样 · 9:29 定格） -->
     <span class="call-status" id="callStatus"></span>
     <span class="call-clock off" id="callClock"></span>
   </div>
@@ -1162,14 +1161,8 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
 <div id="m7_35"><div class="loading">数据加载中…</div></div>
 </section>
 
-<!-- 7.42 题材热度 · 连板与资金共振方向（2026-09-24 新增）
-     落地「连板梯队 + 资金」双重验证（单一指标不足以确认，需多维共振）。
-     题材归属**复用 7.35**（东财概念 F10 反演），资金口径两级：一级=概念板块主力净流入 f62；
-     取不到则退化为二级=涨停资金聚集度（代理，只衡量"钱扎不扎堆"，不是净流入方向），界面标注实际用了哪级。 -->
-<section class="card" id="m7top42">
-<h2 style="border-color:#f0453a;color:#f0453a">7.42 题材热度 · 连板与资金共振方向<small>按「<b>连板梯队 + 资金</b>」双重验证梳理真实题材热度 —— 单一指标不足以确认，需多维共振 ｜ 题材归属复用 <b>7.35</b> 的东财概念反演 ｜ 资金口径两级：一级<b>概念板块主力净流入</b>（f62），取不到则退化为二级<b>涨停资金聚集度</b>（代理口径 · 只衡量「钱扎不扎堆」、<b>不是</b>净流入方向）｜ 象限：🔥 共振主线 / ⚠️ 梯队完整但资金背离 / 🕐 资金先行 / 💤 脉冲（一日游）｜ 每行给出家数 · 首板 · 连板 · 最高板 · 梯队明细 · 龙头，逐条可复核</small></h2>
-<div id="m7_42"><div class="loading">数据加载中…</div></div>
-</section>
+<!-- 7.42 题材热度 · 连板与资金共振方向：已于 2026-09-27 按用户要求整卡删除
+     （7.35 题材聚类与 7.43 主线识别保留，职责覆盖不变）。 -->
 
 <!-- 7.43 主线识别 · 属性聚合 × 行为指纹（2026-09-26 新增）
      用户诉求：「为什么参考复盘能发现『海峡西岸/福建国资是主线、出版/机器人/高端装备是支线』，
@@ -1206,7 +1199,7 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
 
 <!-- 模块顺序（2026-09-27 用户要求）：大盘情绪 → 集合竞价 → 涨停板 → 主力资金 → 板块/题材 → 策略引擎 → 持仓 → 总结 -->
 <section class="card" id="m7top12">
-<h2 style="border-color:#f0453a;color:#f0453a">7.12 四指标 v3 中军系统 · 三档分类 + 五维打分<small>2026-09-27：结论口径由 MA5 四状态<b>全面替换为四指标 v3</b>｜扫描范围（2026-09-21 v4 · <b style="color:#26c281">2026-09-24 板块层收窄</b>）= <b>7.10B 可买入组合清单选出的板块</b> 内，近 10 个交易日至少涨停 1 次 ∧ 今日未涨停 的股票（板块内按 5 日均额取前 5）｜ 生命周期的<b>限定已删除</b>（该列仅展示）｜ 结果只列「v3 买入档」与「v3 观察档」两类</small></h2>
+<h2 style="border-color:#f0453a;color:#f0453a">7.12 四指标 v3 中军系统 · 三档分类 + 五维打分<small>2026-09-27：结论口径由 MA5 四状态<b>全面替换为四指标 v3</b>｜扫描范围（2026-09-27 v5 · 用户定稿）= <b>今日涨停 &gt; 3 家的板块</b> 中 <b>今日成交额 &gt; 10 亿</b> 的股票（v5.1：板块内 5 日均额排序已取消，满足即全量入池，按今日成交额降序编号）｜ 生命周期的<b>限定已删除</b>（该列仅展示）｜ 结果只列「v3 买入档」与「v3 观察档」两类</small></h2>
 <div id="m7_12"><div class="loading">数据加载中…</div></div>
 </section>
 <!-- ==== MERGE730-BEGIN ==== 7.30 断板二波三部曲（原 7.30 二波蓄势 / 7.32 阴线洗盘 / 7.31 弱转强·分歧转一致 已合并；重复文案去重到卡底「统一口径」）==== -->
@@ -1606,26 +1599,19 @@ function netRelease(){     /* 请求结束（成功/失败/超时都算）后放
   else if(NET_ACTIVE > 0) NET_ACTIVE--;
 }
 
-/* ================= 手动刷新控制（2026-09-18 新增） =================
-   自动刷新（定时 3 分钟 / 启动 / 回前台）只更新核心数据与轻量渲染；
-   7.12 / 7.16-节点策略 / 7.23 / 7.30 / 7.31 / 7.32 / 7.33 / 7.35 / 游资 / 生命周期列 等
-   「自扫日K / 分时回填 / 竞价取数」任务改为**手动触发**（顶部「⟳ 手动刷新自扫」或「手动刷新」）。 */
-var AUTO_REFRESH = false;   /* true = 自动刷新渲染中（自扫模块不启动扫描） */
+/* ================= 刷新控制（2026-09-27 改版：取消所有手刷） =================
+   2026-09-18 旧规：自动刷新只更新核心数据，自扫任务（7.12 / 7.16节点 / 7.30 / 7.33 / 7.35 等）
+   要靠顶部「手动刷新自扫」按钮触发。
+   2026-09-27 用户要求「取消所有手刷」：按钮全部删除，自扫任务随 3 分钟自动刷新一起执行
+   （各模块自有 30 分钟级缓存兜底，不会造成请求风暴）。
+   数据定格纪律（不变）：
+   · 交易日 11:25 / 14:55 定点快照冻结（SNAP 系统，冻结前 16+ 项数据存在性核验三遍）；
+   · 集合竞价 9:29 定格（JJ 落盘 wb_jj_snap_v1）；
+   · 非交易时段「休市冻结 · 复盘」—— 数据固定，方便复盘查询；
+   · 解冻 = 快照横幅「解冻」按钮（唯一保留的人工入口，属冻结控制而非数据刷新）。 */
+var AUTO_REFRESH = false;   /* 2026-09-27 起恒为 false：自动/手动不再有执行差异，自扫模块始终允许启动 */
 function scanPausedHtml(name, extra){
-  return (extra || '') + '<div class="concl c-ora" style="margin-top:6px"><b>⏸ ' + esc(name) + ' 自扫已暂停：</b>自动刷新不执行扫描任务（日K / 分时回填 / 竞价取数），请点顶部「⟳ 手动刷新自扫」执行。</div>';
-}
-function manualScanAll(){
-  AUTO_REFRESH = false;
-  /* 强制各模块缓存失效 → 重渲染时立即重启自扫（日K 30 分钟缓存仍生效，网络不会重复） */
-  MA5S.key = ''; MA5S.done = false;
-  NODE.key = ''; NODE.done = false;
-  M730.key = ''; M730.done = false;
-  WSM.key = ''; WSM.done = false;
-  ZEL.key = ''; ZEL.done = false;
-  THM.done = false;
-  var fns = [renderM5, renderM712, renderM730, renderM731, renderM732, renderM735, renderM733];
-  for(var i = 0; i < fns.length; i++){ try{ fns[i](); }catch(e){ console.error('[看盘台] 手动自扫模块渲染异常', e); } }
-  console.log('[看盘台] 已发起全部自扫模块手动刷新（自动刷新期间不执行）');
+  return (extra || '') + '<div class="concl c-ora" style="margin-top:6px"><b>⏸ ' + esc(name) + ' 自扫排队中：</b>将在本轮数据就绪后自动执行（无需任何手动操作）。</div>';
 }
 function jsonp(url, cbParam, timeout){
   cbParam = cbParam || 'cb'; timeout = timeout || 15000;
@@ -1720,14 +1706,19 @@ function clistUrl(po, pz, fid, fs, fields){
 var CLIST_DOWN_AT = 0, CLIST_DOWN_MS = 30000;
 function fetchClist(po, pz, fid, fs, fields){
   if(Date.now() < CLIST_DOWN_AT) return Promise.resolve([]);
-  return jsonp(clistUrl(po, pz, fid, fs, fields), 'cb').then(function(r){
-    var d = r && r.data && r.data.diff;
-    if(!d) return [];
-    return Object.keys(d).map(function(k){ return d[k]; }).filter(Boolean);
-  }).catch(function(e){
-    CLIST_DOWN_AT = Date.now() + CLIST_DOWN_MS;
-    throw e;
-  });
+  /* 2026-09-28：push2delay 单主机间歇失败（同款问题见 fetchSecList 注释）→ 双主机逐试；
+     两台都空/都挂才熔断 30s，由 loadSecMembers 等转走数据中心 F10 通道。 */
+  var hosts = ['push2delay.eastmoney.com', 'push2.eastmoney.com'];
+  function tryAt(i){
+    if(i >= hosts.length){ CLIST_DOWN_AT = Date.now() + CLIST_DOWN_MS; return Promise.reject(new Error('clist: 双主机均失败')); }
+    return jsonp(clistUrlOn(hosts[i], po, pz, fid, fs, fields), 'cb').then(function(r){
+      var d = r && r.data && r.data.diff;
+      var arr = d ? Object.keys(d).map(function(k){ return d[k]; }).filter(Boolean) : [];
+      if(arr.length) return arr;
+      return tryAt(i + 1);                       /* 返回空（可能坏形态）→ 换主机再试 */
+    }).catch(function(){ return tryAt(i + 1); });
+  }
+  return tryAt(0);
 }
 var FS_STOCK = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23,m:0+t:81+s:2048';
 var FS_SEC = 'm:90+t:2+f:!50';
@@ -1747,6 +1738,7 @@ var FS_SEC = 'm:90+t:2+f:!50';
 var SEC_FS_LIST = ['m:90+t:2+f:!50', 'm:90+t:2', 'm:90+t:3+f:!50', 'm:90+t:3'];
 var SEC_HOSTS = ['push2delay.eastmoney.com', 'push2.eastmoney.com'];
 var SEC_DIAG = { host: '', fs: '', tried: [], ok: false };
+var SEC_RESCAN_AT = 0;    /* 全组合重扫冷却（2026-09-28）：全挂后 10 分钟内不再白打 8 个请求 */
 
 /* ==================================================================
    东财「二级行业」宇宙过滤（2026-09-22）—— 统一板块分类口径
@@ -1961,19 +1953,37 @@ function clistUrlOn(host, po, pz, fid, fs, fields){
     '&fs=' + encodeURIComponent(fs) + '&fields=' + fields;
 }
 function fetchSecList(po, fid){
-  var combos = [], h, i;
+  /* ⚠️ 2026-09-28 修「锁死失效组合」（用户截图：7.3/7.12 整轮「请求失败」红字、板块数据恒空）：
+     旧实现 SEC_DIAG.ok 一旦置位就**只用该组合**；该组合后来也开始失败时，
+     catch 里 `if(!SEC_DIAG.ok…)` 恒假 → 不记录、不重扫、不换组合 → 永远单发死组合。
+     修法：① 锁定组合失败/返回空 → 解锁并**重建全组合重扫**；
+           ② 全组合挂完 → 10 分钟冷却（期内直接空返回，靠 keepGood 旧值撑着），避免每轮白打 8 个请求。 */
+  function allCombos(){
+    var a = [], h, i;
+    for(h = 0; h < SEC_HOSTS.length; h++){
+      for(i = 0; i < SEC_FS_LIST.length; i++){ a.push([SEC_HOSTS[h], SEC_FS_LIST[i]]); }
+    }
+    return a;
+  }
+  var combos, k = 0;
   if(SEC_DIAG.ok){
     combos = [[SEC_DIAG.host, SEC_DIAG.fs]];            /* 已知可用组合：只用它，省请求 */
   }else{
-    for(h = 0; h < SEC_HOSTS.length; h++){
-      for(i = 0; i < SEC_FS_LIST.length; i++){ combos.push([SEC_HOSTS[h], SEC_FS_LIST[i]]); }
-    }
+    if(Date.now() < SEC_RESCAN_AT) return Promise.resolve([]);   /* 冷却期内：不打全组合 */
+    combos = allCombos();
   }
-  var k = 0;
   function next(){
-    if(k >= combos.length) return Promise.resolve([]);
+    if(k >= combos.length){
+      if(!SEC_DIAG.ok) SEC_RESCAN_AT = Date.now() + 600000;      /* 全挂 → 冷却 10 分钟 */
+      return Promise.resolve([]);
+    }
     var c = combos[k++];
     var tag = c[0].replace('.eastmoney.com', '') + '|' + c[1];
+    function unlockAndRescan(){                                  /* 锁定组合失效 → 解锁 + 全组合重扫 */
+      SEC_DIAG.ok = false; SEC_DIAG.host = ''; SEC_DIAG.fs = ''; SEC_DIAG.tried = [];
+      combos = allCombos(); k = 0;
+      return next();
+    }
     return jsonp(clistUrlOn(c[0], po, 100, fid, c[1], SEC_F), 'cb').then(function(r){
       var d = r && r.data && r.data.diff;
       var arr = d ? Object.keys(d).map(function(kk){ return d[kk]; }).filter(Boolean) : [];
@@ -1981,10 +1991,12 @@ function fetchSecList(po, fid){
         if(!SEC_DIAG.ok){ SEC_DIAG.ok = true; SEC_DIAG.host = c[0]; SEC_DIAG.fs = c[1]; }
         return arr;
       }
-      if(!SEC_DIAG.ok && SEC_DIAG.tried.length < 24){ SEC_DIAG.tried.push(tag + '(返回空)'); }
+      if(SEC_DIAG.ok) return unlockAndRescan();
+      if(SEC_DIAG.tried.length < 24){ SEC_DIAG.tried.push(tag + '(返回空)'); }
       return next();
     }).catch(function(){
-      if(!SEC_DIAG.ok && SEC_DIAG.tried.length < 24){ SEC_DIAG.tried.push(tag + '(请求失败)'); }
+      if(SEC_DIAG.ok) return unlockAndRescan();
+      if(SEC_DIAG.tried.length < 24){ SEC_DIAG.tried.push(tag + '(请求失败)'); }
       return next();
     });
   }
@@ -1995,7 +2007,7 @@ function secEmptyWhy(){
   if(!D.poolOk || typeof D.poolOk.sec === 'undefined') return '板块列表尚未取回（本轮刷新未完成）';
   if(!D.poolOk.sec && !(D.secUp && D.secUp.length) && !(D.secDn && D.secDn.length)){
     return '板块列表取数失败 —— 已试 ' + (SEC_DIAG.tried.slice(-6).join(' / ') || '无') +
-      '；若全部失败，多为数据源主机不可达或接口限流，可稍后手动刷新重试';
+      '；若全部失败，多为数据源主机不可达或接口限流，等下一轮自动刷新（3 分钟）重试';
   }
   return '暂无数据';
 }
@@ -2447,13 +2459,20 @@ function fetchRank(){
    逐页抓到「本页末位成交额 < 10 亿」为止（后面只会更小），页数上限 8 兜底。 */
 var AMTTOP_RULE = { min: 1e9, pz: 100, maxPages: 8 };
 function fetchClistPn(pn, po, pz, fid, fs, fields){
-  var u = 'https://push2delay.eastmoney.com/api/qt/clist/get?pn=' + pn + '&pz=' + pz + '&po=' + po +
-    '&np=1&fltt=2&invt=2&fid=' + fid + '&fs=' + encodeURIComponent(fs) + '&fields=' + fields;
-  return jsonp(u, 'cb').then(function(r){
-    var d = r && r.data && r.data.diff;
-    if(!d) return [];
-    return Object.keys(d).map(function(k){ return d[k]; }).filter(Boolean);
-  });
+  /* 2026-09-28：与 fetchClist 同款 —— push2delay 间歇失败 → 双主机逐试（坏形态换下一台） */
+  var hosts = ['push2delay.eastmoney.com', 'push2.eastmoney.com'];
+  function tryAt(i){
+    if(i >= hosts.length) return Promise.resolve([]);
+    var u = 'https://' + hosts[i] + '/api/qt/clist/get?pn=' + pn + '&pz=' + pz + '&po=' + po +
+      '&np=1&fltt=2&invt=2&fid=' + fid + '&fs=' + encodeURIComponent(fs) + '&fields=' + fields;
+    return jsonp(u, 'cb').then(function(r){
+      var d = r && r.data && r.data.diff;
+      var arr = d ? Object.keys(d).map(function(k){ return d[k]; }).filter(Boolean) : [];
+      if(arr.length) return arr;
+      return tryAt(i + 1);
+    }).catch(function(){ return tryAt(i + 1); });
+  }
+  return tryAt(0);
 }
 function loadAmtTop(){
   var out = [], pn = 1;
@@ -2683,6 +2702,46 @@ function wbBadgeUpdate(){
   }
 }
 /* ==== WBFIX-END ==== */
+/* ---- 盘中上一交易日（节假日感知 · 2026-09-28 新增）----
+   prevTradeDate() 只跳周末、不识别法定节假日：2026-09-28（周一）实测，9/25（周五）中秋休市，
+   涨停池接口对该日返回空（9/24 正常 52 家）→ D.pdate 恒错 → D.prev 恒空 →
+   m3 空态、晋级率 / 开盘溢价 / 大面率 / 断板率全线「未取到」。
+   修法：盘中若 D.prev 仍为空，从日历上一自然日往前逐日探测涨停池（非空即交易日，跳过周末），
+   结果按当日缓存（wb_pdate_日期）；找到后改写 D.pdate 并等本轮刷新收尾后自动补一轮。
+   正常交易日 D.prev 有数据 → 只写缓存、零额外探测请求。
+   非交易时段走 wbResolveBase（本就按数据探测，无此问题），两条路互不干扰。 */
+var WB_PD = { probing: false };
+function wbPdateCacheKey(){ return 'wb_pdate_' + D.date; }
+function wbPdateCached(){
+  var c = lsGet(wbPdateCacheKey(), null);
+  return (c && c.pdate && /^\d{8}$/.test(String(c.pdate))) ? c.pdate : prevTradeDate();
+}
+function wbProbePdate(){
+  if((D.prev || []).length > 0){                       /* 昨日池已取到 → pdate 必然正确，只补缓存 */
+    if(!lsGet(wbPdateCacheKey(), null)) lsSet(wbPdateCacheKey(), { pdate: D.pdate, t: Date.now() });
+    return;
+  }
+  if(WB_PD.probing) return;
+  WB_PD.probing = true;
+  var d = new Date(); d.setDate(d.getDate() - 1);
+  var tries = 0;
+  (function step(){
+    if(tries >= 10){ WB_PD.probing = false; return; }  /* 10 个候选日都没有数据 → 放弃，维持原值不猜 */
+    if(d.getDay() === 0 || d.getDay() === 6){ d.setDate(d.getDate() - 1); step(); return; }
+    var cd = dstr(d);
+    fetchPool('getTopicZTPool', cd).then(function(a){
+      if(cleanPool(a).length >= 1){
+        WB_PD.probing = false;
+        lsSet(wbPdateCacheKey(), { pdate: cd, t: Date.now() });
+        if(cd !== D.pdate){
+          D.pdate = cd;
+          /* pdate 修正后本轮已按旧值取数 → 等本轮收尾自动补一轮，prev / 晋级率 / 溢价全部重取 */
+          (function re(){ if(!refreshing){ refreshAll(false); } else { setTimeout(re, 3000); } })();
+        }
+      } else { d.setDate(d.getDate() - 1); tries++; step(); }
+    }).catch(function(){ d.setDate(d.getDate() - 1); tries++; step(); });
+  })();
+}
 function refreshAll(manual){
   if(refreshing) return;
   /* 📌 定点快照冻结（2026-09-25）：冻结期间**自动**刷新一律跳过（数据固定供复盘）；
@@ -2692,12 +2751,16 @@ function refreshAll(manual){
   refreshing = true;
   remain = REFRESH;
   /* 数据基准日（2026-09-20）：非交易时段用「最近一个有数据的交易日」——
-     否则 D.date = 今天，而周末 / 盘前 / 盘后「今天」没有任何行情 → 全页无数据。 */
-  if(isTradingHours()){ D.date = dstr(new Date()); D.pdate = prevTradeDate(); }
+     否则 D.date = 今天，而周末 / 盘前 / 盘后「今天」没有任何行情 → 全页无数据。
+     2026-09-28：盘中 pdate 改走 wbPdateCached()（节假日感知缓存）+ 异步探测 wbProbePdate
+     —— prevTradeDate() 遇「周一逢节假日」会把休市日当上一交易日（实测 9/28 撞上 9/25 中秋）。 */
+  if(isTradingHours()){ D.date = dstr(new Date()); D.pdate = wbPdateCached(); setTimeout(wbProbePdate, 12000); }
   else if(WB_BASE.resolved){ D.date = WB_BASE.date; D.pdate = WB_BASE.pdate; }
   /* 东财二级行业名录（板块口径统一 · 2026-09-22）：缓存优先、每天一次、非阻塞；名录到货后会自己再跑一轮 */
   try{ ind2Load(); }catch(e){}
-  var auto = !manual;   /* 2026-09-18：自动刷新（定时/启动/回前台）→ 自扫模块不执行；手动刷新 → 全部执行 */
+  /* 2026-09-27（取消手刷）：auto/manual 执行差异取消 —— 自扫模块随每轮刷新自动执行。
+     manual 参数保留（复盘生成 / SNAP 定点快照仍传 true），仅作语义标记。 */
+  var auto = false;
   var t0 = Date.now();
   var steps = [];
   /* —— 各数据源是否取到（2026-09-20 新增）——
@@ -2707,24 +2770,64 @@ function refreshAll(manual){
      而页面上看起来一切正常（没有任何报错）。正确做法是：取不到的维度按「缺数据 → 中性分」
      计，并在⑥的规则里如实写出「哪几个维度缺数据」。7.33 已有同款 dataOk，这里是总闸门版。 */
   D.poolOk = {};
-  steps.push(fetchPool('getTopicZTPool', D.date).then(function(a){ D.zt = cleanPool(a); D.poolOk.zt = true; }).catch(function(){ D.zt = []; }));
-  steps.push(fetchPool('getTopicZBPool', D.date).then(function(a){ D.zb = cleanPool(a); D.poolOk.zb = true; }).catch(function(){ D.zb = []; }));
-  steps.push(fetchPool('getTopicDTPool', D.date, 'lbt:asc').then(function(a){ D.dt = cleanPool(a); D.poolOk.dt = true; }).catch(function(){ D.dt = []; }));
-  steps.push(fetchPool('getTopicZTPool', D.pdate).then(function(a){ D.prev = cleanPool(a); D.poolOk.prev = true; }).catch(function(){ D.prev = []; }));
+  /* 2026-09-27：各池 / 榜单接入 keepGood 保底 —— 失败或空时保留当日上一轮成功值（不再清成 []） */
+  steps.push(fetchPool('getTopicZTPool', D.date).then(function(a){ D.zt = keepGood('zt', cleanPool(a)); D.poolOk.zt = true; }).catch(function(){ }));
+  steps.push(fetchPool('getTopicZBPool', D.date).then(function(a){ D.zb = keepGood('zb', cleanPool(a)); D.poolOk.zb = true; }).catch(function(){ }));
+  steps.push(fetchPool('getTopicDTPool', D.date, 'lbt:asc').then(function(a){ D.dt = keepGood('dt', cleanPool(a)); D.poolOk.dt = true; }).catch(function(){ }));
+  steps.push(fetchPool('getTopicZTPool', D.pdate).then(function(a){ D.prev = keepGood('prev', cleanPool(a)); D.poolOk.prev = true; }).catch(function(){ }));
   /* 板块字段：f6成交额 f10量比 f18昨收 f20总市值 f21流通市值 f104上涨家数 f105下跌家数 f184主力净占比
      —— 主线三维判定（资金/强度）全部依赖这些字段，不能删 */
   /* 2026-09-21：改用 fetchSecList（多 fs 串 × 多主机兜底 + 自证）。
      原实现单串单主机，任一失效即被 catch 静默吞成 []，7.3 四榜全空却毫无提示。 */
-  steps.push(fetchSecList(1, 'f3').then(function(a){ D.secUp = ind2Flt(a); if(a && a.length){ D.poolOk.sec = true; } else if(typeof D.poolOk.sec === 'undefined'){ D.poolOk.sec = false; } }).catch(function(){ D.secUp = []; if(typeof D.poolOk.sec === 'undefined'){ D.poolOk.sec = false; } }));
-  steps.push(fetchSecList(0, 'f3').then(function(a){ D.secDn = ind2Flt(a); if(a && a.length){ D.poolOk.sec = true; } }).catch(function(){ D.secDn = []; }));
-  steps.push(fetchSecList(1, 'f6').then(function(a){ D.secAmt = ind2Flt(a); if(a && a.length){ D.poolOk.sec = true; } }).catch(function(){ D.secAmt = []; }));
-  steps.push(fetchClist(1, 100, 'f3', FS_STOCK, 'f2,f3,f6,f12,f14,f100').then(function(a){ D.top100 = a; }).catch(function(){ D.top100 = []; }));
-  steps.push(fetchClist(0, 100, 'f3', FS_STOCK, 'f2,f3,f6,f12,f14,f100').then(function(a){ D.bot100 = a; }).catch(function(){ D.bot100 = []; }));
-  steps.push(loadAmtTop().then(function(a){ D.amtTop = a; }).catch(function(){ D.amtTop = []; }));   /* F3：分页抓全，见 AUDIT 块 */
-  steps.push(jsonp('https://push2delay.eastmoney.com/api/qt/ulist.np/get?secids=1.000001,0.399001&fields=f2,f3,f12,f14,f104,f105,f106', 'cb').then(function(r){ D.mkt = (r && r.data && r.data.diff) || null; D.poolOk.mkt = !!D.mkt; }).catch(function(){ D.mkt = null; }));
-  steps.push(loadTxQuotes(IDX_DEF.map(function(x){ return x[0]; })).then(function(q){ D.idx = q; D.poolOk.idx = !!Object.keys(q).length; }).catch(function(){ D.idx = {}; }).then(idxFallbackEM));
-  steps.push(fetchNews().then(function(a){ D.news = a; }).catch(function(){ D.news = []; }));
-  steps.push(fetchRank().then(function(r){ D.rank = r.list; D.rankSrc = r.src; }).catch(function(){ D.rank = []; D.rankSrc = ''; }));
+  steps.push(fetchSecList(1, 'f3').then(function(a){ D.secUp = keepGood('secUp', ind2Flt(a)); if(D.secUp.length){ D.poolOk.sec = true; } else if(typeof D.poolOk.sec === 'undefined'){ D.poolOk.sec = false; } }).catch(function(){ if(typeof D.poolOk.sec === 'undefined'){ D.poolOk.sec = false; } }));
+  steps.push(fetchSecList(0, 'f3').then(function(a){ D.secDn = keepGood('secDn', ind2Flt(a)); if(D.secDn.length){ D.poolOk.sec = true; } }).catch(function(){ }));
+  steps.push(fetchSecList(1, 'f6').then(function(a){ D.secAmt = keepGood('secAmt', ind2Flt(a)); if(D.secAmt.length){ D.poolOk.sec = true; } }).catch(function(){ }));
+  steps.push(fetchClist(1, 100, 'f3', FS_STOCK, 'f2,f3,f6,f12,f14,f100').then(function(a){ D.top100 = keepGood('top100', a); }).catch(function(){ }));
+  steps.push(fetchClist(0, 100, 'f3', FS_STOCK, 'f2,f3,f6,f12,f14,f100').then(function(a){ D.bot100 = keepGood('bot100', a); }).catch(function(){ }));
+  steps.push(loadAmtTop().then(function(a){ D.amtTop = keepGood('amtTop', a, 30); }).catch(function(){ }));   /* F3：分页抓全，见 AUDIT 块 */
+  /* 2026-09-28 涨跌家数修复：ulist.np/get 端点实测**间歇性**失败（真网探针：同页面首轮挂、
+     12 秒后手动重放同 URL 即成功；curl 层还能观察到 rc:102 / 空 body 两种坏形态）。
+     原实现单发 + .catch 静默吞 → 首轮一旦命中坏窗口，D.mkt 恒空，⑥ 情绪卡「涨跌家数 — / —」。
+     修法：① 同 URL 三连重试（无ut → 带ut → push2 主机）跨过坏窗口；
+           ② keepGood 保底：本轮三发全挂时沿用今日上一轮好值，卡片不再闪空。 */
+  function fetchMkt(){
+    var urls = [
+      'https://push2delay.eastmoney.com/api/qt/ulist.np/get?secids=1.000001,0.399001&fields=f2,f3,f12,f14,f104,f105,f106',
+      'https://push2delay.eastmoney.com/api/qt/ulist.np/get?ut=fa5fd1943c7b386f172d6893dbfba10b&secids=1.000001,0.399001&fields=f2,f3,f12,f14,f104,f105,f106',
+      'https://push2.eastmoney.com/api/qt/ulist.np/get?ut=fa5fd1943c7b386f172d6893dbfba10b&secids=1.000001,0.399001&fields=f2,f3,f12,f14,f104,f105,f106'
+    ];
+    function tryAt(i){
+      if(i >= urls.length) return Promise.reject(new Error('mkt: 三发全失败'));
+      return jsonp(urls[i], 'cb', 8000).then(function(r){
+        var m = r && r.data && r.data.diff;
+        if(!m || !m.length || m[0].f104 == null) throw new Error('mkt: 坏形态');
+        return m;
+      }).catch(function(){ return tryAt(i + 1); });
+    }
+    return tryAt(0);
+  }
+  steps.push(fetchMkt().then(function(m){ D.mkt = keepGood('mkt', m); D.poolOk.mkt = true; }).catch(function(){
+    /* 三发全挂：首轮渲染已把「涨跌家数」写成 —（keepGood 首日无旧值可保底）。
+       20 秒后单独补拉一次（坏窗口实测秒级恢复，不必干等 180s 周期刷新）；
+       成功即更新 D.mkt 并做一次轻量全量渲染（RA_BUSY 防重入已内建）。
+       ⚠ 必须等 refreshing 收尾再渲染：首轮全量拉取可达 60s，若抢跑，
+         D.prevQ 等派生态还是 null → renderM737（res.g1.ok）等模块崩（e2e 抓到过）。 */
+    setTimeout(function(){
+      fetchMkt().then(function(m){
+        D.mkt = keepGood('mkt', m); D.poolOk.mkt = true;
+        /* 补拉不在 refreshAll 轮次内 → RENDER_SEQ 未 ++，emoCtx(EMOCTX_C)/emotion(EMO_C)
+           的按轮缓存会返回旧值（up=0）→ 卡片仍画 —。手动失效两层缓存再渲染。 */
+        try{ EMOCTX_C.seq = -1; EMO_C.seq = -1; }catch(e){}
+        (function waitMain(){
+          if(refreshing){ setTimeout(waitMain, 1500); return; }
+          try{ renderAllAsync(false); }catch(e){}
+        })();
+      }).catch(function(){ });
+    }, 20000);
+  }));
+  steps.push(loadTxQuotes(IDX_DEF.map(function(x){ return x[0]; })).then(function(q){ if(q && Object.keys(q).length){ D.idx = q; D.poolOk.idx = true; } }).catch(function(){ }).then(idxFallbackEM));
+  steps.push(fetchNews().then(function(a){ if(a && a.length) D.news = a; }).catch(function(){ }));
+  steps.push(fetchRank().then(function(r){ if(r && r.list && r.list.length){ D.rank = r.list; D.rankSrc = r.src; } }).catch(function(){ }));
 
   Promise.all(steps).then(function(){
     /* ⚠️ 2026-09-22：RENDER_SEQ++ **不在这里**，已下移到「buildGroups() 之后」。
@@ -2771,9 +2874,9 @@ function refreshAll(manual){
     return loadK10EM().then(function(k10){
       if(k10 && k10.length >= 10) return k10;
       return loadK10(cand);
-    }).catch(function(){ return loadK10(cand); });
+    }).catch(function(){ return loadK10(cand); }).catch(function(){ return []; });   /* 双通道全失败 → 保底沿用上一轮（keepGood） */
   }).then(function(k10){
-    D.k10 = k10;
+    D.k10 = keepGood('k10', k10, 10);
     buildGroups();                        /* 同步派生态到此全部就绪（ztGroup / indMap / idxList） */
     RENDER_SEQ++;                         /* ← 现在才失效「按轮次缓存」：见上方 2026-09-22 的说明 */
     D.analysis = analyzePrev();
@@ -2794,7 +2897,24 @@ function refreshAll(manual){
     console.error('刷新异常', e);
   });
 }
-function manualRefresh(){ remain = REFRESH; refreshAll(true); }   /* 手动刷新：核心数据 + 自扫模块全部执行 */
+function manualRefresh(){ remain = REFRESH; refreshAll(true); }   /* 保留：复盘生成 / SNAP 定点快照内部用（页面上已无手刷按钮） */
+
+/* ── 保底：取数失败 / 返回空时保留上一轮成功数据（2026-09-27 · 修 7.2 / 7.3 / ⑧五池「数据经常不稳定」）──
+   根因：refreshAll 每 3 分钟把 D.secUp / D.top100 / D.rank / D.k10 等全部重取一遍，
+   任一通道失败都被 .catch 静默吞成 [] → 页面整榜瞬间变空、下一轮成功又恢复 —— 即用户看到的"不稳定"。
+   口径：新数据非空（≥minN 条）才覆盖；失败 / 空 → 沿用**当日**上一轮成功值；跨交易日自动清空重计。
+   这是「缺失不当 0」纪律的展示层延伸：拿不到新数据时，宁可显示上一轮的真实值，也不显示空榜。
+   注意：只做"展示保底"，不做"数据伪造"—— poolOk 标志仍如实反映本轮接口是否取到，
+   SNAP 定点快照核验（11:25 / 14:55）依然按真实取数结果判定。 */
+var KEEP_GOOD = { date: '', v: {} };
+function keepGood(key, newV, minN){
+  var today = D.date;
+  if(KEEP_GOOD.date !== today){ KEEP_GOOD.date = today; KEEP_GOOD.v = {}; }
+  minN = minN || 1;
+  if(newV && newV.length >= minN){ KEEP_GOOD.v[key] = newV; return newV; }
+  var old = KEEP_GOOD.v[key];
+  return (old && old.length >= minN) ? old : (newV || []);
+}
 
 /* ================= 分组与分析 ================= */
 /* ⚠ 2026-09-22 口径统一：D.ztGroup 的键一律改为「东财二级行业全称」——
@@ -5581,7 +5701,7 @@ function renderAll(){
   renderM735();  /* 7.35 题材聚类（东财概念板块；当日 1 次 F10 请求 + 30 分钟概念列表缓存，其余读本地缓存） */
   renderM710B(); /* 7.10B 可买入组合清单（修正版）：读 ⑥ 大盘周期 + 7.5 板块级别/周期，自动高亮命中组合 */
   renderM741();  /* 7.41 个股 12 维复盘（修正版）：只重渲染已有结果，不自动取数（查询由按钮触发） */
-  renderM742();  /* 7.42 题材热度 · 连板与资金共振：复用 7.35 的题材反演（未就绪时显示加载中并注册一次回调） */
+  /* 7.42 题材热度已于 2026-09-27 按用户要求删除（renderM742 不再存在） */
   renderM743();  /* 7.43 主线识别 · 属性聚合 × 行为指纹：同一份 F10 数据，聚合成"方向"后做角色定性 */
   renderM744();  /* 7.44 赚亏钱效应（2026-09-27 新增）：读 emoCtx()/emotion()/D.analysis + 本卡自身落盘，零额外请求 */
   renderDiv();   /* 置顶风控信号：指数 vs 情绪 背离判断（置顶横幅，每刷新实时更新） */
@@ -5595,7 +5715,7 @@ function renderAll(){
    总耗时不变，但每帧都有空闲给浏览器做样式/布局/绘制与响应输入 → 不再"卡住"。
    ⚠️ 桩环境走同步 renderAll，本函数只在 refreshAll 里按 WB_IO_ON 择一调用，回归套件不受影响。 */
 var RA_TASKS = [renderTimeline, renderStageQuick, renderM3, renderM4, renderM5, renderM6,
-  renderM7, renderM8, renderM11, renderM735, renderM710B, renderM741, renderM742, renderM743,
+  renderM7, renderM8, renderM11, renderM735, renderM710B, renderM741, renderM743,
   renderM744,   /* 7.44 赚亏钱效应（2026-09-27 新增）。同 renderM743：**必须同时**登记在这里和同步版 renderAll，
                    只加同步版 → 桩环境测试通过、真实页面永远"加载中"（§5 踩过）。 */
   renderDiv, renderVerdict];   /* renderVerdict：结论前置条（2026-09-26 新增），读 ⑥/7.5/⑦ 缓存，放末尾让缓存全热 */
@@ -6400,7 +6520,7 @@ function lifeTag(bars, ctx, opt){
       ? '该板别无日K数据源（北交所 / B 股；平台不提供日K）→ 本列对该股不适用，非数据缺失'
       : (pend
           ? ('日K 根数不足（需 ' + LIFE_RULE.minBars + ' 根，30 周线需 ' + LIFE_RULE.w30 + ' 根）：长周期日K 补扫中，到位后本格自动回填')
-          : ('日K 根数不足（需 ' + LIFE_RULE.minBars + ' 根，30 周线需 ' + LIFE_RULE.w30 + ' 根）：已补扫 ' + tries + ' 次仍不足（次新股 / 停牌 / 三通道均未返回），点顶部「⟳ 手动刷新自扫」可重试'));
+          : ('日K 根数不足（需 ' + LIFE_RULE.minBars + ' 根，30 周线需 ' + LIFE_RULE.w30 + ' 根）：已补扫 ' + tries + ' 次仍不足（次新股 / 停牌 / 三通道均未返回），下一轮自动刷新会继续重试'));
     return '<span class="ls-tag ls-na"' + (code ? ' data-lc="' + esc(code) + '"' : '')
       + ' title="' + esc(why) + '">—</span>';
   }
@@ -6572,7 +6692,7 @@ function lifeHasWork(){
 function lifePump(){
   if(LIFE_P.busy) return;
   if(LIFE_P.req >= LIFE_RULE.pumpBudget){
-    if(!LIFE_P.budgetWarned){ LIFE_P.budgetWarned = 1; console.warn('[看盘台] 生命周期日K 补扫已达本会话上限 ' + LIFE_RULE.pumpBudget + ' 只；剩余标的请点顶部「⟳ 手动刷新自扫」'); }
+    if(!LIFE_P.budgetWarned){ LIFE_P.budgetWarned = 1; console.warn('[看盘台] 生命周期日K 补扫已达本会话上限 ' + LIFE_RULE.pumpBudget + ' 只；剩余标的等下一轮自动刷新继续'); }
     return;
   }
   var cand = [], code;
@@ -6835,113 +6955,12 @@ function thmTop(code, g){
   return best;
 }
 /* ==================================================================
-   7.42 题材热度 · 连板与资金共振方向（2026-09-24 新增 · 用户要求「增加题材热度·连板与资金共振方向工作区」）
-   ------------------------------------------------------------------
-   与 7.35 的分工：7.35 回答「哪些题材有涨停」（题材热度榜按涨停家数排序）；
-   本卡在其上加一层**双重验证**，回答「哪些题材是"真热度"」：
-     ① 连板梯队强度（家数 / 连板家数 / 最高板）—— 有没有接力链条
-     ② 资金参与度 —— 钱是不是扎在这一头
-   象限（2×2，顺序即结论优先级）：
-     🔥 共振主线（梯队强 ∧ 资金聚集）｜⚠️ 梯队完整但资金背离 ｜ 🕐 资金先行（梯队未成）｜ 💤 脉冲（一日游）
-   外部依据：东方财富财富号《A股短线攻防》(2026-09-19) 的「退潮八大信号」与「买点后置五标准」都强调
-     "单一指标不足以确认，需多维共振"；主线识别实务口径（今日头条《看不懂题材轮动？学会这套方法，锁定市场主线》）
-     亦给出「涨停梯队筛联动性 + 资金流向筛真实性」的两步法 —— 本卡即这两步的落地。
-   资金口径**两级，界面标注实际用了哪一级**：
-     一级（首选）= 概念板块主力净流入 f62（东财概念板块列表；本机该源常被拦 → 会是"未取到"）
-     二级（代理）= **涨停资金聚集度** = 该题材涨停股合计成交额 ÷ 全部题材合计
-                    —— 它衡量「钱扎不扎堆」，**不是**净流入方向；高低用全体题材的 2/3 分位自适应
-   ⚠️ 绝不把代理口径写成"主力净流入"；也绝不因缺资金就丢掉该题材（缺 → 该行资金列如实写"未取到"）。
+   7.42 题材热度 · 连板与资金共振方向 —— 已于 2026-09-27 按用户要求整卡删除。
+   原实现（M742_RULE / m742Ladder / M742_QUAD / m742Quad / m742Agg / renderM742）
+   可从备份 index.html.bak_before_autorefresh_*.html 取回。
+   保留：7.35 题材聚类（thmGroups）、7.43 主线识别（MLI）。
    ================================================================== */
-/* ==== M742-BEGIN ==== */
-var M742_RULE = { topN: 8, clusterQ: 2 / 3, microCnt: 2 };
-/* 连板梯队强度：3 = 集群+梯队 / 2 = 有高度 / 1 = 家数够但无高度 / 0 = 脉冲 */
-function m742Ladder(o) {
-  var cnt = (o && o.cnt) || 0, lb = (o && o.maxLbc) || 1, lian = (o && o.lian) || 0;
-  if (cnt >= 5 && lian >= 2 && lb >= 3) return 3;
-  if (lian >= 1 && lb >= 3) return 2;
-  if (cnt >= 3) return 1;
-  return 0;
-}
-var M742_QUAD = {
-  rc: { k: 'rc', name: '共振主线（连板 ∧ 资金）', icon: '🔥', tune: 'c-red',
-    act: '梯队完整且资金聚集 —— 真主线，可重点跟踪；仓位仍受 ⑥ 大盘周期与十四节退潮预警约束。' },
-  dd: { k: 'dd', name: '梯队完整但资金背离', icon: '⚠️', tune: 'c-ora',
-    act: '有高度、有梯队，但资金没有跟上来 —— 存量博弈 / 高低切特征，只做龙头不做跟风。' },
-  fw: { k: 'fw', name: '资金先行（梯队未成）', icon: '🕐', tune: 'c-blu',
-    act: '资金已在这一头聚集，但连板梯队尚未形成 —— 观察次日能否接出梯队，不追首板。' },
-  pl: { k: 'pl', name: '脉冲（一日游风险）', icon: '💤', tune: 'c-grn',
-    act: '无高度且资金分散 —— 一日游概率高，不参与；除非次日出现连板梯队再回看。' }
-};
-var M742_QCOL = { rc: '#f0453a', dd: '#f59e0b', fw: '#60a5fa', pl: '#64748b' };
-/* 象限判定：梯队强度（≥2 记"强"）× 资金聚集（强/弱） —— 纯函数 */
-function m742Quad(o) {
-  var strongLad = m742Ladder(o) >= 2;
-  var strongFund = !!(o && o.fundStrong === true);
-  if (strongLad && strongFund) return M742_QUAD.rc;
-  if (strongLad && !strongFund) return M742_QUAD.dd;
-  if (!strongLad && strongFund) return M742_QUAD.fw;
-  return M742_QUAD.pl;
-}
-/* 聚合：题材 → 排序后的行（纯函数；不碰 DOM、不联网；便于单测） */
-function m742Agg(g, zt) {
-  var rows = [], totAmt = 0, i, k;
-  var ztn = (zt || []).length;
-  if (!g) return { rows: [], totAmt: 0, mode: '无', n: 0, ztN: ztn };
-  var ks = Object.keys(g);
-  for (i = 0; i < ks.length; i++) {
-    var o = g[ks[i]];
-    if (!o || !o.cnt) continue;
-    var amt = num(o.ztAmt) || 0;
-    totAmt += amt;
-    rows.push({ name: o.name, cnt: o.cnt, maxLbc: o.maxLbc || 1, lian: o.lian || 0, first: o.first || 0,
-      ztAmt: amt, pct: (o.pct == null ? null : o.pct), fund: (o.fund == null ? null : o.fund),
-      fundPct: (o.fundPct == null ? null : o.fundPct), leadName: o.leadName || '', stocks: o.stocks || [] });
-  }
-  /* 口径判定：只要有一行拿到概念板块主力净流入，就整体走一级口径 */
-  var hasDirect = false;
-  for (i = 0; i < rows.length; i++) { if (rows[i].fund != null) { hasDirect = true; break; } }
-  /* 聚集度分位阈值（自适应；样本 <3 时不给阈值 → 资金列一律"未取到"，避免小样本误判） */
-  var q = null, amts = [];
-  for (i = 0; i < rows.length; i++) amts.push(rows[i].ztAmt);
-  amts.sort(function (a, b) { return a - b; });
-  if (rows.length >= 3 && totAmt > 0) q = amts[Math.min(amts.length - 1, Math.floor(amts.length * M742_RULE.clusterQ))];
-  for (i = 0; i < rows.length; i++) {
-    var r = rows[i];
-    r.share = (totAmt > 0) ? (r.ztAmt / totAmt) : null;
-    if (hasDirect) {
-      r.fundTxt = (r.fund == null) ? '主力净流入未取到'
-        : ((r.fund > 0 ? '主力净流入 ' : '主力净流出 ') + fmtYi(Math.abs(r.fund)) + (r.fundPct != null ? '（净占比 ' + r.fundPct.toFixed(2) + '%）' : ''));
-      r.fundStrong = (r.fund == null) ? null : (r.fund > 0);
-    } else {
-      r.fundTxt = (r.share == null) ? '资金未取到'
-        : ('涨停资金聚集度 ' + (r.share * 100).toFixed(1) + '%（' + fmtYi(r.ztAmt) + '）' + (q == null ? ' · 样本不足不判方向' : ''));
-      r.fundStrong = (q == null || r.share == null) ? null : (r.ztAmt >= q);
-    }
-    r.ladder = m742Ladder(r);
-    r.micro = (r.cnt <= M742_RULE.microCnt);
-    r.quad = m742Quad(r);
-    r.rank = ({ rc: 0, dd: 1, fw: 2, pl: 3 })[r.quad.k];
-    /* 梯队明细：按板数分组（高位在前） */
-    var byLb = {};
-    for (k = 0; k < r.stocks.length; k++) {
-      var lb = (r.stocks[k] && r.stocks[k].lbc) || 1;
-      byLb[lb] = (byLb[lb] || 0) + 1;
-    }
-    var parts = [];
-    Object.keys(byLb).map(Number).sort(function (a, b) { return b - a; }).forEach(function (n) {
-      parts.push((n >= 2 ? (n + ' 板 × ' + byLb[n]) : ('首板 × ' + byLb[n])));
-    });
-    r.ladderTxt = parts.join(' · ');
-    r.lead = (r.stocks[0] ? (r.stocks[0].n + '（' + ((r.stocks[0].lbc) || 1) + ' 板）') : (r.leadName || '—'));
-  }
-  rows.sort(function (a, b) {
-    return (a.rank - b.rank) || (b.maxLbc - a.maxLbc) || (b.cnt - a.cnt) || (b.ztAmt - a.ztAmt) ||
-      (a.name < b.name ? -1 : (a.name > b.name ? 1 : 0));
-  });
-  return { rows: rows, totAmt: totAmt, mode: (hasDirect ? '直接' : (q == null ? '无' : '代理')), n: rows.length, ztN: ztn };
-}
-/* ==== M742-END ==== */
-var M742 = { wait: false };
+/* ==== M742-REMOVED ==== */
 /* ==================================================================
    7.44 赚亏钱效应引擎（MLE · Money-making / Losing Effect）
    ------------------------------------------------------------------
@@ -9375,92 +9394,7 @@ function jdRepaint() {
   try { var f = $('jdRot7'); if (f) setHtml(f, jdRotBriefHtml()); } catch (e5) { }
 }
 
-function renderM742() {
-  var box = $('m7_42'); if (!box) return;
-  if (typeof THM === 'undefined' || typeof thmEnsure !== 'function') {
-    setHtml(box, '<div class="loading">题材聚类基建（7.35）未就绪 —— 本卡不另起一套取数，等它加载。</div>');
-    return;
-  }
-  var ztN = (typeof D !== 'undefined' && D.zt) ? D.zt.length : 0;
-  if (!THM.done) {
-    setHtml(box, '<div class="loading">题材归属取数中（复用 7.35 通道 · 东财概念 F10）…' +
-      (ztN ? '' : '；当前涨停池为空（多为非交易时段或接口未达）') + '</div>');
-    /* 注册一次回调（**必须防递归**：done 后 thmEnsure 会同步回调 → 会无限递归）。
-       ⚠️ 2026-09-26：条件里**不再排除 THM.running** —— thmEnsure 现在会把回调排队，
-       正在拉取时注册也是安全的；旧写法排除 running 会导致"数据到货但没有回调触发重渲染"。 */
-    if (!M742.wait && ztN) {
-      M742.wait = true;
-      try { thmEnsure(function () { M742.wait = false; renderM742(); }); }
-      catch (e) { M742.wait = false; }
-    }
-    return;
-  }
-  var g = null;
-  try { g = thmGroups(); } catch (e) { g = null; }
-  var agg = m742Agg(g, (typeof D !== 'undefined' ? D.zt : []) || []);
-  if (!agg.rows.length) {
-    setHtml(box, '<div class="concl c-grn"><b>题材热度：</b>本轮没有可归类的涨停题材（涨停池为空，或题材归属未取到）' +
-      '—— 非交易时段 / 接口受限时属正常空态，不是"今天没有热点"。' +
-      (THM.miss && THM.miss.length ? '（未归类 ' + THM.miss.length + ' 只）' : '') + '</div>');
-    return;
-  }
-  var hitN = (typeof THM !== 'undefined' && THM.map) ? Object.keys(THM.map).length : 0;
-  var missN = (THM.miss && THM.miss.length) ? THM.miss.length : 0;
-  var q = { rc: 0, dd: 0, fw: 0, pl: 0 };
-  agg.rows.forEach(function (r) { q[r.quad.k] = (q[r.quad.k] || 0) + 1; });
-  function nm(arr, n) {
-    var a = arr.slice(0, n).map(function (r) {
-      return esc(r.name) + '（' + r.cnt + ' 家' + (r.maxLbc >= 2 ? ' · 高 ' + r.maxLbc + ' 板' : '') + '）';
-    });
-    return a.join('、') + (arr.length > n ? ' 等 <b>' + arr.length + '</b> 个' : '');
-  }
-  var h = '';
-  /* 2026-09-26 追加：与 7.43 的口径分工提示。
-     起因：本卡的「🔥 共振主线」是**单一标签**的题材热度口径，宽泛标签同样会命中
-     （实测 2026-09-24：「央国企改革」覆盖 24/52 = 46.2% 仍被标为共振主线，
-     而真正的当日合力方向「福建」因家数少、连板少排在后面）。
-     不加这条说明，用户会以为 7.42 与 7.43 结论互相矛盾。 */
-  h += '<div class="note" style="border-left:3px solid #a855f7">🔀 <b>与 7.43 的分工（口径不同，不是矛盾）：</b>' +
-    '本卡的「🔥 共振主线」是<b>题材热度</b>口径 —— 看<b>单一标签</b>的连板梯队 × 资金聚集，' +
-    '所以<b>宽泛标签也会命中</b>（如「央国企改革」覆盖近半涨停池仍算共振）。' +
-    '要判断<b>谁是真主线、谁是轮动支线</b>（把散落在多个窄标签里的同一批股票<b>聚合成"方向"</b>，' +
-    '再用封板时点 / 同步性等<b>行为指纹</b>验证组织性），请看 ' +
-    '<a href="#m7top43" onclick="return jumpTo(\'m7top43\')" style="color:#c084fc;font-weight:700">7.43 主线识别 →</a></div>';
-  h += '<div class="note"><b>题材热度速览</b>：归类题材 <b>' + agg.n + '</b> 个 · 覆盖涨停股 <b>' + hitN + '</b>/' + agg.ztN + ' 只' +
-    (missN ? '（未归类 ' + missN + ' 只）' : '') +
-    '　｜ 资金口径 <b>' + (agg.mode === '直接' ? '一级 · 概念板块主力净流入' : (agg.mode === '代理' ? '二级 · 涨停资金聚集度（代理）' : '未取到')) + '</b>' +
-    '　｜ 🔥 共振 ' + q.rc + ' · ⚠️ 背离 ' + q.dd + ' · 🕐 资金先行 ' + q.fw + ' · 💤 脉冲 ' + q.pl + '</div>';
-  var rcs = agg.rows.filter(function (r) { return r.quad.k === 'rc'; });
-  var fws = agg.rows.filter(function (r) { return r.quad.k === 'fw'; });
-  h += '<div class="concl ' + (rcs.length ? 'c-red' : 'c-grn') + '">' + (rcs.length
-    ? ('🔥 <b>共振主线（连板 ∧ 资金）</b>：' + nm(rcs, 4) + ' —— 梯队与资金双确认，属真热度。')
-    : ('⚠️ <b>本轮没有「连板 ∧ 资金」共振方向</b>' + (fws.length ? '；资金已先行的是：' + nm(fws, 4) : '') +
-      ' —— 热度尚未形成「梯队 + 资金」双确认，按存量博弈 / 脉冲对待，不按主线执行。')) + '</div>';
-  var top = agg.rows.slice(0, M742_RULE.topN);
-  top.forEach(function (r) {
-    var col = M742_QCOL[r.quad.k] || '#94a3b8';
-    h += '<div class="note" style="border-left:3px solid ' + col + ';margin:7px 0;padding:8px 11px">' +
-      '<div style="font-weight:700;color:' + col + '">' + r.quad.icon + ' ' + esc(r.name) + ' · ' + esc(r.quad.name) + '</div>' +
-      '<div style="margin-top:3px">涨停 <b>' + r.cnt + '</b> 家 · 首板 <b>' + r.first + '</b> · 连板 <b>' + r.lian + '</b> · 最高 <b>' + r.maxLbc + '</b> 板' +
-      '　｜ 龙头 ' + esc(r.lead) + (r.micro ? '　<b style="color:#f59e0b">（样本仅 ' + r.cnt + ' 家 · 参考性弱）</b>' : '') + '</div>' +
-      '<div style="margin-top:3px">梯队：' + esc(r.ladderTxt || '—') + '　｜ ' + esc(r.fundTxt) +
-      '　｜ 题材涨幅 ' + (r.pct == null ? '—' : fpct(r.pct)) + (r.amt != null ? ' · 板块成交 ' + fmtYi(r.amt) : '') + '</div>' +
-      '<div style="margin-top:3px;color:#94a3b8">判定：' + esc(r.quad.act) + '</div>' +
-      '</div>';
-  });
-  if (agg.rows.length > top.length)
-    h += '<div class="note">以上按「象限优先级 → 最高板 → 涨停家数 → 资金」降序，只列前 ' + top.length + ' 个（共 ' + agg.rows.length + ' 个题材有涨停）。</div>';
-  h += '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:#9fb4ff">📖 口径自证（数据源 / 两级资金口径 / 象限判定 / 与 7.35 的关系，点开看）</summary><div style="margin-top:6px"><div class="note">' +
-    '① <b>题材归属</b>：复用 7.35 的 <code>thmGroups()</code>（东财概念 F10 反演：个股 → 题材，再反演成 题材 → 涨停股），<b>不另起一套</b>。当日只拉 1 次并落盘 <code>wb_theme_v1</code>（保留 3 日）。<br>' +
-    '② <b>连板梯队</b>：来自涨停池自带的 <code>lbc</code>（连板数）—— 家数 / 连板家数 / 最高板同源同批，零额外请求。<br>' +
-    '③ <b>资金口径两级</b>（顶部标注实际用了哪级）：一级 = 概念板块<b>主力净流入</b>（<code>f62</code>，东财概念板块列表；本机该源常被拦 → 会是"未取到"）；二级（代理）= <b>涨停资金聚集度</b> = 该题材涨停股合计成交额 ÷ 全部题材合计 —— 它衡量「钱扎不扎堆」，<b>不是</b>净流入方向，两者不可混称。聚集度高低用全体题材的 <b>2/3 分位</b>自适应，不写死金额；题材数 &lt;3 时不建阈值，资金列一律"未取到"。<br>' +
-    '④ <b>象限判定（2×2）</b>：梯队强 = （家数 ≥5 且 连板 ≥2 家 且 最高 ≥3 板）或（有连板 且 最高 ≥3 板）；资金强 = 主力净流入 &gt; 0（一级）／聚集度 ≥ 2/3 分位（二级）。两者皆强 → 🔥 共振；仅梯队强 → ⚠️ 背离；仅资金强 → 🕐 资金先行；皆弱 → 💤 脉冲。<br>' +
-    '⑤ <b>与 7.35 的关系</b>：7.35 按「涨停家数」排题材热度榜（回答"哪些题材有涨停"）；本卡在其上叠加「资金」做双重验证（回答"哪些题材是真热度"）。排序 = 象限优先级 → 最高板 → 涨停家数 → 资金。<br>' +
-    '⑥ <b>颜色</b>：本卡颜色表示<b>热度梯度</b>（红 = 共振最强，灰 = 脉冲最弱），不是涨跌色；"样本仅 N 家"的黄标表示分母过小、占比类结论参考性弱（通则：比例类指标分母 &lt;3 时不给方向性结论）。<br>' +
-    '⑦ <b>缺口</b>：北交所已在涨停池基建中剔除（无日K稳定源）；龙虎榜 / 两融 / 北向资金未纳入本卡（不做代理，避免假信号）。' +
-    '</div></div></details>';
-  setHtml(box, h);
-}
+/* ==== 7.44-UI-END ==== */
 /* ==================================================================
    7.43 主线识别引擎（MLI · Main Line Identification）
    ------------------------------------------------------------------
@@ -9921,7 +9855,7 @@ function renderM743() {
     '② <b>属性聚合规则</b>：把每只涨停股的 F10 标签归入两个维度之一（<b>互斥，不重复计数</b>）——' +
     '<b>region</b>（地域/区域 · 炒地图：F10「福建板块」+ 概念类区域「长江三角/雄安新区/海南自贸」等）；' +
     '<b>chain</b>（产业链 · 跨标签共振：按内置 <code>' + MLI_CHAIN.length + '</code> 条产业链关键词表匹配）。' +
-    '普通概念标签（如「人工智能」「央国企改革」）<b>不在此聚合</b> —— 它们已由 7.35 / 7.42 回答，不重复造轮子。<br>' +
+    '普通概念标签（如「人工智能」「央国企改革」）<b>不在此聚合</b> —— 它们已由 7.35 回答，不重复造轮子。<br>' +
     '③ <b>行为指纹</b>：全部来自涨停池自带字段，零额外请求 —— 封板时点 <code>fbt</code>（早盘 ≤10:00 / 盘中 / 尾盘 ≥14:00 / 尾盘后段 ≥14:30）、' +
     '同步性 σ（封板时间的标准差，越小越集中 = 组织性越强）、炸板率 <code>zbc</code>、封单强度 <code>fund/amount</code>、梯队 <code>lbc</code>。<br>' +
     '④ <b>角色判定（优先级自上而下）</b>：⚠️ 分歧加剧（家数 ≥3 且 炸板率 ≥40% 且 无连板）→ 🎯 真主线（家数 ≥3 且 ' +
@@ -9933,9 +9867,9 @@ function renderM743() {
     '(a) 方向覆盖率 &gt; ' + (MLI_RULE.broadRatio * 100) + '%（实证：「AI应用·软件信创」18/52 = 34.6% 曾凭家数挤到支线榜首）；' +
     '(b) 方向内标签数 &gt; ' + MLI_RULE.broadTags + '（靠十几个标签凑起来的是"归类"，不是"共振"）。' +
     '另：<b>地域维度要求家数 ≥' + MLI_RULE.regionMinN + '</b>（同省公司天然成群，2~3 只同省纯属巧合）。<br>' +
-    '⑥ <b>与 7.35 / 7.42 的关系</b>：三层递进、互不替代 —— 7.35 回答「哪些题材有涨停」（单标签家数榜）；' +
-    '7.42 回答「哪些题材是真热度」（连板梯队 × 资金双验证）；本卡回答「<b>谁是主线、谁是支线</b>」（多属性聚合 × 行为指纹）。' +
-    '三者共用同一份 F10 数据（<code>wb_theme_v2</code>），不会出现两套口径打架。<br>' +
+    '⑥ <b>与 7.35 的关系</b>：两层递进、互不替代 —— 7.35 回答「哪些题材有涨停」（单标签家数榜）；' +
+    '本卡回答「<b>谁是主线、谁是支线</b>」（多属性聚合 × 行为指纹）。' +
+    '两卡共用同一份 F10 数据（<code>wb_theme_v2</code>），不会出现两套口径打架。<br>' +
     '⑦ <b>明确未做的部分（不臆造）</b>：昨日同方向的「<b>退潮出清</b>」判定需要昨日涨停池的 F10 属性（额外一轮 F10，请求量翻倍）' +
     '→ 本卡改用方向内「<b>连板家数</b>」间接衡量延续性（连板家数为 0 说明该方向今日全是首板，持续性未经验证）；' +
     '封单撤单 / 竞价五档 / 消息催化真伪 —— 无稳定免费源，不参与判定（与全站口径一致）。<br>' +
@@ -10652,7 +10586,7 @@ function renderM5Node(){
   var key = D.date + '|' + codes.join(',') + '|' + (st.active ? (st.active.date + st.active.anchor.code) : '-');
   if(NODE.key !== key || !NODE.done){
     if(AUTO_REFRESH){
-      setHtml(box, nodeStatusHtml(st) + nodeHiHtml(st) + scanPausedHtml('7.16 节点策略', (NODE.done ? '<div class="note">现有结果为上次手动刷新数据（' + new Date(NODE.t).toTimeString().slice(0, 5) + '）</div>' : '')) + nodeRulesHtml());
+      setHtml(box, nodeStatusHtml(st) + nodeHiHtml(st) + scanPausedHtml('7.16 节点策略', (NODE.done ? '<div class="note">现有结果为上次自动刷新数据（' + new Date(NODE.t).toTimeString().slice(0, 5) + '）</div>' : '')) + nodeRulesHtml());
       return;
     }
     if(!NODE.running){
@@ -13575,6 +13509,13 @@ function renderM737(){
     return;
   }
   var res = j37Compute();
+  /* 2026-09-28：nodata（昨日快照空 / 未就绪）时 res.g1 为 null，下面 res.g1.ok 直接崩
+     （e2e 抓到过：renderM737 TypeError reading 'ok'，首轮网络慢时高发）。
+     ⚠ 只提示、不重试：此处 JJ.snap 对象已在、只是 prev 空 —— jjEnsure 会同步回调 → 无限递归（e2e 抓到过 Stack overflow）。等下一轮刷新自然恢复。 */
+  if(res.phase === 'nodata'){
+    setHtml(box, '<div class="loading">7.37 竞价定选：昨日涨停快照未就绪（下一轮刷新自动恢复）…</div>');
+    return;
+  }
   j37Save(res);
   var h = '';
   /* 结论行 */
@@ -13656,25 +13597,18 @@ function renderM737Archive(arc){
    铁律优先级：MA5 斜率 ＞ 连续破线天数 ＞ 是否站线 ＞ 偏离度
    四大状态：无条件清仓 / 减仓防守 / 坚定持有 / 观察池 ＋ 超涨止盈警戒
    合法买点（必须全部满足）：斜率由下翻上 + 连续2日站稳 + dev 0~6% + 近期放量阳线
-   ── 扫描范围（2026-09-21 v4 · 用户口径；★2026-09-24 板块层再收窄）──
-     ① 板块层：近 ztDays(10) 个交易日（含今日）**有涨停股**的板块
-        （涨停池 hybk 聚合家数降序；数据 = 今日 D.zt + 前 9 日涨停池并集 ztPoolUnion，与 7.30/7.32 共用缓存机制）
-        ⚠ 2026-09-21 加固：**不再因为「换不到东财板块码」而剔除板块**（旧版如此 → 用户实测「共 0 个」）。
-          原因与修法见 ma5BkOf 头部注释（hybk 被接口截断到 4 汉字 + 板块榜可能整体为空）。
-     ★ 2026-09-24（用户要求）：「操作板块」= **7.10B 可买入组合清单选出的板块** —— 即上面原始集合
-        ∩ 7.10B 判为「合格」的板块（S/A/B 级 + 非加速/退潮 + 容量/资金/宽度/首板集群闸门全过，
-        口径与 7.10B 三卡/结论条**同源**，见 b710Qualified()）。
-        三态：① 7.10B 大盘一票否决（高潮/退潮）→ 操作板块置空（与清单结论严格一致）；
-              ② 清单未评估（今日无涨停）/ 未过闸门 → 过滤并在诊断行逐条记名；
-              ③ 清单不可用（涨停池为空 / 引擎异常）→ **不阻断**，仍用原始集合并明确标注"未按清单筛选"。
-        这样 7.12 只在"清单说能买"的板块里找中军与四指标 v3 买入档，避免清单与个股模块互相打脸。
-     ② 个股层：**中军 = 近 ztDays(10) 日至少涨停 1 次 ∧ 今日未涨停**，板块内按 5 日均额取前 midTop(5) 名
-        （成员资格唯一来源 = 涨停池并集 ma5ZtMemPool，不依赖 clist；先按今日成交额粗筛前 midShort(15) 控请求量）
+   ── 扫描范围（★ 2026-09-27 v5 · 用户口径，以此为准）──
+     ① 板块层：**今日涨停家数 > poolZtGt(3) 家**的板块（今日涨停池 hybk 聚合家数降序；
+        不再取历史并集）。7.10B 六闸门不再过滤板块，仅保留**大盘一票否决**（高潮/退潮 → 置空）。
+        板块码映射加固（2026-09-21）继续有效：hybk 截断到 4 汉字 + 板块榜可能整体为空，
+        归一化 + 互为前缀匹配（详见 ma5BkOf 头部注释）。
+     ② 个股层（2026-09-27 v5 · 用户口径）：**选股池 = 当天涨停 > 3 家的板块中，今日成交额 > 10 亿的股票**
+        （成员三通道：板块码成分股 / f100 行业名分组 / 今日涨停池兜底；不再要求涨停过、不裁前 5）
      ③ 生命周期门：**已于 2026-09-21 按用户要求删除**（原为「非 3 / 4 阶段」）。
         该列现在只展示、不参与筛选 → 派发/下跌期的票也会出现在买点表里（用户已知悉）。
      结果展示**只保留「合法买点」与「观察」两类**，其余状态不再显示。
      ⚠ 历史沿革：7.10 周期板块池 → 当天涨停板块成分股 → 近3日板块中军（连续排名/淘股吧门槛两版均被推翻）→
-       2026-09-21 v4 定稿「近 10 日至少涨停 1 次」（演进史详见下方「板块中军」定义长注释）。
+       2026-09-21 v4「近 10 日至少涨停 1 次」→ ★ 2026-09-27 v5「涨停>3家板块 ∩ 成交额>10亿」（演进史见 MA5_RULE 上方长注释）。
    数据：日K前复权25日（腾讯/新浪/东财三通道），末根用实时价覆盖，30分钟缓存。
    ================================================================== */
 
@@ -14683,30 +14617,40 @@ function s4kTotal(klines, kj, ctx) {
 
 /* ============ 「板块中军」定义（2026-09-21 v4 定稿 · 用户口径）============
 
-   ── 用户最新口径（2026-09-21 拍板，**以此为准**）──
+   ── ★ 当前口径（2026-09-27 v5 · 用户拍板，**以此为准**）──
+   「7.12 选股池修改为：**当天涨停家数大于 3 家的板块中，成交额大于 10 亿的股票**。」
+
+   ⇒ 板块准入 = **今日涨停池 hybk 聚类家数 > poolZtGt(3)**（不再用近 10 日并集、
+      7.10B 六闸门不再筛板块；**大盘一票否决**仍保留为最后一道风控闸）。
+      个股准入 = 板块成员中 **今日成交额 > poolAmtMin(10亿)**（不再要求「近10日涨停过」、
+      不再排除今日涨停股、不再做板块内前 5 裁剪，**v5.1 再取消板块内 5 日均额排序** ——
+      满足即全量入池，板块内按今日成交额降序编号，无任何排序门槛）。
+      成员三通道：① 板块码成分股（loadSecMembers，30 分钟缓存）② 全市场清单按 f100 行业名
+      分组（零额外请求）③ 今日涨停池成员兜底；按 code 去重后统一过滤成交额。
+      「中军#N」徽标保留为**板块内今日成交额位次**的排序展示，不再是资格线
+      （v5.1：日K不足 / 5 日均额算不出的票照常入池，不再被剔除）。
+
+   ── 旧口径存档（2026-09-21 v4，已被 v5 取代）──
    「修改策略，中军的定义范围改为 **10 日至少涨停 1 次** 的股票。」
+   ⇒ 中军 = 近 ztDays(10) 个交易日（含今日）至少有过 1 次涨停 ∧ 今日未涨停，
+      板块内按 5 日均额取前 midTop(5) 名。
 
-   ⇒ 中军 = 近 ztDays(10) 个交易日（含今日）**至少有过 1 次涨停** ∧ **今日未涨停** 的股票，
-      按所属板块（涨停池 hybk）分组，板块内按 **5 日均额** 取前 midTop(5) 名。
-
-   ── 演进史（2026-09-21 一天四改，存档备查，以后翻案先看这里）──
+   ── 演进史（存档备查，以后翻案先看这里）──
      v1 「板块内 5 日均额前 5」→ 被反例否掉（0.71 亿也当中军，矮子里拔将军）；
      v2 「板块内连续 ≥3 天成交额前 3 ∧ 未涨停」（连续排名）→ 被用户改为 v3，又要求改回，最终被 v4 取代；
      v3 淘股吧硬门槛（市值 200 亿 ∧ 板块内前 3 ∧ 日成交 15 亿 ∧ 占板块 10%）→ 短暂生效后用户推翻；
-     v4 **当前**：「近 10 日至少涨停 1 次」—— 定义从「资金容量排名」转为「**近期被资金关注过**」。
-        ⚠ 候选池因此**直接来自涨停池并集**（getTopicZTPool × (ztDays-1) 个历史日 + 今日池），
-        **不再依赖东财成分股通道（clist）** —— 此前「clist 被拦 → 中军恒 0」的问题从根上消失；
-        板块成分股清单（通道1/2）降级为「实时价补源」（memBy 命中时用快照价覆盖日K末根，未命中用日K末根价，
-        腾讯 fqkline 盘中末根本身即实时价）。
+     v4 「近 10 日至少涨停 1 次」（成员来自涨停池并集、不依赖 clist）→ 被 v5 取代；
+     v5 **当前**：「当天涨停 > 3 家板块 ∩ 成交额 > 10 亿」—— 定义从「被资金关注过」转为
+        「**最强板块里的活跃票**」；成员重新启用板块成分股通道（成交额判定需要覆盖全板块成员）。
 
-   ── 实现口径 ──
-     · 成员资格 = ma5ZtMemPool（近 ztDays 日涨停池并集 + 今日 D.zt，按 hybk 分组，剔北交所/B股/无成交额）；
-     · 未涨停 = ma5NoZt（不在今日涨停池 —— 成员本身来自涨停池，今日涨停的自然被剔除：中军 ≠ 连板龙头）；
-     · 粗筛 = 各板块涨停成员按今日成交额前 midShort(15)（控制日K请求量；amt5 与今日成交额强相关，前 15
-       基本覆盖板块内 5 日均额前 5 的候选，近似已在界面注明）；
-     · 精排 = 5 日均额（ma5Amt5）降序取板块内前 midTop(5) 名；
+   ── 实现口径（v5）──
+     · 板块准入 = ma5ScanSecs()：ma5ZtSecUnion(1)（今日池）按家数 > poolZtGt(3) 过滤；
+     · 成员资格 = ma5PoolMembers() 三通道（板块码成分股 MLM / f100 行业名分组 indPool / 今日涨停池兜底），
+       统一过滤 f6(或 amount) > poolAmtMin(10亿)，按 code 全局去重（一只票只归首个命中板块）；
+     · 候选 = ma5Candidates()：成交额降序，全池上限 total(80)；
+     · 排序 = ma5MidPick()：板块内按今日成交额降序编号（v5.1 取消 5 日均额排序，无任何排序门槛）；
      · 5 日均额 = f6 锚定还原（amount × (v_d·c_d)/(v_末根·c_末根)），消除腾讯「手」/新浪「股」100 倍量纲差；
-     · 涨停池成员自带 amount（单位「元」，与 clist f6 同量纲，实测 4.47 亿 = 446859296）/ ltsz（流通市值，元）/ day（涨停日）。
+     · 成交额字段量纲统一为「元」：clist f6 与涨停池 amount 同量纲（实测 4.47 亿 = 446859296）。
    ============================================================================ */
 var MA5_RULE = {
   breakClear: 3,      /* 连续破线 ≥3 天 → 无条件清仓（短期趋势彻底拐头） */
@@ -14717,15 +14661,13 @@ var MA5_RULE = {
   volRatio: 1.8,      /* 放量阳线：成交量 ≥ 前5日均量 × 1.8 */
   volDays: 20,        /* 放量阳线回看窗口（交易日，不含当日） */
   slopeWin: 3,        /* 买点窗口：斜率向上后的前 N 天内（"由下翻上"附近） */
-  /* ── 中军判定参数（2026-09-21 v4 · 用户口径，见上方「板块中军」定义）──
-     演进：v1 板块内5日均额前5 → v2 连续排名 → v3 淘股吧硬门槛（市值200亿/前3/15亿/10%）→ v4 近10日涨停过（当前）。 */
-  /* ── 扫描范围（2026-09-21 v4 · 见 ma5ScanSecs 头部注释）── */
-  ztDays: 10,         /* ① 中军/板块范围：近 10 个交易日（含今日）**至少涨停 1 次** */
-  midTop: 5,          /* 精排：板块内按 5 日均额取前 5 名（排名展示用；成员资格 = 涨停池并集，见上） */
-  midShort: 15,       /* 粗筛窗口：各板块涨停成员按今日成交额取前 15（控制日K请求量，见「板块中军」定义） */
-  total: 80,          /* 全池中军总数上限（板块多时防止日K请求量失控） */
-  ztp: { '10cm': 9.7, '20cm': 19.5, '30cm': 29.5, '5cm': 4.8 },   /* 板别涨停阈值（与全站同口径）：仅用于「未涨停」的涨幅兜底判定 */
-  perSec: 40          /* 保留：旧「每板块扫描上限」口径的兼容引用 */
+  /* ── ★ 选股池参数（2026-09-27 v5 · 用户口径，见上方「板块中军」定义）──
+     演进：v1 板块内5日均额前5 → v2 连续排名 → v3 淘股吧硬门槛（市值200亿/前3/15亿/10%）
+     → v4 近10日涨停过 → v5 「当天涨停>3家板块 ∩ 成交额>10亿」（当前）。 */
+  poolZtGt: 3,        /* 板块准入：今日涨停池 hybk 聚类家数须 **大于** 此值（严格 >） */
+  poolAmtMin: 10e8,   /* 个股准入：今日成交额下限（元）＝ 10 亿 */
+  total: 80,          /* 全池总数上限（防日K请求量失控；按今日成交额降序截断） */
+  ztp: { '10cm': 9.7, '20cm': 19.5, '30cm': 29.5, '5cm': 4.8 }   /* 板别涨停阈值（与全站同口径） */
 };
 /* ---------- MA5 核心指标计算（纯函数，末根可用实时价覆盖） ---------- */
 function ma5Stats(bars, livePrice){
@@ -14812,7 +14754,9 @@ function ma5PosAdvice(exec){
   if(st.observe) return '禁止开仓（冰点周期约束）';
   return '仓位 ≤ ' + st.pos + ' · ' + st.buyShort;
 }
-/* ============================ 扫描范围（两层，2026-09-21 第二次重定义）============================
+/* ============================ 扫描范围（历史存档：2026-09-21 第二次重定义，v1/v2 时代）============================
+   ⚠ 本段为历史注释存档（当时口径 = 近 3 日有涨停板块的中军），**v5 当前口径见 MA5_RULE 上方长注释**
+   （板块 = 今日涨停 > 3 家；个股 = 成交额 > 10 亿全量入池）。以下保留原文供翻案参考：
    用户口径：「扫描范围改为近 3 日有涨停股的板块中的中军，中军 = 板块内 5 日平均成交额前 5 名但未涨停的股票」。
    ① 板块层：近 ztDays(3) 个交易日（含今日）**有涨停股**的板块。
       数据源 = 今日涨停池 D.zt（本地）+ 前 (ztDays-1) 个交易日涨停池并集（ztPoolUnion → 与 7.30 / 7.32 共用缓存）。
@@ -14933,18 +14877,15 @@ function ma5IndHit(name, pool){
   if(pre.length) return { keys: pre, how: 'prefix(' + pre.length + ')' };
   return { keys: [], how: 'none' };
 }
-/* 扫描板块集合（**不再因为拿不到板块码而被剔除** —— 那正是「共 0 个」的直接成因）
-   ★ 2026-09-24（用户要求）：本函数的**返回值**收窄为「7.10B 可买入组合清单选出的板块」——
-     即：原始集合（近 ztDays 日有涨停股的板块）∩ 7.10B 判为「合格」的板块。
-     被过滤掉的板块**逐类计数 + 记名**（写进 MA5S.diag.b710），界面展开可见，不允许"少列了板块却不说为什么"。
-     三态处理：
-       · 7.10B 大盘一票否决（高潮 / 退潮）→ 返回空集 + 写明"禁止买入"（与 7.10B 结论条严格一致）；
-       · 7.10B 未评估该板块（今日无涨停 → gradeSectors 不含它）→ 过滤并计数；
-       · 7.10B 引擎不可用（涨停池为空 / 异常）→ **不阻断**：返回原始集合并在 MA5S.diag.b710.na 标记（如实标注）。 */
+/* 扫描板块集合（★ 2026-09-27 v5 · 用户口径）：**今日涨停家数 > poolZtGt(3) 的板块**。
+   旧口径（近 ztDays 日有涨停 ∩ 7.10B 六闸门合格板块）已退役 —— 7.10B 不再过滤板块，
+   仅保留「**大盘一票否决**」（高潮 / 退潮 → 操作板块置空）作为最后一道风控闸；
+   7.10B 完整状态仍显示在横幅里供参考。板块名 → 板块码映射（ma5BkOf）保留：成分股通道需要 BK 码。 */
 function ma5ScanSecs(){
-  var raw = ma5ZtSecUnion(MA5_RULE.ztDays), gm = {}, out = [], unmapped = [], how = { exact: 0, prefix: 0, none: 0 };
+  var raw = ma5ZtSecUnion(1), gm = {}, out = [], unmapped = [], how = { exact: 0, prefix: 0, none: 0 };
   try{ gm = secGradeMap() || {}; }catch(e){ gm = {}; }
   Object.keys(raw).sort(function(a, b){ return raw[b].n - raw[a].n; }).forEach(function(nm){
+    if(raw[nm].n <= MA5_RULE.poolZtGt) return;              /* ★ v5 板块准入：今日涨停 > 3 家（严格大于） */
     var r = ma5BkOf(nm);
     var bk = (r.s && /^BK/i.test(String(r.s.f12 || ''))) ? r.s.f12 : '';
     if(bk) how[r.how === 'prefix' ? 'prefix' : 'exact']++;
@@ -14952,56 +14893,20 @@ function ma5ScanSecs(){
     out.push({ name: nm, bk: bk, bkHow: bk ? r.how : 'none', zt: raw[nm].n, dayN: raw[nm].dayN,
       maxLbc: raw[nm].maxLbc, grade: gm[nm] || '—' });
   });
-  /* ── 7.10B 过滤（★ 2026-09-24 用户要求：操作板块 = 可买入组合清单选出的板块） ──
-     ⚠ 名称空间不同：本函数的板块名来自**涨停池 hybk（接口截断到 4 汉字）**，
-     而 7.10B 的名字来自 gradeSectors（f100 全名）——实测存在 '其他电子' vs '其他电子Ⅱ'、
-     '汽车零部' vs '汽车零部件' 这类差异。故用已有的 ma5NormName（去罗马数字/空格/括号）+
-     互为前缀匹配建索引（多候选时宁可不匹配，避免拉错板块）。 */
+  /* ── 7.10B 大盘一票否决（保留的风控闸）：高潮 / 退潮 → 操作板块置空（与 7.10B 结论条严格一致）；
+     六闸门 / 级别 / 板块周期等板块级筛选自 v5 起不再生效（选股池口径 = 涨停家数，与清单解耦）。 ── */
   var q = null; try{ q = b710Qualified(); }catch(e){ q = null; }
-  var evalNorm = {}, evalCnt = {};
-  Object.keys((q && q.evalMap) || {}).forEach(function(k){
-    var nk = ma5NormName(k);
-    if(!nk) return;
-    evalNorm[nk] = q.evalMap[k]; evalCnt[nk] = (evalCnt[nk] || 0) + 1;
-  });
-  function evalOf(rawName){
-    if(!q) return null;
-    if(q.evalMap[rawName]) return q.evalMap[rawName];
-    var a = ma5NormName(rawName);
-    if(!a) return null;
-    if(evalNorm[a] && evalCnt[a] === 1) return evalNorm[a];
-    var hit = null, cnt = 0;
-    Object.keys(evalNorm).forEach(function(k){
-      if(k && (k.indexOf(a) === 0 || a.indexOf(k) === 0)){ cnt++; hit = evalNorm[k]; }
-    });
-    return cnt === 1 ? hit : null;                 /* 多个候选 → 宁可不匹配（不误判） */
-  }
-  var kept = [], drop = [], cnt = { noEval: 0, gate: 0, veto: 0, na: 0 };
-  var b710 = { on: !!(q && !q.bad && !(q && q.veto)), bad: !q || !!q.bad, badWhy: (q && q.badWhy) || '', cyc: q ? q.cyc : null,
+  var drop = [];
+  var b710 = { on: !!(q && !q.bad), bad: !q || !!q.bad, badWhy: (q && q.badWhy) || '', cyc: q ? q.cyc : null,
     veto: q ? q.veto : null, hitId: (q && q.hit) ? q.hit.id : null, curName: (q && q.cur) ? q.cur.name : null,
-    okN: q ? q.okN : null, all: out.length, kept: 0, drop: drop, noEval: 0, gate: 0 };
-  if(!q || q.bad){
-    /* 引擎不可用 → 不阻断（返回原始集合），但明确标注"本次未按清单筛选" */
-    cnt.na = out.length; b710.na = true;
-    out.forEach(function(s){ s.b710 = 'na'; kept.push(s); });
-  } else if(q.veto){
-    cnt.veto = out.length; b710.na = false;
-    out.forEach(function(s){ s.b710 = 'veto'; drop.push(s.name + '（7.10B：大盘「' + q.cyc + '」→ 禁止买入）'); });
-  } else {
-    out.forEach(function(s){
-      var e = evalOf(s.name);
-      if(!e){ s.b710 = 'noEval'; cnt.noEval++; drop.push(s.name + '（今日无涨停 → 7.10B 未评估该板块）'); return; }
-      if(!e.ok){ s.b710 = 'gate'; cnt.gate++; drop.push(s.name + '（' + (e.no || []).join('；') + '）'); return; }
-      s.b710 = 'ok'; s.b710Lvl = e.lvl; s.b710St = e.stLabel; kept.push(s);
-    });
+    okN: q ? q.okN : null, all: Object.keys(raw).length, gt3: out.length, kept: 0, drop: drop, noEval: 0, gate: 0 };
+  if(q && !q.bad && q.veto){
+    out.forEach(function(s){ drop.push(s.name + '（7.10B：大盘「' + q.cyc + '」→ 禁止买入）'); });
+    out = [];
   }
-  b710.noEval = cnt.noEval; b710.gate = cnt.gate; b710.kept = kept.length;
-  /* 7.10B 优先级序（S>A>B，同级涨停家数/最高板降序）——让"首选"排在最前 */
-  var ord = { S: 0, A: 1, B: 2 };
-  kept.sort(function(a, b){ return (ord[a.b710Lvl] == null ? 9 : ord[a.b710Lvl]) - (ord[b.b710Lvl] == null ? 9 : ord[b.b710Lvl])
-    || b.zt - a.zt || b.maxLbc - a.maxLbc; });
-  MA5S.diag = { rawSec: Object.keys(raw).length, mapped: out.length - how.none, unmapped: unmapped, how: how, b710: b710 };
-  return kept;
+  b710.kept = out.length;
+  MA5S.diag = { rawSec: Object.keys(raw).length, mapped: how.exact + how.prefix, unmapped: unmapped, how: how, b710: b710 };
+  return out;
 }
 /* 该板块的成分股（三通道合并、按 code 去重；通道1 优先，因为它含小票与更多字段）
    ⚠ v4 起成员资格改由涨停池并集决定（ma5ZtMemPool），本函数退役为「实时价补源」的潜在数据源之一。 */
@@ -15017,14 +14922,7 @@ function ma5MembersOf(sec, pool){
   });
   return { list: out, via: out.length ? ('行业名·' + hit.how) : '' };
 }
-/* 未涨停？双保险：不在今日涨停池 ∧ 涨幅未达板别阈值 */
-function ma5NoZt(code, name, pct){
-  if((D.zt || []).some(function(x){ return String(x.c) === String(code); })) return false;
-  var k = ztLimitOf(code, name), need = MA5_RULE.ztp[k];
-  if(need != null && pct != null && pct >= need - 0.3) return false;   /* 阈值下浮 0.3：含「一字板/接近封板」 */
-  return true;
-}
-/* 5 日平均成交额（口径见上方注释）：f6 锚定量纲 + 近 5 日量能形态还原 */
+/* 5 日平均成交额（口径见下方 ma5MidPick 注释）：f6 锚定量纲 + 近 5 日量能形态还原 */
 function ma5Amt5(bars, f6){
   if(!bars || bars.length < 6) return null;
   var f = num(f6); if(f == null || f <= 0) return null;
@@ -15037,89 +14935,74 @@ function ma5Amt5(bars, f6){
   if(cnt < 5 || !(lastW > 0)) return null;
   return f * (s / cnt) / lastW;
 }
-/* ---------- 生命周期门：**已于 2026-09-21 按用户要求删除** ----------
-   用户原话：「另外，生命周期这个限定条件删除」。
-   原实现 ma5LifeGate() 把「温斯坦阶段 3（派发）/ 4（下跌）」的票从结果里剔除；
-   现不再过滤 —— 生命周期阶段改为**只展示、不参与筛选**（表内仍保留该列，便于人工判断）。
-   ⚠ 副作用（必须知道）：派发期 / 下跌期的票现在也可能出现在「合法买点」表里。
-     MA5 的四条件本身不含趋势位置约束（斜率刚翻上 + 站稳 + 偏离 0~6% + 有放量阳线），
-     个股所在的大级别阶段只能靠那一列人工看。要恢复过滤：从 _backup_before_712_fix.html 取回 ma5LifeGate 即可。 */
-/* ---------- 中军成员池（2026-09-21 v4 · **唯一的成员资格来源**）----------
-   用户口径：「中军的定义范围 = 近 10 日（含今日）至少涨停 1 次的股票」。
-   数据 = 「近 ztDays 日涨停池并集」（ZTPU.cache，与 7.30 / 7.32 共用缓存）+ 今日 D.zt —— 【零额外成分股请求、不依赖 clist】。
-   按涨停池自带的 hybk（行业板块）分组；成员自带 amount（成交额，元）/ ltsz（流通市值，元）/ day（窗口内最近一次涨停日）。
-   原「通道1 板块码成分股 / 通道2 全市场行业名」退役为「实时价补源」（见 renderM712 的 memBy）——
-   因为成员资格由涨停池完全决定，成分股清单无法补充任何合格成员。 */
-function ma5ZtMemPool(hks){
-  var g = {}, seen = {};
-  function put(code, name, sec, amt, cap, day){
-    if(!code || !sec || sec === '—' || sec === '其他') return;
-    if(!/^[036]/.test(String(code))) return;                 /* 剔北交所/B股，与全站口径一致 */
-    var k = String(code);
-    if(seen[k]) return;
-    var f6 = num(amt);
-    if(f6 == null || f6 <= 0) return;                        /* 无成交额无法精排 */
-    seen[k] = 1;
-    (g[sec] || (g[sec] = [])).push({ code: k, name: name, sec: sec, amt: f6, ltsz: num(cap), ztDay: day || '', ztMem: true });
+/* ---------- 选股池成员（★ 2026-09-27 v5 · 用户口径，**唯一成员来源**）----------
+   选股池 = 「今日涨停 > poolZtGt(3) 家」板块的成员中 **今日成交额 > poolAmtMin(10亿)** 的股票
+   （不再要求「近10日涨停过」、不再排除今日涨停股 —— 选股池只是候选池，买卖档由四指标 v3 判定）。
+   成员三通道（按 code 全局去重，一只票只归首次命中的板块）：
+     ① 板块码成分股：MLM 缓存（loadSecMembers，30 分钟；f2 现价 / f3 涨跌幅 / f6 成交额 / f21 流通市值齐全）；
+     ② 全市场清单按 f100 行业名分组（D.amtTop / D.top100 / D.bot100，零额外请求；
+        ma5IndHit 前缀匹配消化 hybk 4 字截断）；
+     ③ 今日涨停池成员兜底（自带 amount / ltsz，无现价 → 由日K末根或 memBy 补）。
+   ⚠ 覆盖面如实说明：② 只覆盖成交额/涨跌幅榜上榜股票；① 拉不到（clist 被拦是常态）时，
+      成交额 > 10 亿但未上榜的成员会漏 —— 成员通道计数显示在漏斗行/空态诊断里，不静默。 */
+function ma5PoolMembers(secs){
+  var indPool = ma5IndPool();
+  var seen = {}, out = [], via = { '板块成分': 0, '行业名': 0, '涨停兜底': 0 };
+  function put(x, sec, src){
+    if(!x) return;
+    var c = String(x.f12 != null ? x.f12 : (x.c != null ? x.c : ''));
+    if(!/^[036]/.test(c) || seen[c]) return;                 /* 剔北交所/B股，与全站口径一致 */
+    if(/ST|退/i.test(String(x.f14 || x.n || ''))) return;
+    var amt = num(x.f6) != null ? num(x.f6) : num(x.amount);
+    if(amt == null || amt <= MA5_RULE.poolAmtMin) return;    /* ★ 个股准入：今日成交额 > 10 亿 */
+    seen[c] = 1;
+    via[src]++;
+    out.push({ code: c, name: x.f14 || x.n || '', sec: sec.name, grade: sec.grade || '—',
+      amt: amt, cap: num(x.f21) != null ? num(x.f21) : num(x.ltsz),
+      pct: num(x.f3), price: num(x.f2),
+      secZt: sec.zt, secDayN: sec.dayN, src: src });
   }
-  var cache = ZTPU.cache[hks];
-  if(cache) Object.keys(cache).forEach(function(k){ var h = cache[k]; if(h) put(h.code, h.name, h.sec, h.amount, h.ltsz, h.day); });
-  (D.zt || []).forEach(function(x){ put(String(x.c || ''), x.n, x.hybk, x.amount, x.ltsz, D.date); });
-  return g;
-}
-/* ---------- 候选粗筛（2026-09-21 v4）：各板块涨停成员按「今日成交额」降序前 midShort，且今日未涨停 ----------
-   成员资格即中军定义（近 ztDays 日涨停过），这里只做两件事：
-     ① 今日未涨停过滤（ma5NoZt：今日涨停的是龙头/连板股，不是中军；成员池含今日涨停成员，必须剔掉）；
-     ② 每板块按今日成交额取前 midShort 名 —— 控制日K请求量（amt5 与今日成交额强相关，近似已在界面注明）。
-   真正的「板块内前 midTop」由 ma5MidPick 按 5 日均额精排产生。 */
-function ma5Candidates(secs, ztMem){
-  if(!secs) secs = ma5ScanSecs();
-  if(!ztMem) ztMem = ma5ZtMemPool(zelBackDates(Math.max(1, MA5_RULE.ztDays - 1)).join(','));
-  var seen = {}, out = [], via = { '涨停成员': 0, '无': 0 };
-  secs.forEach(function(sec){
-    var list = ztMem[sec.name] || [];
-    if(!list.length){ via['无']++; return; }
-    via['涨停成员']++;
-    list.filter(function(x){
-      if(!x.code || num(x.amt) == null) return false;
-      return ma5NoZt(x.code, x.name, null);      /* 今日未涨停（成员池含今日涨停者，必须剔除） */
-    }).sort(function(a, b){ return num(b.amt) - num(a.amt); })
-      .slice(0, MA5_RULE.midShort).forEach(function(x){
-        if(seen[x.code]) return;
-        seen[x.code] = 1;
-        out.push({ name: x.name, code: x.code, pct: null, price: null,
-          amt: num(x.amt), cap: num(x.ltsz), sec: sec.name, grade: sec.grade,
-          secZt: sec.zt, secDayN: sec.dayN, ztDay: x.ztDay, src: '中军' });
-      });
+  (secs || []).forEach(function(sec){
+    var c1 = MLM[D.date + '|' + sec.name];
+    ((c1 && c1.v) || []).forEach(function(x){ put(x, sec, '板块成分'); });
+    var hit = ma5IndHit(sec.name, indPool);
+    hit.keys.forEach(function(k){ (indPool[k].list || []).forEach(function(x){ put(x, sec, '行业名'); }); });
+    (D.zt || []).forEach(function(x){ if(String(x.hybk || '') === sec.name) put(x, sec, '涨停兜底'); });
   });
   MA5S.via = via;
   return out;
 }
-/* ---------- 中军精排（2026-09-21 v4 · 用户口径）----------
-   成员资格已在粗筛阶段确定（近 ztDays 日涨停过 ∧ 今日未涨停，见 ma5Candidates）；
-   本函数只做「板块内按 5 日均额取前 midTop」的排名与裁剪：
-     · amt5 = ma5Amt5(bars, amt)（f6 锚定量纲还原）；日K不足 / 成交额缺失 → 不参与（不猜）；
-     · 「中军#N」的 N = 板块内位次（按 5 日均额降序，保证连续可读）；原始位次 secRank 供悬停展示；
-     · 原 v2「连续 ≥3 天板块内成交额前 3」的连续排名逻辑随口径 v4 删除（要恢复：从
-       _snapshot_final_v2_middef.html 取回 ma5MidPick 即可）。
+/* ---------- 候选生成（★ v5）：成员池按今日成交额降序，全池上限 total ---------- */
+function ma5Candidates(secs){
+  if(!secs) secs = ma5ScanSecs();
+  var list = ma5PoolMembers(secs);
+  list.sort(function(a, b){ return b.amt - a.amt; });
+  MA5S.poolAllN = list.length;
+  return list.slice(0, MA5_RULE.total);
+}
+/* ---------- 中军排序（★ 2026-09-27 v5.1 · 用户口径「取消板块内按 5 日均额排序」）----------
+   成员资格 = 选股池（今日涨停>3家板块 ∩ 成交额>10亿，见 ma5PoolMembers），**满足即全量入池**；
+   v5.1 起本函数只做「板块内按今日成交额降序编号」的排序展示：
+     · ★ 不再要求 5 日均额可算 —— 日K不足 / 5 日均额缺失的票**照常入池**（不再剔除、不再有 midFiltered）；
+     · amt5 = ma5Amt5(bars, amt)（f6 锚定量纲还原）仅在算得出时填，作「5日均额」列的参考展示；
+     · 「中军#N」的 N = 板块内位次（按今日成交额降序，保证连续可读）；仅排序徽标，不是资格线。
    barsBy = { code: bars }，与 MA5 判定共用同一份 30 分钟日K缓存 → 零额外请求。 */
 function ma5MidPick(short, barsBy){
   var bySec = {}, out = [], seen = {};
   (short || []).forEach(function(x){
     var bars = (barsBy || {})[x.code];
     var a5 = ma5Amt5(bars, x.amt);
-    if(a5 == null) return;                                 /* 日K不足 / 成交额缺失 → 不参与精排（不猜） */
-    x.amt5 = a5;
+    if(a5 != null) x.amt5 = a5;                            /* v5.1：仅参考展示，算不出不再剔除 */
     (bySec[x.sec] || (bySec[x.sec] = [])).push(x);
   });
-  var noMid = [];                                          /* v4：成员资格即中军，板块必有成员；此列表仅异常兜底（恒空） */
+  var noMid = [];
   Object.keys(bySec).forEach(function(sec){
-    var arr = bySec[sec].slice().sort(function(a, b){ return b.amt5 - a.amt5; });
-    arr.forEach(function(x, i){ x.secRank = i + 1; });      /* 板块内 5 日均额原始位次 */
-    arr.slice(0, MA5_RULE.midTop).forEach(function(x, idx){
+    var arr = bySec[sec].slice().sort(function(a, b){ return b.amt - a.amt; });   /* v5.1：今日成交额降序 */
+    arr.forEach(function(x, i){
       if(seen[x.code] || out.length >= MA5_RULE.total) return;
       seen[x.code] = 1;
-      x.midRank = idx + 1;                                 /* 板块内位次（连续可读） */
+      x.secRank = i + 1;                                   /* 板块内今日成交额位次 */
+      x.midRank = i + 1;                                   /* v5.1：全量入池，midRank 仅作排序编号 */
       out.push(x);
     });
   });
@@ -15127,10 +15010,10 @@ function ma5MidPick(short, barsBy){
   MA5S.noMid = noMid;
   return out;
 }
-var MA5S = { key: '', running: false, done: false, rows: [], t: 0, ok: 0, fail: 0, shortN: 0, secN: 0, midFiltered: 0,
-  diag: null,      /* 板块层诊断：{rawSec, mapped, unmapped[], how{exact,prefix,none}} —— 供空态自证（别再出现"共 0 个"却不给原因） */
-  via: null,      /* 成分股来源统计：{'板块码':n,'行业名':n,'涨停成员':n,'无':n} */
-  noMid: null };   /* 无中军板块（2026-09-21 新增）：[{sec,n,maxAmt5,topName,bestRank,maxStreak,why}] —— 供界面列名自证 */
+var MA5S = { key: '', running: false, done: false, rows: [], t: 0, ok: 0, fail: 0, shortN: 0, secN: 0, midFiltered: 0, poolAllN: 0,
+  diag: null,      /* 板块层诊断：{rawSec, mapped, unmapped[], how{exact,prefix,none}, b710} —— 供空态自证（别再出现"共 0 个"却不给原因） */
+  via: null,      /* 成员通道统计：{'板块成分':n,'行业名':n,'涨停兜底':n} */
+  noMid: null };   /* 无中军板块（保留字段）：恒空 —— v5 起全量入池，仅成员数据异常时可能出现 */
 var MA5LD = { key: '', loading: false };
 /* ---------- 上游取数自证（2026-09-21 新增）----------
    7.12 的「中军」需要两个上游：东财**板块榜**（给板块码）与东财**全市场个股清单**（给 f100 行业名）。
@@ -15154,115 +15037,118 @@ function ma5SrcDiagHtml(){
 function ma5SecDiagHtml(){
   var d = MA5S.diag || { rawSec: 0, mapped: 0, unmapped: [], how: { exact: 0, prefix: 0, none: 0 } };
   var b = d.b710 || {};
-  var poolGot = ZTPU.got || 0, ztN = (D.zt || []).length;
-  var tries = ZTPU.tries[zelBackDates(Math.max(1, MA5_RULE.ztDays - 1)).join(',')] || 0;
+  var ztN = (D.zt || []).length;
+  /* 今日各板块涨停家数 TOP8：让「为什么是 0 个板块」一眼可见（弱市常态 = 最多家数不足 4） */
+  var topTxt = '—';
+  try{
+    var raw0 = ma5ZtSecUnion(1);
+    var arr0 = Object.keys(raw0).map(function(k){ return { n: k, v: raw0[k].n }; })
+      .sort(function(a, c){ return c.v - a.v; }).slice(0, 8);
+    topTxt = arr0.length ? arr0.map(function(x){ return esc(x.n) + ' ' + x.v + ' 家'; }).join(' · ') : '（今日无涨停）';
+  }catch(eT){}
   var h = '<div class="concl c-ora" style="margin-top:8px"><b>板块层扫描结果：0 个板块。</b>逐级诊断：<br>' +
-    '① <b>涨停池取数</b>：历史并集命中 <b>' + poolGot + '/' + Math.max(1, MA5_RULE.ztDays - 1) + '</b> 个有数据日' +
-      '（已尝试 ' + tries + ' 次）· 今日涨停池 <b>' + ztN + '</b> 只' +
-      (poolGot === 0 && ztN === 0
-        ? '<br>　→ <b>两个来源都是空的</b>：多为非交易时段/盘前首次打开，或东财涨停池接口暂时不可达。' +
-          '平台会在 60 秒后自动重试（最多 4 次），也可点顶部「⟳ 手动刷新自扫」。'
-        : '') + '<br>' +
-    '② <b>板块聚合</b>：按涨停池 hybk 行业名去重后 <b>' + (d.rawSec || 0) + '</b> 个板块' +
-      ((d.rawSec || 0) === 0 ? '　→ 涨停池取到了但 hybk 字段为空（罕见，请反馈）' : '') + '<br>' +
-    '③ <b>板块码映射</b>：成功 <b>' + (d.mapped || 0) + '</b> 个（精确 ' + (d.how.exact || 0) + ' · 截断前缀 ' + (d.how.prefix || 0) +
+    '① <b>今日涨停池</b>：<b>' + ztN + '</b> 只（★ v5 板块准入只看今日池，不再取近 10 日历史并集）<br>' +
+    '② <b>板块聚合</b>：按涨停池 hybk 行业名去重后 <b>' + (d.rawSec || 0) + '</b> 个板块；今日涨停家数 TOP8：' + topTxt + '<br>' +
+    '③ <b>★ 准入（2026-09-27 v5）：今日涨停 &gt; ' + MA5_RULE.poolZtGt + ' 家</b> → 命中 <b>' + (b.gt3 != null ? b.gt3 : '—') + '</b> 个板块' +
+      ((d.rawSec || 0) > 0 && !(b.gt3 > 0) ? '　→ <b>今日没有「涨停 &gt; ' + MA5_RULE.poolZtGt + ' 家」的板块（弱市常态）→ 按空仓 / 观望执行</b>' : '') + '<br>' +
+    '④ <b>板块码映射</b>：成功 <b>' + (d.mapped || 0) + '</b> 个（精确 ' + (d.how.exact || 0) + ' · 截断前缀 ' + (d.how.prefix || 0) +
       '），失败 <b>' + (d.how.none || 0) + '</b> 个' +
       (d.unmapped && d.unmapped.length ? '（如 ' + esc(d.unmapped.join('、')) + '）' : '') +
-      ((d.mapped || 0) === 0 && (d.rawSec || 0) > 0
-        ? '<br>　→ <b>东财板块榜（D.secUp/secDn/secAmt）为空</b>时会发生整片映射失败。' +
-          '此时本模块会自动改走<b>通道2</b>（用个股 f100 行业名分组，不需要板块码）——' +
-          '若这里仍是 0，请点「⟳ 手动刷新自扫」等本轮刷新跑完（D.amtTop 就绪后即可出中军）。'
+      ((d.mapped || 0) === 0 && (b.gt3 || 0) > 0
+        ? '<br>　→ 东财板块榜（D.secUp/secDn/secAmt）为空时整片映射失败；成员通道②（f100 行业名分组）不依赖板块码，仍可出候选。'
         : '') + '<br>' +
-    '④ <b>7.10B 清单筛选</b>（★ 2026-09-24 新口径：操作板块 = 可买入组合清单选出的板块）：原始板块 <b>' + (b.all == null ? '—' : b.all) + '</b> 个 → 清单选出 <b>' +
-      (b.kept == null ? '—' : b.kept) + '</b> 个' +
-      ((b.bad || b.na)
-        ? '<br>　→ <span class="yel">7.10B 清单本次不可用（' + esc(b.badWhy || '涨停池为空 / 引擎异常') + '）→ 本次<b>未按清单筛选</b>，上面各步即为原始集合</span>'
+    '⑤ <b>7.10B 大盘一票否决</b>（保留的风控闸）：' +
+      (!(b.on)
+        ? '<span class="yel">7.10B 本次不可用（' + esc(b.badWhy || '涨停池为空 / 引擎异常') + '）→ 不阻断，仅横幅提示</span>'
         : (b.veto
-          ? '<br>　→ <span class="dn">7.10B 一票否决：' + esc(b.veto) + '（大盘「' + esc(b.cyc || '—') + '」）→ 操作板块按"禁止买入"置空</span>'
-          : '<br>　→ 过滤明细：今日无涨停、清单未评估 <b>' + (b.noEval || 0) + '</b> 个 · 未过清单闸门（级别 / 板块周期 / 容量 / 资金 / 宽度 / 首板集群）<b>' + (b.gate || 0) + '</b> 个' +
-            (b.drop && b.drop.length ? '<br>　　（共 ' + b.drop.length + ' 个，前 12 个：' + esc(b.drop.slice(0, 12).join('；')) + (b.drop.length > 12 ? ' …' : '') + '）' : ''))) +
+          ? '<span class="dn">已触发：大盘「' + esc(b.cyc || '—') + '」→ 禁止买入 → 操作板块置空</span>'
+          : '未触发（大盘「' + esc(b.cyc || '—') + '」）；7.10B 六闸门自 v5 起<b>不再过滤板块</b>，完整状态见横幅')) +
     '</div>';
   return h;
 }
-/* 中军徽标（2026-09-21 v4 定稿 · 用户口径「近 10 日至少涨停 1 次 ∧ 今日未涨停」）：
-   · 中军#N —— 板块内按 5 日均额排第 N 名的涨停成员（悬停：涨停日 / 5 日均额 / 流通市值 / 板块内位次）。
-   ⚠ v4 起成员资格完全来自涨停池并集（不依赖东财 clist），原「窄口径#N」降级徽标随三通道成员制一并退役。 */
+/* 中军徽标（★ 2026-09-27 v5 · v5.1 取消 5 日均额排序）：
+   · 中军#N —— 板块内按**今日成交额**排第 N 名的**选股池成员**（悬停：今日成交额 / 5 日均额参考 / 流通市值）。
+     成员资格 = 「今日涨停>3家板块 ∩ 成交额>10亿」，#N 仅为排序展示、不是资格线。 */
 function ma5MidBadge(r){
   if(!r || !r.midRank) return '';
   var a5 = (r.amt5 == null) ? '—' : (r.amt5 / 1e8).toFixed(2) + ' 亿';
   var cap = (r.cap == null) ? '未取到' : (r.cap / 1e8).toFixed(1) + ' 亿';
-  var day = r.ztDay ? (String(r.ztDay).slice(4, 6) + '-' + String(r.ztDay).slice(6, 8)) : '—';
-  var base = '涨停日 ' + day + ' · 5 日均额 ' + a5 + ' · 流通市值 ' + cap + ' · 板块内第 ' + r.midRank + ' 名（5 日均额）' +
-    (r.secRank && r.secRank !== r.midRank ? '（候选集内原始第 ' + r.secRank + ' 名）' : '');
-  return ' <span class="badge b-o" title="板块中军（近 ' + MA5_RULE.ztDays + ' 日至少涨停 1 次 ∧ 今日未涨停）· ' + base + '">中军#' + r.midRank + '</span>';
+  var base = '板块内今日成交额第 ' + r.midRank + ' 名 · 今日成交额 ' + (r.amt != null ? (r.amt / 1e8).toFixed(2) + ' 亿' : '—') +
+    ' · 5 日均额（参考）' + a5 + ' · 流通市值 ' + cap;
+  return ' <span class="badge b-o" title="选股池成员（今日涨停 > ' + MA5_RULE.poolZtGt + ' 家板块 ∩ 今日成交额 > 10 亿）· ' + base + '">中军#' + r.midRank + '</span>';
 }
 /* ---------- 渲染：7.12 四指标 v3 中军系统（结论口径 = v3；MA5 仅作 S1 维度） ---------- */
 function renderM712(){
   var box = $('m7_12');
   if(!box) return;
-  /* 板块层需要「近 ztDays 日涨停池」：缺失则先取（与 7.30 / 7.32 共用缓存）→ 取到再渲染 */
-  var backN = Math.max(1, MA5_RULE.ztDays - 1), hks = zelBackDates(backN).join(',');
-  if(MA5_RULE.ztDays > 1 && ztpNeedFetch(hks)){
-    setHtml(box, '<div class="loading">7.12 四指标 v3 中军系统：正在取近 ' + MA5_RULE.ztDays +
-      ' 个交易日（含今日）的涨停池 —— 用于确定「有涨停股的板块」（' + backN +
-      ' 次请求，与 7.30 / 7.32 共用缓存；非交易日返回空自动跳过）…</div>');
-    ztPoolUnion(backN, function(){ if($('m7_12')) renderM712(); });
+  /* ★ v5（2026-09-27）：板块层只看今日涨停池 → 不再取近 10 日历史并集（7.30 / 7.32 需要时各自取）。
+     改为「板块成员就绪」阶段：入选板块的 MLM 成分股缓存缺失时先批量拉取（每批 4 个，30 分钟缓存，
+     与 7.11 / 7.31 共用）→ 就绪后重渲染 —— 成交额 > 10 亿的判定要覆盖全板块成员。 */
+  var EX = execStageOf(), e = EX.e, chk = EX.chk, exec = EX.exec, st = EX.st;
+  var secs = ma5ScanSecs();
+  var needMl = secs.filter(function(s){
+    var c = MLM[D.date + '|' + s.name];
+    return s.bk && !(c && Date.now() - c.t < 1800000 && c.v && c.v.length);
+  });
+  if(needMl.length && !MA5LD.loading){
+    MA5LD.loading = true;
+    var di = 0;
+    (function dstep(){
+      if(di >= needMl.length){ MA5LD.loading = false; if($('m7_12')) renderM712(); return; }
+      var bt = needMl.slice(di, di + 4); di += 4;
+      Promise.all(bt.map(function(s){ return loadSecMembers(s.name, s.bk).catch(function(){ return []; }); })).then(dstep);
+    })();
+    setHtml(box, '<div class="loading">7.12 四指标 v3 中军系统：正在拉取 ' + needMl.length +
+      ' 个板块的成分股（选股池 = 今日涨停 &gt; ' + MA5_RULE.poolZtGt + ' 家板块 ∩ 成交额 &gt; ' + (MA5_RULE.poolAmtMin / 1e8) +
+      ' 亿，成员判定需要；每批 4 个 · 30 分钟缓存 · 与 7.11 / 7.31 共用；clist 被拦时自动切数据中心通道）…</div>');
     return;
   }
-  /* ⚠ 原「等待数据（涨停池与板块资金未就绪）」的早退守卫已删除（2026-09-21）：
-     它会**抢在诊断之前**把页面变成一句无从判断的「等待数据」——用户实测的困惑正在于此。
-     走到这里板块层只有两种状态：① 涨停池已就绪（有 cache）→ 正常计算；
-     ② 涨停池取不到（冷却/达重试上限）→ 进 ma5ScanSecs() 得 0 个板块，由「板块层扫描结果：0 个板块」逐级说明原因。 */
-  var EX = execStageOf(), e = EX.e, chk = EX.chk, exec = EX.exec, st = EX.st;
-  /* 扫描范围（2026-09-21 v4 · 用户口径）：中军 = 近 ztDays(10) 日至少涨停 1 次 ∧ 今日未涨停；
-     生命周期门已于同日删除。⚠ v4 起成员资格完全来自涨停池并集 —— 原通道1/2 成分股清单
-     退役为「实时价补源」（memBy），不再触发 loadSecMembers 等待（成员资格不依赖它）。 */
-  var secs = ma5ScanSecs();
-  /* ★ 2026-09-24（用户要求）：操作板块 = **7.10B 可买入组合清单选出的板块**（口径同源，见 ma5ScanSecs 头部注释）。
-     这里再取一次同一份同轮缓存，用于在横幅里显示"清单怎么说"（命中组合 / 无命中 / 一票否决 / 清单不可用）。 */
+  /* ⚠ 原早退守卫纪律沿用：走到这里板块层只有两种状态 —— 涨停池已就绪（正常计算）或取不到（得 0 个板块，
+     由「板块层扫描结果：0 个板块」逐级说明原因），绝不给一句无从判断的「等待数据」。 */
+  /* ★ v5（2026-09-27）：7.10B 不再过滤板块（选股池口径 = 今日涨停 > 3 家），这里只取同轮缓存
+     用于横幅显示「清单怎么说」（命中组合 / 一票否决 / 不可用）—— 供参考、以及一票否决的说明。 */
   var q710 = null; try{ q710 = b710Qualified(); }catch(e){ q710 = null; }
   var src710 = '';
-  if(!q710 || q710.bad) src710 = '<span class="yel">⚠ 7.10B 清单本次不可用（' + esc((q710 && q710.badWhy) || '涨停池为空 / 引擎异常') + '）→ 未按清单筛选，本卡列原始板块集合</span>';
+  if(!q710 || q710.bad) src710 = '<span class="yel">7.10B 本次不可用（' + esc((q710 && q710.badWhy) || '涨停池为空 / 引擎异常') + '）→ 仅提示，不阻断</span>';
   else if(q710.veto) src710 = '<span class="dn">⛔ 7.10B：大盘「' + esc(q710.cyc) + '」→ 禁止买入</span>（' + esc(q710.veto) + '）→ 操作板块置空';
-  else src710 = '7.10B 清单：合格板块 <b>' + q710.okN + '</b> 个' +
+  else src710 = '7.10B 参考：合格板块 <b>' + q710.okN + '</b> 个' +
     (q710.hit ? '（命中 <b>' + q710.hit.id + ' · ' + q710.hit.pos + '</b>' + (q710.curName ? ' · 首选 ' + esc(q710.curName) : '') + '）'
-              : '（<span class="yel">当前无命中组合 → 按空仓 / 观望执行</span>）');
+              : '（当前无命中组合）') + ' —— v5 起六闸门<b>不再过滤板块</b>，仅大盘一票否决生效';
   var indPool = ma5IndPool();       /* 实时价补源原料：按 f100 行业名分组的个股清单（零额外请求） */
-  /* 候选（各板块涨停成员按今日成交额前 midShort 且今日未涨停）；板块内前 midTop 由扫描完日K后精排产生 */
-  var ztMem = ma5ZtMemPool(hks);
-  var short = ma5Candidates(secs, ztMem);
+  /* 候选（★ v5：今日涨停>3家板块的成员 ∩ 今日成交额>10亿，按成交额降序、上限 total） */
+  var short = ma5Candidates(secs);
   var key = D.date + '|' + exec + '|' + short.map(function(x){ return x.code; }).join(',');
   var expired = MA5S.done && (Date.now() - MA5S.t > 25 * 60 * 1000);   /* 日K缓存30分钟，25分钟后主动重扫 */
   var via = MA5S.via || {};        /* ⚠ 必须在 stgbar 与 !short.length 分支**之前**取（那两处都要用；放后面会 undefined 报错） */
-  var viaTxt = '（候选来源：涨停池成员 ' + (via['涨停成员'] || 0) + ' · 无成员 ' + (via['无'] || 0) + ' 个板块）';
+  var viaTxt = '（成员通道：板块成分 ' + (via['板块成分'] || 0) + ' · 行业名 ' + (via['行业名'] || 0) + ' · 涨停兜底 ' + (via['涨停兜底'] || 0) + '）';
   /* ① 阶段横幅（先渲染，扫描态/完成态共用）：情绪周期（心法策略）直接显示 仓位 / 操作板块 / 具体方向，与 7.26 风控信号同源 */
   var emoCyc = null; try { emoCyc = (typeof emotion === 'function') ? emotion() : null; } catch (e) { emoCyc = null; }
   var cycJ = cycJudge(emoCyc);                 /* 6 阶段：冰点/修复/发酵主升/高潮/分歧/退潮（单一事实源 = emotion() 的 cyc，高潮由 peakOrDiverge 四维度判定） */
   var cycName = cycJ.name, cycPos = cycJ.pos, cycStrat = cycJ.strategy;
   var cycCls = cycName === '冰点' ? 'flat' : (cycName === '修复' ? 'grn' : (cycName === '发酵主升' ? 'up' : (cycName === '分歧' ? 'yel' : (cycName === '高潮' ? 'ora' : 'dn'))));
   var secTxt = secs.length
-    ? secs.slice(0, 8).map(function(s){ return esc(s.name) + '(涨停' + s.zt + ')' + (s.b710Lvl ? '·' + s.b710Lvl + '级' : ''); }).join('、') +
+    ? secs.slice(0, 8).map(function(s){ return esc(s.name) + '(涨停' + s.zt + ')'; }).join('、') +
       (secs.length > 8 ? ' 等 ' + secs.length + ' 个板块' : '')
-    : ((q710 && q710.veto) ? '⛔ 7.10B 禁止买入 → 无操作板块'
-      : ((q710 && !q710.bad) ? '7.10B 当前无合格板块 → 无操作板块（原因见下方诊断）' : '近 ' + MA5_RULE.ztDays + ' 日无可操作板块'));
+    : ((q710 && q710.veto && !q710.bad) ? '⛔ 7.10B 禁止买入 → 无操作板块'
+      : '今日无「涨停 &gt; ' + MA5_RULE.poolZtGt + ' 家」的板块 → 无操作板块（原因见下方诊断）');
   var h = '<div class="stgbar ' + (st.cls || '') + '">' +
     '<div class="sg" style="flex:1.2"><div class="l">情绪周期（心法策略 · 与 7.26 同源）</div><div class="v ' + cycCls + '">' + cycName + '</div>' +
       '<div class="d">建议仓位 <b style="color:#e2e8f0">' + cycPos + '</b>' + (emoCyc && emoCyc.reasonTxt ? ' ｜ ' + emoCyc.reasonTxt : '') + '</div></div>' +
     '<div class="sg" style="flex:1.7"><div class="l">具体方向（操作策略）</div><div class="v" style="font-size:12.5px;font-weight:600;line-height:1.5;white-space:normal">' + cycStrat + '</div></div>' +
-    '<div class="sg" style="flex:1.5"><div class="l">操作板块（<b>7.10B 清单选出</b> · 共 ' + secs.length + ' 个）</div><div class="v" style="font-size:13px;font-weight:600;line-height:1.45;white-space:normal">' + secTxt + '</div>' +
+    '<div class="sg" style="flex:1.5"><div class="l">操作板块（<b>今日涨停 &gt; ' + MA5_RULE.poolZtGt + ' 家</b> · 共 ' + secs.length + ' 个）</div><div class="v" style="font-size:13px;font-weight:600;line-height:1.45;white-space:normal">' + secTxt + '</div>' +
       '<div class="d">' + src710 + '</div></div>' +
-    '<div class="sg"><div class="l">中军候选</div><div class="v" style="font-size:15px">' +
+    '<div class="sg"><div class="l">选股池候选</div><div class="v" style="font-size:15px">' +
       ((MA5S.done && MA5S.key === key) ? MA5S.rows.length + ' 只' : (short.length ? '待扫描' : '无可扫描候选')) + '</div>' +
-      '<div class="d">中军 = 近 ' + MA5_RULE.ztDays + ' 日至少涨停 1 次 ∧ 今日未涨停（<b>限 7.10B 选出的板块内</b>，按 5 日均额取前 ' + MA5_RULE.midTop + '）</div></div>' +
+      '<div class="d">选股池 = <b>今日涨停 &gt; ' + MA5_RULE.poolZtGt + ' 家的板块</b> 中 <b>今日成交额 &gt; ' + (MA5_RULE.poolAmtMin / 1e8) + ' 亿</b> 的股票（满足即入池 · v5.1 取消板块内 5 日均额排序）</div></div>' +
     '<div class="sg" style="flex:1.1"><div class="l">铁律优先级</div><div class="v" style="font-size:14px">斜率 ＞ 破线天数 ＞ 站线 ＞ 偏离度</div>' +
       '<div class="d">🛑 破位闸：跌破 MA5 且 MA5 向下 → 一律不买入</div></div>' +
   '</div>';
   if(!short.length){
     h += secs.length
-      ? '<div class="concl c-ora" style="margin-top:8px">7.10B 清单选出 <b>' + secs.length + '</b> 个板块，但<b>没拿到任何候选</b>（涨停成员今日全部仍在涨停，或成员数据异常）。<br>' +
+      ? '<div class="concl c-ora" style="margin-top:8px">准入 <b>' + secs.length + '</b> 个板块（今日涨停 &gt; ' + MA5_RULE.poolZtGt + ' 家），但<b>没拿到任何成交额 &gt; ' + (MA5_RULE.poolAmtMin / 1e8) + ' 亿的成员</b>。<br>' +
         '<b>上游取数自证：</b>' + ma5SrcDiagHtml() + '<br>' +
-        '<span class="flat">候选来源：涨停池成员 ' + (via['涨停成员'] || 0) + ' · 无成员 ' + (via['无'] || 0) + ' 个板块。' +
-        '按总纲此时应当<b>空仓或极小仓</b>。</span></div>'
+        '<span class="flat">成员通道：板块成分 ' + (via['板块成分'] || 0) + ' · 行业名 ' + (via['行业名'] || 0) + ' · 涨停兜底 ' + (via['涨停兜底'] || 0) + '。' +
+        '板块成分股通道（clist）被拦是常态，会漏掉未上榜的成员 —— 行业名通道只覆盖成交额/涨跌幅榜上榜股票；全为 0 时等下一轮自动刷新重试。</span></div>'
       : ma5SecDiagHtml() + ma5SrcDiagHtml();
     setHtml(box, h);
     return;
@@ -15270,7 +15156,7 @@ function renderM712(){
   /* ② 扫描调度：key 变化或缓存过期 → 异步逐批拉日K（每批6只），完成后重渲染 */
   if(MA5S.key !== key || !MA5S.done || expired){
     if(AUTO_REFRESH){
-      setHtml(box, h + scanPausedHtml('7.12 四指标 v3 中军系统', (MA5S.done ? '<div class="note">现有结果为上次手动刷新数据（成功 ' + MA5S.ok + ' 只 · ' + new Date(MA5S.t).toTimeString().slice(0, 5) + '）</div>' : '')));
+      setHtml(box, h + scanPausedHtml('7.12 四指标 v3 中军系统', (MA5S.done ? '<div class="note">现有结果为上次自动刷新数据（成功 ' + MA5S.ok + ' 只 · ' + new Date(MA5S.t).toTimeString().slice(0, 5) + '）</div>' : '')));
       return;
     }
     if(!MA5S.running){
@@ -15279,7 +15165,7 @@ function renderM712(){
       var i = 0, barsBy = {};
       (function step(){
         if(i >= short.length){
-          /* 日K 拉完 → 精排中军（每板块按 5 日平均成交额前 midTop）；粗筛未进中军的计入 midFiltered */
+          /* 日K 拉完 → 排序编号（板块内按今日成交额降序 · v5.1 取消 5 日均额排序，不再有剔除） */
           var mids = ma5MidPick(short, barsBy);
           MA5S.rows = mids; MA5S.midFiltered = short.length - mids.length;
           MA5S.running = false; MA5S.done = true; MA5S.t = Date.now();
@@ -15298,9 +15184,10 @@ function renderM712(){
         })).then(step);
       })();
     }
-    h += '<div class="concl c-blu" style="margin-top:8px"><b>四指标 v3 扫描进行中…</b>粗筛候选 ' + short.length +
-      ' 只（近 ' + MA5_RULE.ztDays + ' 日有涨停股的 ' + secs.length + ' 个板块 · 每板块按今日成交额前 ' + MA5_RULE.midShort +
-      ' 且未涨停），正在逐批拉取 200 根前复权日K（v3 需 ≥26 根；腾讯/新浪/东财三通道，每批6只）→ 完成后按「5 日平均成交额」精排出各板块中军前 ' + MA5_RULE.midTop + ' 名，再逐只跑四指标 v3 打分。日K缓存30分钟，后续刷新秒级完成。</div>';
+    h += '<div class="concl c-blu" style="margin-top:8px"><b>四指标 v3 扫描进行中…</b>选股池 ' + short.length +
+      ' 只（今日涨停 &gt; ' + MA5_RULE.poolZtGt + ' 家的 ' + secs.length + ' 个板块 ∩ 今日成交额 &gt; ' + (MA5_RULE.poolAmtMin / 1e8) + ' 亿' +
+      (MA5S.poolAllN > short.length ? '，全池 ' + MA5S.poolAllN + ' 只按成交额降序取前 ' + MA5_RULE.total : '') +
+      '），正在逐批拉取 200 根前复权日K（v3 需 ≥26 根；腾讯/新浪/东财三通道，每批6只）→ 完成后板块内按「今日成交额」降序排序编号，再逐只跑四指标 v3 打分。日K缓存30分钟，后续刷新秒级完成。</div>';
     setHtml(box, h);
     return;
   }
@@ -15354,10 +15241,10 @@ function renderM712(){
   var N = MA5S.rows.length;
   h += '<div class="concl c-blu" style="margin-top:8px"><b>一句话总纲：</b>本表结论一律出自<b>四指标 v3 打分</b>（MA5 + KDJ(9,3,3) + VOL + 冲高回吐 + BIAS，满分 100 + S5 板块高度修正）——总分 ≥ ' + S4K_RULE.buyRunMin + ' 且无一票否决、无破位闸 = 买入档；' + S4K_RULE.s4kProfitMin + '~' + (S4K_RULE.buyRunMin - 1) + ' = 观察档（只看不买）；&lt; ' + S4K_RULE.s4kProfitMin + ' 或一票否决 = 清仓档。' +
     '<b>MA5 跌破且 MA5 方向向下 → 破位闸，一律不买入</b>。仓位服从情绪周期上限。</div>' +
-    '<div class="note" style="margin-top:4px">漏斗：<b>中军口径（2026-09-21 v4 · 用户定稿）</b> = <b>近 ' + MA5_RULE.ztDays + ' 个交易日（含今日）至少涨停 1 次</b> ∧ <b>今日未涨停</b> —— 近期被资金做过、但今天不是连板龙头；板块内按 5 日均额取前 ' + MA5_RULE.midTop + ' 名。候选池直接来自涨停池并集（getTopicZTPool × ' + (MA5_RULE.ztDays - 1) + ' 个历史日 + 今日池），<b>不依赖东财成分股接口</b>。<br>' +
-    '板块层：近 ' + MA5_RULE.ztDays + ' 日有涨停股 <b>' + ((MA5S.diag && MA5S.diag.b710 && MA5S.diag.b710.all != null) ? MA5S.diag.b710.all : MA5S.secN) + '</b> 个 → <span style="color:#26c281">7.10B 清单选出</span> <b>' + MA5S.secN + '</b> 个' + viaTxt + ' → 粗筛候选 <b>' + MA5S.shortN +
-    '</b> 只（每板块涨停成员按今日成交额前 ' + MA5_RULE.midShort + ' 且今日未涨停；日K 成功 ' + MA5S.ok + (MA5S.fail ? ' · 失败 ' + MA5S.fail : '') + '）→ 精排出中军 <b class="ora">' + N +
-    '</b> 只（板块内按 5 日均额取前 ' + MA5_RULE.midTop + '，已滤掉 ' + MA5S.midFiltered + ' 只）。<br>' +
+    '<div class="note" style="margin-top:4px">漏斗：<b>选股池口径（2026-09-27 v5 · 用户定稿）</b> = <b>今日涨停 &gt; ' + MA5_RULE.poolZtGt + ' 家的板块</b> 中 <b>今日成交额 &gt; ' + (MA5_RULE.poolAmtMin / 1e8) + ' 亿</b> 的股票 —— 聚焦当日最强板块里的活跃票；不要求涨停过、不排除今日涨停股，买卖档由四指标 v3 判定。<br>' +
+    '板块层：今日有涨停的板块 <b>' + ((MA5S.diag && MA5S.diag.b710 && MA5S.diag.b710.all != null) ? MA5S.diag.b710.all : MA5S.secN) + '</b> 个 → 涨停 &gt; ' + MA5_RULE.poolZtGt + ' 家准入 <b>' + ((MA5S.diag && MA5S.diag.b710 && MA5S.diag.b710.gt3 != null) ? MA5S.diag.b710.gt3 : MA5S.secN) + '</b> 个' + viaTxt + ' → 选股池 <b>' + MA5S.shortN +
+    '</b> 只（今日成交额 &gt; ' + (MA5_RULE.poolAmtMin / 1e8) + ' 亿，按成交额降序' + (MA5S.poolAllN > MA5S.shortN ? '，全池 ' + MA5S.poolAllN + ' 只取前 ' + MA5_RULE.total : '') + '；日K 成功 ' + MA5S.ok + (MA5S.fail ? ' · 失败 ' + MA5S.fail : '') + '）→ 排序编号后 <b class="ora">' + N +
+    '</b> 只（板块内按今日成交额降序编号；v5.1 已取消 5 日均额排序，无排序门槛、日K不足也照常入池）。<br>' +
     '<b>按需求只显示两类</b>：v3 买入档 <b class="up">' + cats.buy.length + '</b> · v3 观察档 <b class="flat">' + cats.watch.length + '</b>' +
     (cats.noData.length ? ' · v3 未算出（日K不足 26 根）' + cats.noData.length + ' 只' : '') +
     '；v3 清仓档（&lt; ' + S4K_RULE.s4kProfitMin + ' 或一票否决）<b>' + cats.sell.length + '</b> 只 · <b class="dn">🛑 破位闸 ' + cats.gated.length + ' 只</b>均不再展示' +
@@ -15373,9 +15260,9 @@ function renderM712(){
   }
   /* ④ 合法买点（必须全部满足四条件；仓位服从情绪周期约束） */
   h += '<div style="margin-top:10px"><b style="font-size:12.5px;color:#f0453a">今日合法买点（四指标 v3 总分 ≥ ' + S4K_RULE.buyRunMin + ' · 共 ' + cats.buy.length + ' 只）</b></div>';
-  h += '<div class="note" style="margin-top:4px"><b>本表候选 = 各板块中军</b>（近 ' + MA5_RULE.ztDays + ' 日至少涨停 1 次 ∧ 今日未涨停；板块内按 5 日均额取前 ' + MA5_RULE.midTop + ' 名）；' +
-    '<span class="badge b-o">中军#N</span> = 该股在其板块涨停成员中按 5 日均额排第 N 名（悬停可看涨停日 / 5 日均额 / 流通市值）。' +
-    '中军是「近期被资金做过」的票，分歧日可低吸承接、破位即减仓；今天涨停的是龙头/连板股，已按「今日未涨停」排除。</div>';
+  h += '<div class="note" style="margin-top:4px"><b>本表候选 = 选股池成员</b>（今日涨停 &gt; ' + MA5_RULE.poolZtGt + ' 家的板块 ∩ 今日成交额 &gt; ' + (MA5_RULE.poolAmtMin / 1e8) + ' 亿，全量入池）；' +
+    '<span class="badge b-o">中军#N</span> = 该股在其板块内按今日成交额排第 N 名（悬停可看今日成交额 / 5 日均额参考 / 流通市值），仅为排序标识 —— v5.1 起<b>板块内 5 日均额排序已取消</b>，日K不足的票照常入池。' +
+    '买卖档一律以四指标 v3 打分判定；今日涨停的龙头股也在池内（v3 照常打分，追高与否自行判断）。</div>';
   if(exec === '冰点'){
     h += '<div class="concl c-grn" style="margin-top:6px"><b>冰点期禁止开仓。</b>下列 v3 买入档信号仅作拐点观察记录，不得实际买入（情绪周期总权重优先于一切技术信号）。</div>';
   } else if(cycName === '高潮'){
@@ -15390,7 +15277,7 @@ function renderM712(){
         return '<tr>' + pkTd(r.code, r.name) + '<td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) +
             ma5MidBadge(r) + '</td><td class="mono">' + esc(r.code) + '</td>' +
           '<td class="yel">' + esc(r.sec) + '</td>' +
-          '<td class="mono" title="中军口径（v4）：近 ' + MA5_RULE.ztDays + ' 日至少涨停 1 次 ∧ 今日未涨停；板块内按 5 日均额取前 ' + MA5_RULE.midTop + '。实测：板块内第 ' + (r.secRank || r.midRank) + ' 名 · 涨停日 ' + (r.ztDay || '—') + '">' +
+          '<td class="mono" title="选股池口径（v5 · v5.1）：今日涨停 > ' + MA5_RULE.poolZtGt + ' 家的板块 ∩ 今日成交额 > ' + (MA5_RULE.poolAmtMin / 1e8) + ' 亿；板块内按今日成交额降序编号。实测：板块内第 ' + (r.secRank || r.midRank) + ' 名">' +
           (r.amt5 == null ? '—' : famt(r.amt5 / 1e8)) +
           (r.amt5 != null && r.amt5 < 1e8 ? ' <span class="dn" title="低于 1 亿：文献口径的板块中军通常 ≥5~15 亿。中小市值板块按用户口径允许，但请自判容量">⚠</span>' : '') + '</td>' +
           '<td>' + pcts(r.pct) + '</td><td class="mono">' + (r.price != null ? r.price.toFixed(2) : '—') + '</td>' +
@@ -15439,45 +15326,28 @@ function renderM712(){
     '<tr><td class="yel">盘中实时判定</td><td>本模块随 180 秒刷新实时重算 v3 五维与总分（MA5 只作为其中一个维度参与）</td></tr>' +
     '<tr><td class="yel">尾盘最终定局</td><td>收盘后以终值重算：买入档 → 次日继续持有 / 择机建仓；观察档 → 不加仓；清仓档或破位闸 → 按纪律减仓 / 离场</td></tr>' +
     '</tbody></table></div>' +
-    '<div class="twrap" style="margin-top:8px"><table class="mini-tbl"><thead><tr><th>扫描范围（两层 · v4）</th><th>口径与自证</th></tr></thead><tbody>' +
-    '<tr><td class="yel" style="white-space:normal">① 板块层</td><td style="white-space:normal">近 <b>' + MA5_RULE.ztDays + ' 个交易日（含今日）有涨停股</b>的板块 —— 按涨停池的 hybk（行业板块）聚合家数降序；数据 = 今日涨停池（本地）+ 前 ' + (MA5_RULE.ztDays - 1) + ' 个交易日涨停池并集（<code>getTopicZTPool(date)</code>，与 7.30 / 7.32 <b>共用缓存</b>，非交易日返回空自动跳过）。剔除北交所 / B股。<br>' +
-      '<b style="color:#26c281">★ 2026-09-24 收窄（用户要求）：操作板块 = 7.10B「可买入组合清单」选出的板块</b> —— 上面原始集合 <b>∩ 7.10B 合格板块</b>' +
-      '（S/A/B 级 + 非加速/退潮阶段 + 容量/资金/宽度/首板集群闸门全过）。口径与 7.10B 三卡/结论条<b>同源</b>（同一份 <code>b710Qualified()</code>，同轮缓存），' +
-      '所以"清单说不能买"时这里不会出现该板块；<b>大盘一票否决（高潮/退潮）→ 操作板块直接置空</b>；' +
-      '被过滤掉的板块逐类计数并记名（诊断行 ④），清单不可用时<b>不阻断</b>并明确标注「未按清单筛选」。<br>' +
-      '<b>2026-09-21 加固（修「操作板块 共 0 个」）</b>：<b>板块聚合结果一律保留</b>，不再因为「换不到东财板块码」就被剔除 —— 那正是旧版的直接成因：' +
-      '涨停池的 hybk 被接口<b>截断到 8 字节（= 4 个汉字）</b>。真实数据实测（近 3 日涨停池 228 条 → 73 个行业名）：GBK 字节数全部 ∈ {4,6,8}，' +
-      '其中 <b>8 个是 5 字全名被截断</b>（汽车零部←汽车零部件、房地产服←房地产服务、房地产开←房地产开发、炼化及贸←炼化及贸易、旅游及景←旅游及景区、计算机设←计算机设备、农产品加←农产品加工、光学光电←光学光电子），' +
-      '另有 9 个带罗马数字后缀（证券Ⅱ / IT服务Ⅱ / 综合Ⅱ …）。' +
-      '而旧代码只做<b>精确匹配</b> → 实测 <b>只命中 65/73，8 个板块被静默丢掉</b>；当东财板块榜整体取不到时更是全军覆没（0/73）。<br>' +
+    '<div class="twrap" style="margin-top:8px"><table class="mini-tbl"><thead><tr><th>扫描范围（两层 · ★ v5）</th><th>口径与自证</th></tr></thead><tbody>' +
+    '<tr><td class="yel" style="white-space:normal">① 板块层（★ 2026-09-27 v5 · 用户定稿）</td><td style="white-space:normal"><b>今日涨停家数 &gt; ' + MA5_RULE.poolZtGt + ' 家</b>的板块 —— 按今日涨停池的 hybk（行业板块）聚合家数降序；剔除北交所 / B股。不再取近 10 日历史并集（7.30 / 7.32 需要时各自取）。<br>' +
+      '<b style="color:#26c281">★ v5 变更：7.10B 六闸门不再过滤板块</b>（选股池口径 = 涨停家数，与清单解耦）；仅保留<b>大盘一票否决（高潮/退潮 → 操作板块置空）</b>作为风控闸，7.10B 完整状态移到横幅供参考。<br>' +
+      '<b>板块码映射加固（2026-09-21，继续有效）</b>：涨停池 hybk 被接口<b>截断到 8 字节（= 4 个汉字）</b>（汽车零部←汽车零部件等 8 个 5 字全名 + 证券Ⅱ 等 9 个罗马数字后缀），' +
       '现改为 <b>归一化（去空格/罗马数字/括号）+ 互为前缀</b> 匹配 → 真实数据 <b>73/73 全中</b>；<b>前缀命中必须唯一</b>才采用（多个候选宁可放弃拿码，也不拉错成分股），映射成败在漏斗行给出计数。</td></tr>' +
-    '<tr><td class="yel" style="white-space:normal">② 个股层 · 中军（2026-09-21 v4 · 用户定稿）</td><td style="white-space:normal"><b>近 ' + MA5_RULE.ztDays + ' 个交易日（含今日）至少涨停 1 次，且今日未涨停</b> 的股票（板块内按 5 日均额取前 ' + MA5_RULE.midTop + ' 名）。<br>' +
-      '<b style="color:#26c281">板块范围 = ① 的 7.10B 清单结果</b>（清单未选中的板块里即使有中军也不列）。<br>' +
-      '<b>为什么这样定</b>（用户口径）：中军 = 「近期被资金关注过」的票 —— 10 日内涨停过说明资金做过它，' +
-      '「今日未涨停」把它与<b>今天的龙头/连板股</b>区分开（今天还在涨停的是龙头，断板后的才是中军候选）。<br>' +
-      '<b>成员资格唯一来源 = 涨停池并集</b>（<code>getTopicZTPool(date)</code> × ' + (MA5_RULE.ztDays - 1) + ' 个历史日 + 今日池，按涨停池自带的 hybk 行业名分组）——' +
-      '<b>不依赖东财成分股接口（clist）</b>，此前「clist 被拦 → 中军恒 0」的问题从根上消失；' +
-      '板块成分股清单（板块码 / 全市场行业名）降级为「实时价补源」：候选出现在清单里时用快照实时价覆盖日K末根，未命中用日K末根价（腾讯 fqkline 盘中末根本身即实时价）。<br>' +
-      '近似与限制：粗筛取各板块涨停成员按<b>今日成交额</b>前 ' + MA5_RULE.midShort + ' 名（控制日K请求量；amt5 与今日成交额强相关，该近似极少漏掉板块内 5 日均额前 5 的候选）。<br>' +
-      '<b>5 日平均成交额</b> = <code>f6 × mean₅(v·c) ÷ v_末根·c_末根</code> —— 用今日实际成交额锚定量纲，再按近 5 日量能形态还原。<br>' +
-      '为什么不用日K的 v 直接排序：腾讯通道 v 单位是「手」、新浪兜底是「股」，<b>差 100 倍</b>，跨股票比大小会被量纲破坏。<br>' +
-      '盘中 f6 与末根 v 同为部分量 → 比值自然放大，amt5 自动成为「按当前量能水平折算的日均值」。</td></tr>' +
-    '<tr><td class="yel" style="white-space:normal">「未涨停」判定</td><td style="white-space:normal">双保险：不在今日涨停池 <code>D.zt</code> ∧ 当前涨幅未达该股板别阈值（10cm 9.7% / 20cm 19.5% / 30cm 29.5% / ST 4.8%，阈值下浮 0.3 含接近封板）—— 涨停池取不到时靠涨幅兜底，不会静默失效。</td></tr>' +
+    '<tr><td class="yel" style="white-space:normal">② 个股层 · 选股池（★ 2026-09-27 v5 · 用户定稿）</td><td style="white-space:normal"><b>① 板块成员中，今日成交额 &gt; ' + (MA5_RULE.poolAmtMin / 1e8) + ' 亿</b> 的股票 —— <b>全量入池</b>（不再裁板块内前 5；按今日成交额降序，全池上限 ' + MA5_RULE.total + ' 只）。<br>' +
+      '<b>成员三通道</b>（按 code 去重）：① 板块码成分股（<code>loadSecMembers</code>，成交额/涨幅各一页 ×100 并集，30 分钟缓存）② 全市场清单按 f100 行业名分组（<code>D.amtTop / D.top100 / D.bot100</code>，零额外请求；ma5IndHit 前缀匹配消化 hybk 截断）③ 今日涨停池成员兜底。<br>' +
+      '<b style="color:#26c281">★ v5 变更（相对 v4）</b>：不再要求「近 10 日涨停过」、不再排除今日涨停股、不再做 5 日均额前 5 裁剪；<b style="color:#26c281">★ v5.1 变更</b>：板块内 5 日均额排序整条取消（含「日K不足剔除」的隐性门槛），满足成交额 &gt; 10 亿即全量入池、按今日成交额降序编号 —— 选股池只是<b>候选池</b>，买卖档一律由四指标 v3 打分判定（含破位闸）。<br>' +
+      '<b>覆盖面如实说明</b>：通道②只覆盖成交额/涨跌幅榜上榜股票；通道①拉不到（clist 被拦是常态）时，成交额 &gt; 10 亿但未上榜的成员会漏 —— 成员通道计数显示在漏斗行/空态诊断里，不静默。<br>' +
+      '<b>5 日平均成交额</b> = <code>f6 × mean₅(v·c) ÷ v_末根·c_末根</code>（用今日实际成交额锚定量纲，再按近 5 日量能形态还原；腾讯「手」/新浪「股」差 100 倍，跨股票比大小必须锚定）。盘中 f6 与末根 v 同为部分量 → amt5 自动成为「按当前量能水平折算的日均值」。</td></tr>' +
     '<tr><td class="yel" style="white-space:normal">③ 生命周期门</td><td style="white-space:normal"><b class="dn">已于 2026-09-21 按用户要求删除</b>（原为「中军再经温斯坦阶段过滤，只放行非 3 / 4 阶段」）。' +
       '现在<b>生命周期阶段只展示、不参与筛选</b> —— 表内仍保留该列供人工判断。<br>' +
       '<span class="flat">⚠ 副作用（必须知道）：派发期 / 下跌期的票现在也可能出现在「买入档」表里 —— 四指标 v3 的五维（MA5/KDJ/VOL/回吐/BIAS）不含大级别位置约束。' +
       '要恢复过滤：从 <code>_backup_before_712_fix.html</code> 取回 <code>ma5LifeGate</code> 并接回分类循环即可。</span></td></tr>' +
     '<tr><td class="yel" style="white-space:normal">④ 显示层</td><td style="white-space:normal"><b>只显示「买入档」与「观察档」两类</b>；清仓档（&lt;' + S4K_RULE.s4kProfitMin + ' 或一票否决）、🛑 破位闸、v3 未算出（日K不足 26 根）三类只计数不展示（均可在上方漏斗行复核过滤是否生效）。</td></tr>' +
-    '<tr><td class="yel" style="white-space:normal">空态自证（2026-09-21 新增）</td><td style="white-space:normal">板块数为 0 时不再只报「共 0 个」，而是<b>逐级打印</b>：涨停池取回情况（含已重试次数）→ 板块聚合数 → 成员来源统计。<br>' +
+    '<tr><td class="yel" style="white-space:normal">空态自证（2026-09-21 新增 · v5 适配）</td><td style="white-space:normal">板块数为 0 时不再只报「共 0 个」，而是<b>逐级打印</b>：今日涨停池只数 → 板块聚合数（含今日涨停家数 TOP8，一眼看出为什么不满 4 家）→ 准入命中数 → 板块码映射 → 7.10B 一票否决状态。<br>' +
       '<b>候选数为 0 时还会打印上游取数自证</b>：东财 clist 的「板块榜 条数」与「全市场清单 条数」+ 已试过的 host×fs 组合' +
       '（clist 与涨停池不是同一域名：clist = <code>push2delay</code>/<code>push2</code>，涨停池 = <code>push2ex</code>；' +
-      'v4 起中军成员资格<b>只依赖涨停池</b>，clist 取不到只影响「实时价补源」的覆盖面）。<br>' +
-      '<b>涨停池首次取数失败不再被永久缓存</b>：空结果不写缓存，60 秒后自动重试、每个窗口最多 4 次。' +
-      '（旧实现 `catch → cache[ks] = {}`，而所有门槛都写 <code>!cache[ks]</code> → 空结果被当作"已就绪"，' +
-      '导致「共 0 个」<b>永不自愈</b>、只能刷新页面。）</td></tr>' +
-    '<tr><td class="yel" style="white-space:normal">取数量提示</td><td style="white-space:normal">' + MA5_RULE.ztDays + ' 日窗口的涨停并集通常 300~500 只（v4 起不再逐板块拉成分股，首屏少了板块成分股请求）；' +
-      '日K请求数 = 粗筛候选数（各板块涨停成员按今日成交额前 ' + MA5_RULE.midShort + '，去重后通常一两百只，全池上限 ' + MA5_RULE.total + ' 只中军）。' +
-      '涨停池与日K均 <b>缓存 30 分钟</b>，之后刷新为 0 请求。</td></tr>' +
+      'v5 起成员走三通道，clist 取不到时通道②/③仍可出候选，但会漏掉未上榜的成员——如实计数，不静默）。</td></tr>' +
+    '<tr><td class="yel" style="white-space:normal">取数量提示</td><td style="white-space:normal">板块层只用今日池（不再取历史并集）；成分股请求 = 准入板块数（每板块成交额/涨幅各一页 ×100，每批 4 个，30 分钟缓存，与 7.11 / 7.31 共用）；' +
+      '日K请求数 = 选股池候选数（今日成交额 &gt; 10 亿，去重后通常几十只，全池上限 ' + MA5_RULE.total + ' 只）。' +
+      '成分股与日K均 <b>缓存 30 分钟</b>，之后刷新为 0 请求。</td></tr>' +
     '</tbody></table></div>' +
     '<div class="note"><b>仓位管理：</b>v3 买入档=正常仓位（仍受情绪周期（⑤）仓位上限约束）；观察档=不加仓；清仓档=减至零仓；🛑 破位闸=禁止买入。' +
     '<b>数据口径：</b>日K为前复权 200 根（v3 需 ≥26 根；腾讯fqkline→新浪→东财三通道兜底），末根以实时价覆盖；v3 五维 = MA5 维度 + KDJ(9,3,3) + VOL 量能 + 冲高回吐 + BIAS 乖离率（10 日/5 日双周期合成）。' +
@@ -15751,7 +15621,7 @@ function buildM716cfg(){
     '<textarea id="m7_16_ta" placeholder="每行一只：代码 名称 成本(可选) 加入日期(可选)&#10;例：&#10;600519 贵州茅台&#10;000001 平安银行 11.20&#10;300750 宁德时代 2026-08-01&#10;（加入日期用于「加入以来涨幅」列；不填则首次保存那天自动记为本日）"></textarea>' +
     '<div class="row">' +
       '<button class="btn" id="m7_16_save">保存持仓</button>' +
-      '<button class="btn b2" id="m7_16_refresh">立即刷新</button>' +
+      '<button class="btn b2" id="m7_16_refresh" style="display:none">立即刷新</button>' +
       '<button class="btn b3" id="m7_16_clear">清空持仓</button>' +
       '<button class="btn b2" id="m7_16_alert">🔔 买入信号桌面提醒：' + (lsGet('wb_hold_alert', false) ? '开' : '关') + '</button>' +
       '<button class="btn b2" id="m7_16_test">测试提醒</button>' +
@@ -17999,7 +17869,7 @@ function renderM730(){
   if(!cand.length){
     setHtml(box, dbHeadHtml(exec, stageOk, cand, { conv: (dbElapsedFrac() > 0 && dbElapsedFrac() < 1) }) +
       '<div class="concl c-ora"><b>涨停池并集取回为空。</b>可能原因：① 非交易时段首次打开且历史涨停池接口未返回（本平台无法从本机访问东财域名时也会如此）；' +
-      '② 今日涨停池（D.zt）与历史涨停池均未就绪 → 等本轮刷新完成后重试，或点顶部「⟳ 手动刷新自扫」。</div>' + dbRulesHtml());
+      '② 今日涨停池（D.zt）与历史涨停池均未就绪 → 等本轮刷新完成后自动重试。</div>' + dbRulesHtml());
     return;
   }
   var key = D.date + '|' + DB_RULE.ztDays + '|' + cand.map(function(x){ return x.code; }).join(',');
@@ -20529,13 +20399,22 @@ function wtPoolCntOfSec(name, list) {
   });
   return n;
 }
-/* 7.5 等级（同名对齐规则与上面一致） */
+/* 7.5 等级（同名对齐规则与上面一致）
+   ⚠️ 2026-09-28 收紧（用户指出九节交叉表等级错、真网探针实锤）：旧实现是**双向子串**
+   （k===name || k.indexOf(name)>=0 || name.indexOf(k)>=0），实测错配 ——
+     · 「厨房小家电」错配「小家电」的 A（'厨房小家电'.indexOf('小家电')===2，两码事）；
+     · 「燃料电池」错配「电池」的 B。
+   7.5 名经 ind2Canon 上游归一后与板块榜 f14 同为全称 → **精确匹配已覆盖 99% 场景**；
+   仅 ind2 名录未就绪时 7.5 名才是 hybk 4 字缩写 → 用「短名(≥3字)是长名前缀」对齐截断场景。
+   中间包含（ indexOf>0 ）一律不再认 —— 宁可显示「—（今日无涨停）」也不借邻居的等级。 */
 function wtGradeOfSec(name) {
   var gs = null; try { gs = wtGrades(); } catch (e) { gs = null; }
-  if (!gs) return null;
-  for (var i = 0; i < gs.length; i++) {
-    var g = gs[i], k = String(g.name || '');
-    if (k === name || k.indexOf(name) >= 0 || name.indexOf(k) >= 0) return g;
+  if (!gs || !gs.length) return null;
+  var i, k;
+  for (i = 0; i < gs.length; i++) { k = String(gs[i].name || ''); if (k === name) return gs[i]; }
+  for (i = 0; i < gs.length; i++) {
+    k = String(gs[i].name || '');
+    if (k.length >= 3 && name.indexOf(k) === 0) return gs[i];   /* hybk 截断：'汽车零部'←'汽车零部件' */
   }
   return null;
 }
@@ -20767,9 +20646,13 @@ function wtBreadthTbl(secs, BR, mode) {
     var scTxt = sc.ok ? ('<b style="color:' + scCol + '" title="B1 ＞5%占比 ' + (sc.p5 == null ? '样本不足' : sc.p5.toFixed(1) + '%→' + sc.b1 + '分') +
       ' ｜ B2 上涨家数占比 ' + (sc.b2 == null ? '板块过小→不给分' : sc.b2 + '分') + ' ｜ B3 中间层 ' + (sc.b3 == null ? '—' : sc.b3 + '分') + '">' +
       sc.total + '/10</b>') : '<span style="color:#64748b">未取到</span>';
+    /* ★ 2026-09-28：等级列的「—」必须明示原因 —— 7.5 分级只覆盖「今日有涨停」的板块，
+       涨幅前5 里的无涨停板块（如医疗美容）本来就不在分级宇宙里，不是漏取。 */
+    var gCell = g ? wtGtag(g.grade)
+      : '<span title="今日该板块无涨停 → 不在 7.5 分级宇宙（7.5 只对有涨停的板块定级），并非漏取" style="color:#64748b">—</span>';
     return '<tr><td>' + (i + 1) + '</td><td><b>' + esc(sec.f14) + '</b></td>' +
       '<td>' + pcts(num(sec.f3)) + '</td>' +
-      '<td>' + (g ? wtGtag(g.grade) : dash) + '</td>' +
+      '<td>' + gCell + '</td>' +
       '<td>' + (zt ? '<span class="up">' + zt + '</span>' : '0') + '</td>' +
       '<td>' + (size == null ? dash : size) + '</td>' +
       '<td>' + cellN + '</td><td>' + cell5 + '</td><td>' + cellP + '</td>' +
@@ -20875,7 +20758,7 @@ function wtxFrozenBar(atTs){
     if(typeof wtTrading === 'function' && !wtTrading(wtDate()))
       return '<div class="wt-frozen-bar" style="margin:6px 0">🔒 <b>非交易时间 · 数据固定</b>' +
         (atTs ? '（最后取数 ' + new Date(atTs).toTimeString().slice(0, 8) + '）' : '') +
-        '—— 下一交易日开盘自动恢复 3 分钟刷新；点「⟳ 刷新盯盘」可手动重取</div>';
+        '—— 下一交易日开盘自动恢复 3 分钟刷新</div>';
   }catch(e){ }
   return '';
 }
@@ -21384,7 +21267,7 @@ function wtRiskHtml() {
   try { c = emoCtx(); } catch (e) { c = null; }
   if (!c || c.noData) {
     return h + '<div class="wt-modwait">⚠ 退潮预警不判定：盘面原始数据尚未就绪（' +
-      (c ? '涨停 / 跌停 / 炸板 / 板块资金全为空' : 'emoCtx 调用失败') + '）—— 缺失不推断，点「⟳ 刷新盯盘」或等主刷新完成后自动补齐。</div>';
+      (c ? '涨停 / 跌停 / 炸板 / 板块资金全为空' : 'emoCtx 调用失败') + '）—— 缺失不推断，等主刷新完成后自动补齐。</div>';
   }
   var a = (D && D.analysis && !D.analysis.empty) ? D.analysis : null;
   var sig = wtrSignals(c, a);
@@ -21475,13 +21358,13 @@ function wtdHtml() {
     '<span style="font-size:11.5px;font-weight:400;color:#94a3b8">　当前节点：' + esc(ph.label) + ' · ' + esc(ph.hhmm) +
     '　｜　仓位为 <b>单票</b> 口径（不打板，只做中军低吸）</span></h3>';
   if (!snap) {
-    h += '<div class="wt-modwait">⚠️ <b>数据获取失败，请手动提供</b> —— 顶部工作区还没取到快照。可点上方「⟳ 刷新盯盘」重试。</div>';
+    h += '<div class="wt-modwait">⚠️ <b>数据获取失败</b> —— 顶部工作区还没取到快照，等下一轮自动刷新（3 分钟）重试。</div>';
     h += wtdRulesHtml(); return h;
   }
   var r = null; try { r = wtdEval(snap); } catch (e) { r = null; }
   if (!r || !r.ok) {
     h += '<div class="wt-modwait">⚠️ <b>数据获取失败，请手动提供</b> —— 昨日涨停池或腾讯快照未取到' +
-      (snap.pbase ? '（昨日基准 ' + esc(snap.pbase) + '）' : '') + '。可点上方「⟳ 刷新盯盘」重试。</div>';
+      (snap.pbase ? '（昨日基准 ' + esc(snap.pbase) + '）' : '') + '。等下一轮自动刷新重试。</div>';
     h += wtdRulesHtml(); return h;
   }
   var cCol = { A: '#f0453a', B: '#fbbf24', C: '#fb923c', D: '#10b981', E: '#10b981' }[r.caseKey] || '#94a3b8';
@@ -21523,7 +21406,7 @@ function wtdHtml() {
     holds.slice(0, 12).forEach(function (hd) {
       var m = WTD.holdMa[hd.code];
       var nm = '<b>' + esc(hd.name || hd.code) + '</b>';
-      if (!m) { h += '· ' + nm + '：分时未取到（' + (WTD.holdLoading ? '取数中…' : '可点「⟳ 刷新盯盘」重试') + '）<br>'; return; }
+      if (!m) { h += '· ' + nm + '：分时未取到（' + (WTD.holdLoading ? '取数中…' : '等下一轮自动重试') + '）<br>'; return; }
       var over = (m.breakMin != null && m.breakMin >= WTD_RULE.maBreakMin);
       h += '· ' + nm + '：现价 <span class="wt-mono">' + (m.price == null ? '—' : m.price.toFixed(2)) + '</span>' +
         ' ｜ 分时均线 <span class="wt-mono">' + (m.ma == null ? '—' : m.ma.toFixed(2)) + '</span>' +
@@ -21646,7 +21529,25 @@ function wtMainLineCardsHtml() {
   var s = WT.snap;
   if (!s || !s.sectors || !s.sectors.length) return '<div class="wt-line">未取到涨停池（非交易日 / 接口受限）</div>';
   var groups = { real: [], mid: [], trap: [] };
-  s.sectors.slice(0, 12).forEach(function (g) {
+  /* ★ 2026-09-28 字段对齐修复（实测：所有卡恒显「涨停 0 家」、分类恒落「轮动支线·涨停稀少」）：
+     快照 sectors 行是 wtFetch 的 {cnt, zb, maxLbc, ...}，**没有** zt / secc / veto / ladder 字段，
+     而 wtClassifySector 的契约是 7.5 gradeSectors() 行形状 —— 单测 mock 恰好喂的是 7.5 形状，
+     真页快照形状不同，上线起就错位、直到今天用户截图才暴露。修法：就地合成对齐行 ——
+     zt ← cnt（今日涨停池同源同尺）；grade / secc / veto / vetoWhy / ladder / dt ← 7.5 权威行按名合并；
+     7.5 没有该板块名时回落快照自算 grade，其余留空 → 分类自然落到「按涨停家数」的分支。 */
+  var GSM = {};
+  try { (typeof wtGrades === 'function' ? (wtGrades() || []) : []).forEach(function (x) { if (x && x.name) GSM[x.name] = x; }); } catch (eGS) {}
+  s.sectors.slice(0, 12).forEach(function (sg) {
+    var G = GSM[sg.name] || {};
+    var g = {}, kk;
+    for (kk in sg) g[kk] = sg[kk];
+    g.zt = (sg.cnt != null) ? sg.cnt : (sg.zt || 0);
+    if (G.grade) g.grade = G.grade;
+    g.secc = G.secc || sg.secc || null;
+    g.veto = (G.veto != null) ? G.veto : !!sg.veto;
+    g.vetoWhy = G.vetoWhy || sg.vetoWhy || '';
+    g.ladder = G.ladder || sg.ladder || '';
+    if (G.dt != null) g.dt = G.dt; else if (g.dt == null) g.dt = 0;
     var c = wtClassifySector(g);
     groups[c.cls].push({ g: g, c: c });
   });
@@ -21984,7 +21885,7 @@ function gt5Kick(force) {
     });
   }).catch(function (e) {
     G.err = '名单取数失败（' + ((e && e.message) || e) + '）—— fetch 直连与 jsonp 注入两条通道均不可达，' +
-      '多为新浪限流或本机网络拦截；2 分钟后自动重试，也可点顶部「⟳ 刷新盯盘」立即重试';
+      '多为新浪限流或本机网络拦截；2 分钟后自动重试';
     G.at = Date.now(); wtxPaint(); G.busy = false;
   });
 }
@@ -22061,7 +21962,7 @@ function wtThermoPosition() {
 function wtRender() {
   var box = $('wtBody'); if (!box) return;
   var s = WT.snap;
-  if (!s) { setHtml(box, '<div class="wt-note">暂无数据。点「⟳ 刷新盯盘」取数。</div>' +
+  if (!s) { setHtml(box, '<div class="wt-note">暂无数据，等自动取数（盘前 30 秒采样 / 盘中 3 分钟一次）。</div>' +
     /* 盯盘快照缺失也要给反向方向容器一个家 —— 它读的是主刷新 D.*（与快照无关），
        且 #wtRevDirs 必须在页面上存在，wtPaintMods 的指纹重画才有落点。 */
     '<div id="wtRevDirs">' + wtRevDirsSafe() + '</div>'); return; }
@@ -22234,7 +22135,7 @@ function wtLoad(base, pbase, mode) {
   }).catch(function (e) {
     WT.err = (e && e.message) || String(e);
     WT.at = Date.now();                                   /* ⚠️ 失败也要记时间：否则 tick 每秒重试 → 请求风暴（实测打了一串） */
-    wtStatus('取数失败：' + WT.err + '（3 分钟后自动重试，或点「⟳ 刷新盯盘」立即重试）', true);
+    wtStatus('取数失败：' + WT.err + '（3 分钟后自动重试）', true);
   }).then(function () { WT.running = false; });
 }
 /* 落盘前剥掉不可序列化/过大的引用（snap 里都是纯对象，这里只做一次体检） */
@@ -22260,8 +22161,7 @@ function wtTick() {
   }
 }
 function wtBind() {
-  var b = $('wtRefresh');
-  if (b) b.addEventListener('click', function () { WT.done = false; WT.key = ''; wtRefresh(true); });
+  /* 2026-09-27：刷新盯盘按钮已删除（取消所有手刷）—— wtTick 自动刷新是唯一取数入口 */
   if (!WT.timer) WT.timer = setInterval(wtTick, 1000);
   wtPaintToolbar();
   wtRefresh(false);
@@ -22315,7 +22215,39 @@ var JJ_RULE = {
   sampleMs: 15000, idleMs: 120000, failMs: 30000, traceMax: 80, stuckTop: 10, traceKey: 'wb_jjtrace'
 };
 var JJ = { running: false, done: false, t: 0, snap: null, cbs: [],
-  poolKey: '', prevPool: null, zbPool: null, lastErr: '', failT: 0 };
+  poolKey: '', prevPool: null, zbPool: null, lastErr: '', failT: 0, fixed: false };
+/* ---------- 9:29 竞价定格（2026-09-27 新增 · 用户要求「交易日 9 点 29 固定数据」） ----------
+   口径：竞价唯一结果 = 9:25 撮合出的今开价 → 9:25 后当日竞价数据已不可能变化。
+   机制：当日成功取到「今日竞价」快照后立即落盘 wb_jj_snap_v1（按日期存，保留 15 个交易日），
+   之后**当日不再重取**，页面重开 / 盘中 / 盘后 / 非交易日一律渲染这份定格快照（复盘查询数据固定）。
+   9:15-9:25 竞价进行中：自动采样展示（jjEnsure 15 秒节流）；9:25-9:30 撮合定型窗口内完成定格。 */
+var JJ_LS = 'wb_jj_snap_v1';
+function jjSnapAll(){ try{ return lsGet(JJ_LS, {}) || {}; }catch(e){ return {}; } }
+function jjSnapGet(date){
+  var a = jjSnapAll(), s = a[date];
+  return (s && s.date === date && s.snap) ? s : null;
+}
+function jjSnapLatest(){
+  var a = jjSnapAll(), ks = Object.keys(a).sort(), i;
+  for(i = ks.length - 1; i >= 0; i--){ var s = a[ks[i]]; if(s && s.snap) return s; }
+  return null;
+}
+/* 当下是否已满足「定格条件」：交易日 9:25 后 且 快照确属今日竞价（auc.day === D.date） */
+function jjAucFixed(){
+  var n = zelHm(hmNow()); if(isNaN(n) || n < 925) return false;
+  return !!(JJ.snap && JJ.snap.auc && JJ.snap.auc.day === D.date);
+}
+function jjSnapSave(){
+  try{
+    if(!JJ.snap || !JJ.done) return;
+    var a = jjSnapAll();
+    a[D.date] = { date: D.date, t: JJ.t, at: new Date().toTimeString().slice(0, 8), snap: JJ.snap };
+    var ks = Object.keys(a).sort();
+    while(ks.length > 15) delete a[ks.shift()];
+    lsSet(JJ_LS, a);
+    JJ.fixed = true;
+  }catch(e){}
+}
 /* ---------- 相位（原文 1.1 三个关键时间窗口） ---------- */
 
 function jjPhase(){
@@ -22855,7 +22787,7 @@ function ph_liveCheck(p){ return p && (p.k === 'fake'); }
 /* ---------- 取数（自带，不依赖 refreshAll） ----------
    并发安全：同一时刻只跑一次；并发调用者挂到 JJ.cbs 队列，完成后统一回调
    （⚠️ 不能在 running 时直接调 cb —— 调用方会立即重入 m733Core → 无限递归）。
-   失败退避：失败后 failMs 内不再自动重试（避免每秒 tick 打接口）；需要重试点「立即刷新」（force）。 */
+   失败退避：失败后 failMs 内不再自动重试（避免每秒 tick 打接口）；退避期满由自动 tick 续试。 */
 
 function jjEnsure(force, cb){
   if(typeof force === 'function'){ cb = force; force = false; }
@@ -22885,16 +22817,30 @@ function jjEnsure(force, cb){
       JJ.snap = jjBuild(JJ.prevPool || [], JJ.zbPool || [], rs[0] || {}, rs[1] || {}, rs[2] || [], rs[3] || []);
       JJ.done = true; JJ.t = Date.now(); JJ.lastErr = ''; JJ.failT = 0;
       jjTraceSample(JJ.snap);
+      if(jjAucFixed()) jjSnapSave();          /* 9:25 后拿到当日竞价 → 立即定格落盘（当日不再重取） */
     }catch(e){ JJ.lastErr = (e && e.message) || String(e); JJ.failT = Date.now(); }
     finish();
   }).catch(function(e){ JJ.lastErr = (e && e.message) || String(e); JJ.failT = Date.now(); finish(); });
 }
-/* 全局 1 秒 tick 驱动（挂在既有 setInterval 里，与 captureM730Auc 同处）：
-   竞价窗口（9:15-9:30）主动刷新；其余时段仅在「从未取到过数据」时补一次 */
+/* 全局 1 秒 tick 驱动（挂在 jjClockUpdate 的 1 秒时钟里）：
+   2026-09-27（取消手刷）：恢复竞价自动取数 ——
+   · 交易日 9:15-9:32：自动采样（jjEnsure 内部 15 秒节流；9:20 前为演戏区，界面已标注不作为决策依据）；
+   · 9:25 后首次成功 → 定格落盘，当日不再重取（9:29 定格口径，今开已固定）；
+   · 9:32 后（含盘后才打开页面）：若当日仍无定格快照 → 补取一次（今开全天不变，取到即定格）；
+   · 非交易日：不取数，渲染层读最近一份定格快照复盘（数据固定）。 */
 function jjTick(){
-  /* 2026-09-18：7.33 竞价全景改为手动刷新 —— 自动 tick 不再发起竞价取数。
-     需要时点卡内「⟳ 立即刷新竞价数据」或顶部「⟳ 手动刷新自扫」。 */
-  return;
+  try{
+    var today = dstr(new Date());
+    if(typeof wtIsTradeDay === 'function' && !wtIsTradeDay(today)) return;
+    try{ captureM730Auc(); }catch(eA){}                /* 7.30 竞价量采集（9:25-9:30 窗口 · 30s 节流，自带守卫）—— 2026-09-27 恢复自动驱动 */
+    if(jjSnapGet(today) || JJ.fixed) return;           /* 当日已定格 → 不再取数 */
+    var n = zelHm(hmNow()); if(isNaN(n) || n < 915) return;
+    var wasDone = JJ.done, wasT = JJ.t;
+    jjEnsure(false);                                   /* 15s 采样节流 / 30s 失败退避都在 jjEnsure 内部 */
+    if((!wasDone && JJ.done) || JJ.t !== wasT){        /* 状态变化 → 下一帧重绘（不回调，避免每秒重入渲染） */
+      try{ if($('m7_33')) m733Core(); }catch(eR){}
+    }
+  }catch(e){}
 }
 /* ---------- 7.33 渲染 ---------- */
 
@@ -22926,12 +22872,12 @@ function jjHeadHtml(s){
   h += '<div class="m730-gate">' +
     jjTag('当前相位：' + esc(ph.name) + '（' + esc(hmNow()) + '）', ph.cls) +
     jjTag(esc(ph.txt), ph.cls) +
+    (JJ.fixed ? jjTag('🔒 9:29 竞价定格（当日数据固定不变）', 'on') : '') +
     jjTag('数据时刻：' + (JJ.t ? new Date(JJ.t).toTimeString().slice(0, 8) : '—'), '') +
     jjTag('在册：昨日涨停 ' + s.prev.n + ' 只 / 昨日炸板 ' + (s.prev.zbAll || 0) + ' 只', '') +
     (JJ.lastErr ? jjTag('取数异常：' + esc(JJ.lastErr), 'off') : '') +
-    '<button onclick="jjEnsure(true,function(){m733Core();})" style="font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid #334155;background:#0b1222;color:#cbd5e1;cursor:pointer">⟳ 立即刷新竞价数据</button>' +
     '</div>';
-  if(ph.k === 'before') h += '<div class="concl c-ora"><b>竞价未开始：</b>现在显示的是「最近一个交易日」的竞价口径（可作复盘参考）。9:15 后本卡会自动刷新（每 ' + (JJ_RULE.sampleMs / 1000) + ' 秒一次），也可点右上「立即刷新」。</div>';
+  if(ph.k === 'before') h += '<div class="concl c-ora"><b>竞价未开始：</b>现在显示的是「最近一个交易日」的竞价口径（可作复盘参考）。交易日 <b>9:15 起本卡自动取数</b>，9:25 撮合完成后当日数据定格（9:29 口径）。</div>';
   if(ph.k === 'fake') h += '<div class="concl c-ora"><b>⚠️ 现在处于 9:15-9:20 演戏区：</b>价格可撤单、会变脸 —— <b>本段读数不作为决策依据</b>，请等 9:20 后（不可撤单）再看。</div>';
   if(ph.k === 'after') h += '<div class="concl c-blu"><b>已开盘（' + esc(hmNow()) + '）：</b>本卡「涨跌停家数 / 涨跌幅」这类<b>价格类读数已是盘中实时值，不再是 9:25 竞价值</b>；' +
     '「开盘溢价率 / 今开 / 六类分类 / 竞价量」这类<b>开盘价类读数仍是当日竞价结果</b>（开盘价一开盘就固定）。' +
@@ -23540,28 +23486,50 @@ function jjFold(sec, open, hint){
 
 function m733Core(){
   var box = $('m7_33'); if(!box) return;
+  /* ① 当日定格快照优先（9:29 定格 / 页面重开恢复）：命中即固定展示，当日不再取数 */
+  var fixed = jjSnapGet(D.date);
+  if(fixed && !JJ.running){
+    if(!JJ.done || !JJ.fixed){
+      JJ.snap = fixed.snap; JJ.done = true; JJ.t = fixed.t || Date.now(); JJ.fixed = true; JJ.lastErr = ''; JJ.failT = 0;
+    }
+  }
   if(!JJ.done){
-    /* ★ 2026-09-22 本平台惯例（同 7.30/7.34）：竞价取数**只在手动触发后**执行。
-       自动刷新期间不发起；页面刚打开、没点过「立即刷新竞价数据」也不发起 —— 否则每次开页面都打一串竞价请求。 */
-    if(AUTO_REFRESH || !JJ.userStart){
-      /* 2026-09-18：自动刷新不发起竞价取数（改为手动刷新） */
-      setHtml(box, '<div class="concl c-ora"><b>⏸ 集合竞价全景：待手动刷新。</b>本工作台不自动发起竞价取数 —— ' +
-      '请点上方「⟳ 立即刷新竞价数据」或页头「⟳ 手动刷新自扫」开始取数（昨日涨停池 / 炸板池 / 指数 / 全市场涨跌榜）。</div>' + jjRulesHtml());
+    /* ② 非交易日 / 竞价开始前：读最近一份定格快照做复盘展示（数据固定，jjAucState 会如实标注归属日） */
+    var trading = (typeof wtIsTradeDay === 'function') ? wtIsTradeDay(dstr(new Date())) : true;
+    var n = zelHm(hmNow()), inWin = (!isNaN(n) && n >= 915);
+    if(!trading || !inWin){
+      var latest = jjSnapLatest();
+      if(latest){
+        if(!JJ.done || JJ.fixed !== false){ JJ.snap = latest.snap; JJ.done = true; JJ.t = latest.t || 0; JJ.fixed = false; JJ.lastErr = ''; }
+        /* 回放的不是当日快照 → 修正竞价归属标注（不许让昨天的数据冒充"当日 9:25 结果"） */
+        try{
+          if(JJ.snap && JJ.snap.auc && JJ.snap.auc.day && JJ.snap.auc.day !== D.date){
+            JJ.snap.auc.ok = false; JJ.snap.auc.kind = 'replay';
+            JJ.snap.auc.label = '历史复盘：**' + JJ.snap.auc.day + '** 的竞价（非当日，不能用于今天决策）';
+          }
+        }catch(eP){}
+      } else {
+        setHtml(box, '<div class="concl c-ora"><b>集合竞价全景：暂无历史定格快照。</b>' +
+          (trading ? '交易日 <b>9:15 起自动取数</b>（9:15-9:32 竞价窗口采样），<b>9:25 竞价撮合完成后当日数据即定格</b>（9:29 口径）。' :
+                     '非交易日不发起取数 —— 显示最近一个交易日的定格快照（数据固定，方便复盘查询）。') +
+          '<br><span class="flat">当前还没有任何落盘快照（新功能首次使用属正常），等第一个交易日自动取数后即可长期回看。</span></div>' + jjRulesHtml());
+        return;
+      }
+    } else {
+      /* ③ 交易日竞价窗口 / 盘中补取：自动取数（jjEnsure 30 秒失败退避，jjTick 每秒驱动） */
+      if(JJ.lastErr && !JJ.running){
+        setHtml(box, '<div class="concl c-ora">7.33 集合竞价：取数失败（' + esc(JJ.lastErr) + '）—— 将自动退避重试（30 秒一次），取到 9:25 后当日数据即定格。<br>' +
+          '<span class="flat">若持续失败，通常是行情接口限流；本卡自带取数、不影响其它模块。</span></div>' + jjRulesHtml());
+        return;
+      }
+      setHtml(box, '<div class="loading">7.33 集合竞价：正在自动取数（昨日涨停池 / 昨日炸板池 / 指数行情 / 昨日涨停股行情 / 全市场涨跌榜）…</div>' + jjRulesHtml());
+      jjEnsure(false, function(){ if($('m7_33')) m733Core(); });
       return;
     }
-    if(JJ.lastErr && !JJ.running){
-      /* 失败后不再自动重试（否则每秒 tick → 请求循环）；只提示并等用户点「立即刷新」 */
-      setHtml(box, '<div class="concl c-ora">7.33 集合竞价：取数失败（' + esc(JJ.lastErr) + '）—— 请点上方「⟳ 立即刷新竞价数据」重试。<br>' +
-        '<span class="flat">若持续失败，通常是行情接口限流或非交易日；本卡自带取数、不影响其它模块。</span></div>' + jjRulesHtml());
-      return;
-    }
-    setHtml(box, '<div class="loading">7.33 集合竞价：正在取数（昨日涨停池 / 昨日炸板池 / 指数行情 / 昨日涨停股行情 / 全市场涨跌榜）…</div>' + jjRulesHtml());
-    jjEnsure(false, function(){ if($('m7_33')) m733Core(); });
-    return;
   }
   var s = JJ.snap;
   if(!s){
-    setHtml(box, '<div class="concl c-ora">7.33 集合竞价：无可用快照。点「⟳ 立即刷新竞价数据」重试。</div>' + jjRulesHtml());
+    setHtml(box, '<div class="concl c-ora">7.33 集合竞价：无可用快照。等下一轮自动取数（交易日 9:15 起）。</div>' + jjRulesHtml());
     return;
   }
   /* 顺序＝第一工作区优先：相位头 → ①【推荐板块 / 回避板块 + 9:25 诊断报告】→ 其余逐段推导 → 规则速查。
@@ -23775,6 +23743,7 @@ function renderM733(){ m733Core(); try{ jjFoldTables(); }catch(e){ console.error
 /* ---------- 时钟：顶部工作区要一眼看到"现在是竞价前还是竞价中" ---------- */
 var __jjClockLast = '';
 function jjClockUpdate(){
+  try{ jjTick(); }catch(eT){}                           /* 2026-09-27：竞价自动取数 tick（9:15-9:32 采样 · 9:25 后定格） */
   var now = new Date();
   var ph = (typeof jjPhase === 'function') ? jjPhase() : { name: '非竞价时段', live: false };
   var txt = now.toTimeString().slice(0, 8);
@@ -23790,15 +23759,10 @@ function jjClockUpdate(){
   if(st) st.textContent = JJ.running ? '取数中…' : (JJ.t ? ('数据时刻 ' + new Date(JJ.t).toTimeString().slice(0, 8)) : '');
 }
 
-/* ---------- 绑定：刷新按钮（唯一取数入口）+ 1 秒时钟 ---------- */
+/* ---------- 绑定：1 秒时钟（+ 竞价自动取数 tick） ---------- */
+/* 2026-09-27（用户要求「取消所有手刷」）：刷新按钮已删除；
+   竞价取数改全自动 —— jjTick 挂在 1 秒时钟里：竞价窗口采样、9:29 定格、其余时段不取数。 */
 function jjTopBind(){
-  var b = $('callRefresh');
-  if(b) b.addEventListener('click', function(){
-    JJ.userStart = true;                                /* 手动开启（本平台不自动取数） */
-    b.disabled = true;
-    jjEnsure(true, function(){ b.disabled = false; renderM733(); jjClockUpdate(); });
-    renderM733();
-  });
   if(!window.__jjClockTimer) window.__jjClockTimer = setInterval(jjClockUpdate, 1000);
   jjClockUpdate();
 }
@@ -23814,7 +23778,7 @@ else jjTopBind();
 var wasTrading = false, WB_TICK = 0;
 setInterval(function(){
   if(typeof document !== 'undefined' && document.hidden) return;   /* 2026-09-18：后台标签页暂停取数与倒计时（回前台时补刷新） */
-  /* 2026-09-18：7.30 竞价快照 / 7.33 竞价全景已改为手动刷新（自动 tick 不再发起取数） */
+  /* 2026-09-27：7.30 竞价快照随自动刷新执行；7.33 竞价全景改全自动（9:15-9:32 采样 · 9:25 后定格落盘） */
   var el = $('cd');
   /* ── 非交易时段（盘前 / 午休 / 盘后 / 周末 / 节假日）──────────────────
      2026-09-20 修复：原实现每次 tick 都 `remain = REFRESH; return;` → 既不倒计时也永不刷新，
@@ -23943,12 +23907,17 @@ function snapChecks(){
   add('10日涨幅榜 k10（10日榜 · 主线）', (D.k10 || []).length >= 10, '已取 ' + (D.k10 || []).length + ' 条');
   add('全市场涨幅榜（十三、行业分布）', (D.rank || []).length > 0 && !!D.rankSrc, D.rankSrc ? '通道 ' + D.rankSrc + ' · ' + (D.rank || []).length + ' 条' : '未取到');
   add('7x24 快讯（复盘小结催化线索）', (D.news || []).length > 0, '已取 ' + (D.news || []).length + ' 条');
-  add('主线判定（主线板块 · 中军 · 7.42 资金）', !!D.ml && !!D.ml.date, D.ml ? '已生成' : '未生成');
+  add('主线判定（主线板块 · 中军）', !!D.ml && !!D.ml.date, D.ml ? '已生成' : '未生成');
   add('两市成交额（F7 量能预估）', D.amtToday != null && D.amtYest != null, '今日 ' + (D.amtToday == null ? '—' : D.amtToday) + ' / 昨日 ' + (D.amtYest == null ? '—' : D.amtYest));
-  /* 题材反演（7.35 · 7.42）：F10 逐股取数较慢 → running 时按 pending 等待而不是判缺失 */
+  /* 集合竞价 9:29 定格（jjtop）：当日快照落盘即算在位（2026-09-27 新增核验项） */
+  var jjToday = (typeof jjSnapGet === 'function') ? jjSnapGet(dstr(new Date())) : null;
+  var jjPend = (typeof JJ !== 'undefined') && JJ.running === true;
+  L.push({ name: '集合竞价 9:29 定格（jjtop）', ok: !!jjToday, pending: jjPend,
+    why: jjToday ? ('已定格（' + (jjToday.at || '') + '）') : (jjPend ? '竞价取数中…' : '当日竞价快照未落盘') });
+  /* 题材反演（7.35）：F10 逐股取数较慢 → running 时按 pending 等待而不是判缺失 */
   var thmOk = (typeof THM !== 'undefined') && THM.done === true && !!THM.date;
   var thmPend = (typeof THM !== 'undefined') && THM.running === true;
-  L.push({ name: '题材反演（7.35 · 7.42）', ok: thmOk, pending: thmPend,
+  L.push({ name: '题材反演（7.35）', ok: thmOk, pending: thmPend,
     why: thmOk ? ('已归类 ' + Object.keys(THM.map || {}).length + ' 只（' + THM.src + '）') : (thmPend ? 'F10 反演取数中…' : '未完成') });
   return L;
 }
@@ -23973,10 +23942,10 @@ function snapBannerAuto(){
     var when = st.t ? new Date(st.t).toTimeString().slice(0, 8) : '';
     snapBanner('🔒 <b>' + esc(st.label || '快照') + ' 已冻结</b>（' + when + ' · 核验三遍全通过 · ' + (st.checksOk || 0) + ' 项数据全部在位）—— 数据固定供复盘，自动刷新已暂停。' +
       '<button class="btn" onclick="snapUnfreezeManual()" style="min-height:20px;font-size:11px;padding:1px 8px;margin-left:8px">解冻（恢复自动刷新）</button>' +
-      '<span style="color:#94a3b8;font-size:11px;margin-left:8px">手动「刷新」也会自动解冻</span>', 'good');
+      '<span style="color:#94a3b8;font-size:11px;margin-left:8px">下一交易日开盘自动解冻并恢复 3 分钟刷新</span>', 'good');
   } else if (st.missing && st.missing.length) {
     snapBanner('⛔ ' + esc(st.label || '快照') + ' 核验未全过、<b>未冻结</b> —— 缺失：' + esc(st.missing.join('；')) +
-      '（数据缺失不推断、绝不假装核验通过；接口恢复后点「手动刷新」重试）', 'bad');
+      '（数据缺失不推断、绝不假装核验通过；下一定点时点自动重试，也可点「解冻」恢复自动刷新后等下一轮 3 分钟刷新）', 'bad');
   } else {
     var bar = $('snapBar');
     if (bar && bar.parentNode) bar.parentNode.removeChild(bar);

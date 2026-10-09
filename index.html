@@ -10731,6 +10731,114 @@ function ptPanelHtml(){
   }catch(e){ return ''; }
 }
 
+/* ★ 2026-10-09 第74轮：🔥 昨日热点今日形态 —— 组装层（取数 / 缓存 / 渲染），纯函数在 YF-BEGIN/END */
+var YF_C = { seq: -1, date: '', v: null }, YF_SEC = { t: 0, name: '', v: null };
+function yfDtCodes(){
+  var s = {}, a = D.dt || [];
+  for(var i = 0; i < a.length; i++){ if(a[i] && a[i].c) s[a[i].c] = true; }
+  return s;
+}
+function yfDtN(name){
+  var n = 0, a = D.dt || [];
+  for(var i = 0; i < a.length; i++){
+    try{ if(a[i] && themeEq(ind2C((a[i].hybk) || ''), name)) n++; }catch(e){}
+  }
+  return n;
+}
+/* 板块级统计（60s 进程内缓存）：与 ptSecData 同一套取数尺（prevZtBySector 主题键 + ztg 今日组） */
+function yfStatsOf(name){
+  var now = Date.now();
+  if(YF_SEC.v && YF_SEC.name === name && now - YF_SEC.t < 60000) return YF_SEC.v;
+  var g = [];
+  try{ g = ztg(name) || []; }catch(e0){ g = []; }
+  var prevRows = null;
+  try{
+    var m = prevZtBySector(), tk = themeKey(name);
+    prevRows = (m[name] != null) ? m[name] : ((tk && m[tk] != null) ? m[tk] : null);
+  }catch(eP){ prevRows = null; }
+  if(!prevRows || !prevRows.length){ YF_SEC = { t: now, name: name, v: null }; return null; }
+  /* 反包二波历史：secsnap 每日板块涨停家数（主题键，收盘后落盘）；昨日值必须在位 */
+  var hist = null, valid = 0;
+  try{
+    var all = secSnapAll(), ds = Object.keys(all).filter(function(k){ return /^\d{8}$/.test(k) && k < D.date; }).sort().slice(-7);
+    hist = ds.map(function(d){ var e = all[d][name]; return (e && e.zt != null) ? e.zt : null; });
+    hist.forEach(function(v){ if(v != null) valid++; });
+  }catch(eH){ hist = null; }
+  var renew = false;
+  if(hist && valid >= 3 && hist[hist.length - 1] != null)
+    renew = yfRenewCheck(hist, g.length);
+  var amtToday = null;
+  try{ amtToday = swLiveAmt(name); }catch(eA){ amtToday = null; }
+  var amtPrev = null;
+  try{
+    var all2 = secSnapAll(), ds2 = Object.keys(all2).filter(function(k){ return /^\d{8}$/.test(k) && k < D.date; }).sort();
+    if(ds2.length){ var pe = all2[ds2[ds2.length - 1]][name]; if(pe && pe.amt > 0) amtPrev = pe.amt; }
+  }catch(eA2){}
+  var st = null;
+  try{
+    st = yfStats({ prevRows: prevRows, todayRows: g, ztMap: ptZtMap(), prevQ: D.prevQ || {},
+      dtCodes: yfDtCodes(), dtN: yfDtN(name), amtToday: amtToday, amtPrev: amtPrev });
+  }catch(eS){ st = null; }
+  var v = null;
+  if(st){
+    var f = null;
+    try{ f = yfForm(st, renew); }catch(eF){ f = null; }
+    v = { st: st, form: f, renew: renew, histValid: valid };
+  }
+  YF_SEC = { t: now, name: name, v: v };
+  return v;
+}
+/* 板块 chip（三类卡 meta / ⑤ 板块分组头共用）：🔥 形态标签 · 数据缺 → '' 留白 */
+function yfTagHtml(name){
+  try{
+    var d = yfStatsOf(name);
+    if(!d || !d.form) return '';
+    var fm = YF_FORMS[d.form.k]; if(!fm) return '';
+    var toneCls = fm.tone === 'up' ? 'up' : fm.tone === 'dn' ? 'dn' : fm.tone === 'yel' ? 'yel' : 'flat';
+    var tip = '🔥 昨日热点今日形态（第74轮）：昨涨停 ' + d.st.prevN + ' → 今日 ' + d.st.todayN + ' 家（' + Math.round((d.st.ratio || 0) * 100) + '%）'
+      + '｜晋级 ' + d.st.promoN + '/' + d.st.prevN + '｜均溢价 ' + (d.st.prem == null ? '—' : d.st.prem + '%')
+      + '｜大面 ' + d.st.mianN + '｜跌停 ' + d.st.dtN
+      + (d.st.amtR != null ? '｜量能 ' + Math.round(d.st.amtR * 100) + '%' : '')
+      + (d.form.warns && d.form.warns.length ? '｜' + d.form.warns.join('；') : '');
+    return '<span class="flat" style="font-size:10.5px" title="' + esc(tip) + '"><b class="' + toneCls + '">' + fm.label + '</b>'
+      + '<span class="flat" style="font-size:9.5px"> ' + esc(fm.op.split('：')[0].split('（')[0]) + '</span></span>';
+  }catch(e){ return ''; }
+}
+/* 7.5B「🔥 今日形态」列单元格：只写结论 + 一句操作 */
+function yfCellHtml(name){
+  var d = yfStatsOf(name);
+  if(!d || !d.form) return '<span class="flat" style="font-size:10.5px">—</span>';
+  var fm = YF_FORMS[d.form.k];
+  var toneCls = fm.tone === 'up' ? 'up' : fm.tone === 'dn' ? 'dn' : fm.tone === 'yel' ? 'yel' : 'flat';
+  return '<b class="' + toneCls + '" style="font-size:11.5px">' + fm.label + '</b>'
+    + '<div class="flat" style="font-size:10px;margin-top:1px">' + esc(fm.op) + '</div>'
+    + ((d.form.warns && d.form.warns.length) ? '<div class="yel" style="font-size:9.5px;margin-top:1px">⚠ ' + esc(d.form.warns.join('；')) + '</div>' : '');
+}
+/* ⑤ 涨停复盘 · 昨日热点今日形态总览面板（昨日涨停 ≥2 家的板块逐个出形态） */
+function yfPanelHtml(){
+  try{
+    var m = prevZtBySector(), names = Object.keys(m).filter(function(k){ return m[k] && m[k].length >= YF_RULE.minPrev; });
+    if(!names.length) return '';
+    var rows = [];
+    names.forEach(function(nm){
+      var d = yfStatsOf(nm);
+      if(d && d.form) rows.push({ name: nm, d: d });
+    });
+    if(!rows.length) return '';
+    var order = { burst: 0, cont: 1, sw: 2, renew: 3, weak: 4, pulse: 5, fake: 6, ebb: 7, purge: 8 };
+    rows.sort(function(a, b){ return (order[a.d.form.k] || 9) - (order[b.d.form.k] || 9) || b.st.ratio - a.st.ratio; });
+    var h = '<div class="note" style="margin:6px 0"><b>🔥 昨日热点的今日形态</b>（分级：≥80% 强延续加速 / 50~79% 良性分歧 / 30~49% 弱分歧 / &lt;30% 退潮；晋级·溢价·大面三重校验，批量大面或晋级断层一票否决「延续」）<br>';
+    h += rows.slice(0, 14).map(function(r){
+      var fm = YF_FORMS[r.d.form.k];
+      var toneCls = fm.tone === 'up' ? 'up' : fm.tone === 'dn' ? 'dn' : 'yel';
+      return '<span style="margin-right:14px;display:inline-block"><b>' + esc(r.name) + '</b> <span class="flat">（' + r.d.st.prevN + '→' + r.d.st.todayN + '）</span> <b class="' + toneCls + '">' + fm.label.split(' · ')[0] + '</b></span>';
+    }).join('');
+    if(rows.length > 14) h += '<span class="flat">…等 ' + rows.length + ' 个板块（完整见各板块标注）</span>';
+    h += '</div>';
+    return h;
+  }catch(e){ return ''; }
+}
+
 /* ==== AFP-BEGIN ==== */
 /* ================================================================================
    2026-10-07 · 涨停板块资金性质标识（游资主导 / 机构主导 / 机构+游资合力）+ 当日攻防判断
@@ -11750,6 +11858,8 @@ function renderM5(){
     return '<div class="grp"><div class="grp-h"><span class="gn">' + esc(dname) + '</span>' + afSecTagHtml(dname) + afRotTagHtml(dname) +
       /* ★ 2026-10-09（第71轮）：🪜 分台阶晋级率 + 梯队完整性 + 真普涨/假普涨（PT 引擎，悬停见逐项核对） */
       (() => { try { return ptChipHtml(dname); } catch (ePT5) { return ''; } })() +
+      /* ★ 2026-10-09（第74轮）：🔥 昨日热点今日形态（YF 引擎，悬停见分级读数） */
+      (() => { try { return yfTagHtml(dname); } catch (eYF5) { return ''; } })() +
       '<span class="tag tag-y">' + cata + '</span><span class="flat">' + gs.length + '只</span><span class="up mono">最高' + ml + '板</span>' +
       '<span class="tag tag-b" style="cursor:pointer" data-wbbpush="' + esc(gs.map(function(x){ return x.c + '|' + (x.n || ''); }).join(',')) + '" title="把本组涨停股整组推入生命周期工作台自选（对方页面需打开）">⇒生命周期自选</span>' +
       (g20 ? '<span class="badge b-r">20cm ' + g20 + '</span>' : '') + (g30 ? '<span class="badge b-o">30cm ' + g30 + '</span>' : '') +
@@ -11758,7 +11868,10 @@ function renderM5(){
   /* ★ 2026-10-09（第71轮）：🪜 全市场分台阶晋级率面板（1进2/2进3/3进4/4板+ · 梯队完整性 · 跨日接力链） */
   var ptPanel = '';
   try { ptPanel = ptPanelHtml(); } catch (ePTP) { ptPanel = ''; }
-  setHtml($('m5grp'), ptPanel + (gh || '<div class="loading">暂无板块分组数据</div>'));
+  /* ★ 2026-10-09（第74轮）：🔥 昨日热点今日形态总览（分级阈值 + 五形态，逐板块结论） */
+  var yfPanel = '';
+  try { yfPanel = yfPanelHtml(); } catch (eYFP) { yfPanel = ''; }
+  setHtml($('m5grp'), ptPanel + yfPanel + (gh || '<div class="loading">暂无板块分组数据</div>'));
   /* 按题材分组（东财概念 · 多标签）：与「按板块分组」并列，供短线按题材找主线 */
   var tg = thmGroups();
   var tnames = Object.keys(tg).sort(function(a, b){ return tg[b].cnt - tg[a].cnt || tg[b].maxLbc - tg[a].maxLbc; });
@@ -16145,6 +16258,143 @@ function ptBroadTip(items){
 }
 /* ==== PT-END ==== */
 
+/* ==== YF-BEGIN ==== */
+/* ── 🔥 昨日热点的今日形态（2026-10-09 第74轮 · 用户文章「五种今日形态」+ 分级阈值落地）──
+   口径（用户原话，改码前必读）：
+   · 基准示例＝昨日板块涨停 10 家（收盘封板剔 ST）；分级阈值按「今日家数 / 昨日家数」比例泛化
+     （基准 10 时与用户绝对阈值逐档吻合）：≥80% 强延续加速 / 50%~79% 良性分歧（最低合格线）/ <50%~≥30% 弱分歧 / <30% 退潮。
+   · 五种今日形态（标注主标签）：主升延续（龙头续板·梯队完整·涨停延续·放量续攻）／
+     分歧换手·高低切（龙头断板但未 A 杀，低位补涨活跃）／一日游·昨涨今跌（昨日涨停今日普遍低开、板块跌幅居前）／
+     退潮出清（高标断板 + 跌停跳增 + 晋级率骤降）／反包二波（调整数日后卷土重来，资金记忆仍在）。
+   · 硬性附加条件（一票否决「延续」类结论）：①龙头断板 + 昨涨停股批量大面；②全部是新首板无任何晋级（梯队断层＝
+     低位零散脉冲，不算热点延续）；③板块成交额大幅萎缩 + 昨日涨停股整体走弱（零星独立涨停无联动）。
+   · 良性分歧前提：至少 1 只昨日涨停股晋级连板 + 昨日涨停股平均溢价为正 + 无批量大面；缺一 → 降档弱分歧/脉冲。
+   ── 诚实披露（不冒充）──
+   · 昨日跌停家数无历史源（getTopicDTPool 只取当日）→「跌停跳增」用「板块今日跌停 ≥3 家」绝对线近似，昨日对照不编；
+   · 反包二波历史 = wb_secsnap 每日板块涨停家数（主题键），序列不足 3 个有效历史日 → 该形态不出（留白待积累）；
+   · 板块指数无稳定日K源 →「板块跌幅居前」以「昨日涨停股平均溢价」为代理（等权口径，与用户文章口径一致）；
+   · 昨日板块涨停 1 家的样本无统计意义 → 不出形态（留白）；D.prev 未就绪 → 全表留白。
+   纯函数段：禁止 document / localStorage / lsGet / D.*。 */
+var YF_RULE = {
+  burst: 0.8,        /* 强延续：今日家数 ≥ 昨日 80%（基准10→≥8） */
+  cont: 0.5,         /* 良性分歧下限：保留昨日 50%（≥5/10）——「至少 5 家才判热点延续」 */
+  weak: 0.3,         /* 弱分歧下限：<30% = 退潮 */
+  mianPct: -5,       /* 大面线：昨涨停今日 ≤ −5% */
+  mianFake: 0.4,     /* 一日游：批量大面 ≥ 40% 昨日涨停股 */
+  mianBig: 0.3,      /* 大面批量（一票否决延续）：≥ 30% */
+  dtPurge: 3,        /* 退潮出清：板块今日跌停 ≥3 家（昨日对照无源，绝对线近似，头注释已披露） */
+  promoPurge: 0.2,   /* 晋级率骤降线：<20% */
+  renewPeak: 5,      /* 反包二波：3~6 天前峰值涨停 ≥5 家 */
+  renewTrough: 2,    /* 调整期：昨日涨停 ≤2 家 */
+  renewToday: 3,     /* 今日重启 ≥3 家且 > 昨日 */
+  amtShrink: 0.7,    /* 缩量线：今日板块额 ≤ 昨日 70% */
+  firstNewMin: 2,    /* 高低切：低位补涨新首板 ≥2 只 */
+  minPrev: 2         /* 昨日涨停 ≥2 家才判形态（1 家无统计意义） */
+};
+var YF_FORMS = {
+  burst: { label: '🚀 主升延续 · 加速', tone: 'up', op: '热点仍是主线：低吸中军、龙头分歧加仓（观察持续性 · 确认再动）' },
+  cont:  { label: '✅ 良性分歧 · 延续', tone: 'up', op: '热点延续（主线最常见走法）：持有为主、回调低吸不追高' },
+  sw:    { label: '🔀 分歧换手 · 高低切', tone: 'yel', op: '主线内高低切：做低位补涨、不做高位接力，快进快出、次日看修复' },
+  weak:  { label: '⚠ 弱分歧 · 警惕', tone: 'yel', op: '涨停大幅缩水：不加仓，看龙头能否修复，只留最强' },
+  pulse: { label: '❔ 低位零散脉冲', tone: 'dn', op: '全是新首板无晋级＝梯队断层，不算热点延续：不接力' },
+  fake:  { label: '☠️ 一日游 · 昨涨今跌', tone: 'dn', op: '伪热点（昨天的明星今天的流星）：不参与、不抄底' },
+  ebb:   { label: '📉 退潮', tone: 'dn', op: '涨停大幅缩水（<30%）：回避，等冰点后再看新方向' },
+  purge: { label: '🧊 退潮出清', tone: 'dn', op: '坚决回避，只留最强核心；等冰点后新方向' },
+  renew: { label: '🔁 反包二波', tone: 'yel', op: '观察二波龙头持续性：确认后参与；反包不持续则情绪结束' }
+};
+/* 板块统计（纯函数）。o 入参：
+   prevRows 昨日涨停行[{c,lbc}] / todayRows 今日行 / ztMap 今日{code:{lbc}} /
+   prevQ {code:{pct}} 昨日股今日涨幅 / dtCodes 今日跌停码 Set / amtToday/amtPrev 板块额(元|null) */
+function yfStats(o){
+  var prevRows = o.prevRows || [], todayRows = o.todayRows || [], ztMap = o.ztMap || {}, prevQ = o.prevQ || {};
+  var prevN = prevRows.length, todayN = todayRows.length;
+  var promoN = 0, premArr = [], mianN = 0, prevCodes = {};
+  var top = null, i, r;
+  for(i = 0; i < prevRows.length; i++){
+    r = prevRows[i]; if(!r || !r.c) continue;
+    prevCodes[r.c] = true;
+    if(!top || (r.lbc || 1) > (top.lbc || 1)) top = r;
+    if(ztMap[r.c]) promoN++;
+    var q = prevQ[r.c];
+    if(q && typeof q.pct === 'number' && !isNaN(q.pct)){
+      premArr.push(q.pct);
+      if(q.pct <= YF_RULE.mianPct) mianN++;
+    }
+  }
+  var prem = premArr.length ? premArr.reduce(function(a, b){ return a + b; }, 0) / premArr.length : null;
+  var firstNewN = 0;
+  for(i = 0; i < todayRows.length; i++){
+    r = todayRows[i]; if(!r || !r.c) continue;
+    if((r.lbc || 1) <= 1 && !prevCodes[r.c]) firstNewN++;
+  }
+  var leadBroken = !!(top && !ztMap[top.c]);
+  var leadADt = false;
+  if(top){
+    if(o.dtCodes && o.dtCodes[top.c]) leadADt = true;
+    else { var lq = prevQ[top.c]; if(lq && typeof lq.pct === 'number' && lq.pct <= -9) leadADt = true; }
+  }
+  var dtN = o.dtN; if(dtN == null) dtN = 0;
+  var amtR = (o.amtToday != null && o.amtPrev > 0) ? o.amtToday / o.amtPrev : null;
+  return { prevN: prevN, todayN: todayN, ratio: prevN ? todayN / prevN : null,
+    promoN: promoN, promoRate: prevN ? promoN / prevN : null,
+    prem: prem == null ? null : Math.round(prem * 100) / 100, mianN: mianN, premN: premArr.length,
+    leadLbc: top ? (top.lbc || 1) : 0, leadBroken: leadBroken, leadADt: leadADt,
+    firstNewN: firstNewN, dtN: dtN, amtR: amtR == null ? null : Math.round(amtR * 100) / 100 };
+}
+/* 反包二波：hist = 最近 7 个历史交易日板块涨停家数（升序，末位=昨日；缺=null）。
+   峰值：3~6 天前 ≥renewPeak；调整：昨日 ≤renewTrough（缺失按低量近似，头注释已披露）、前日 ≤3；
+   今日 ≥renewToday 且 > 昨日 → 反包。 */
+function yfRenewCheck(hist, todayN){
+  if(!hist || hist.length < 4 || todayN == null) return false;
+  var n = hist.length, i, peakOK = false;
+  for(i = n - 4; i >= 0 && i >= n - 6; i--){ if(hist[i] != null && hist[i] >= YF_RULE.renewPeak){ peakOK = true; break; } }
+  if(!peakOK) return false;
+  var yd = hist[n - 1], d2 = hist[n - 2];
+  var troughOK = (yd == null || yd <= YF_RULE.renewTrough) && (d2 == null || d2 <= YF_RULE.renewTrough + 1);
+  if(!troughOK) return false;
+  return todayN >= YF_RULE.renewToday && todayN > (yd || 0);
+}
+/* 形态判定（纯函数）：优先级 退潮出清 > 一日游 > 反包 > 主升延续 > 高低切 > 良性分歧 > 零散脉冲 > 弱分歧 > 退潮 */
+function yfForm(st, renew){
+  if(!st || st.prevN == null || st.prevN < YF_RULE.minPrev) return null;
+  var ratio = st.ratio || 0, warns = [];
+  var mianFake = st.mianN >= Math.max(2, Math.ceil(st.prevN * YF_RULE.mianFake));
+  var mianBig = st.mianN >= Math.max(2, Math.ceil(st.prevN * YF_RULE.mianBig));
+  var noPromo = st.promoN === 0;
+  /* ① 退潮出清：跌停跳增（≥3 家）+ 龙头断板或晋级率骤降 */
+  if(st.dtN >= YF_RULE.dtPurge && (st.leadBroken || st.promoRate < YF_RULE.promoPurge))
+    return { k: 'purge', warns: ['跌停 ' + st.dtN + ' 家' + (st.leadBroken ? ' · 龙头断板' : ' · 晋级率 ' + Math.round(st.promoRate * 100) + '%')] };
+  /* ② 一日游：昨涨停今日平均溢价为负 + 批量大面（≥40%） */
+  if(st.prem != null && st.prem < 0 && mianFake)
+    return { k: 'fake', warns: ['均溢价 ' + st.prem + '% · 大面 ' + st.mianN + '/' + st.prevN] };
+  /* ③ 反包二波（历史序列够才判） */
+  if(renew) return { k: 'renew', warns: ['调整后重启 ' + st.prevN + '→' + st.todayN + ' 家'] };
+  var premPos = (st.prem == null || st.prem > 0);
+  /* ④ 主升延续 · 加速：≥80% + 晋级 ≥1 + 溢价正 + 无批量大面 */
+  if(ratio >= YF_RULE.burst && st.promoN >= 1 && premPos && !mianBig)
+    return { k: 'burst', warns: (st.amtR != null && st.amtR < YF_RULE.amtShrink) ? ['量能萎缩 ' + Math.round(st.amtR * 100) + '%，加速存疑'] : [] };
+  /* ⑤ 分歧换手（高低切）：龙头断板但未 A 杀 + 低位补涨活跃 + 无批量大面（大面批量＝反面案例，落零散脉冲） */
+  if(st.leadBroken && !st.leadADt && st.firstNewN >= YF_RULE.firstNewMin && st.todayN >= 3 && !mianBig)
+    return { k: 'sw', warns: ['龙头断板（昨 ' + st.leadLbc + ' 板）· 新首板 ' + st.firstNewN] };
+  /* ⑥ 良性分歧：50%~79% + 晋级 ≥1 + 溢价正 + 无批量大面 */
+  if(ratio >= YF_RULE.cont && st.promoN >= 1 && premPos && !mianBig)
+    return { k: 'cont', warns: (st.amtR != null && st.amtR < YF_RULE.amtShrink) ? ['板块额缩至 ' + Math.round(st.amtR * 100) + '%'] : [] };
+  /* ⑦ 一票否决：家数达标但晋级=0（全是新首板，梯队断层）→ 低位零散脉冲，不算延续 */
+  if(noPromo && ratio >= YF_RULE.cont)
+    return { k: 'pulse', warns: ['晋级 0/' + st.prevN + ' · 新首板 ' + st.firstNewN] };
+  /* ⑧ 弱分歧：30%~49%（或 ≥50% 但晋级/溢价前提缺） */
+  if(ratio >= YF_RULE.weak || (ratio >= YF_RULE.cont && (noPromo || !premPos))){
+    if(mianBig) warns.push('大面 ' + st.mianN + '/' + st.prevN + '（强退潮前兆）');
+    if(st.prem != null && st.prem <= 0) warns.push('均溢价 ' + st.prem + '%');
+    return { k: 'weak', warns: warns };
+  }
+  /* ⑨ 退潮：<30% */
+  warns.push('家数 ' + st.prevN + '→' + st.todayN);
+  if(st.prem != null && st.prem < 0) warns.push('均溢价 ' + st.prem + '%');
+  return { k: 'ebb', warns: warns };
+}
+/* ==== YF-END ==== */
+
 /* ---------------- 以下为渲染层（取数 / DOM），不参与纯函数单测 ---------------- */
 /* 锚点读写（进场时刻，用于"买入后漂移监控"） */
 function dbgAnchorGet(){ var v = lsGet(DBG_RULE.anchorKey, DBG_RULE.anchorDefault); return DBG_RULE.anchors.indexOf(v) >= 0 ? v : DBG_RULE.anchorDefault; }
@@ -16845,6 +17095,10 @@ function ladderPanelHtml(gs){
     var c11;
     try{ c11 = '<td style="white-space:normal;min-width:150px">' + swCellHtml(g.name) + '</td>'; }
     catch(e11){ c11 = '<td><span class="flat" style="font-size:10.5px">—</span></td>'; }
+    /* ⑫b 🔥 今日形态（第74轮 · 用户文章「昨日热点的五种今日形态」）：只写结论 + 一句操作 */
+    var c11b;
+    try{ c11b = '<td style="white-space:normal;min-width:170px">' + yfCellHtml(g.name) + '</td>'; }
+    catch(e11b){ c11b = '<td><span class="flat" style="font-size:10.5px">—</span></td>'; }
     /* ⑬ 关键风险 */
     var c12 = '<td class="note" style="white-space:normal;min-width:150px">' + esc(x.risk || '—')
       + ((x.gate && x.gate.length) ? '<div class="yel" style="font-size:10.5px">［闸门：' + esc(x.gate.join('；')) + '］</div>' : '') + '</td>';
@@ -16864,7 +17118,7 @@ function ladderPanelHtml(gs){
        只是从"每行一列"改为"表底低频复核区"。 */
     allWhys.push({ name: g.name, tag: (esc(g.grade || '—') + ' · ' + esc(x.act || '—')), why: why });
     return '<tr' + ((d && d.vk === 'open') ? ' style="background:rgba(240,69,58,.06)"' : '') + '>'
-      + c1 + c2 + c3 + c4 + c6 + c10 + c11 + c12 + '</tr>';
+      + c1 + c2 + c3 + c4 + c6 + c10 + c11 + c11b + c12 + '</tr>';
   }).join('');
   var h = '<h2 style="font-size:14px;margin-top:16px;border-color:#26c281;color:#26c281">7.5B 板块总表（梯队形态分级 + 情绪周期 + 结论·仓位/操作 → 一张表回答「能不能买 / 买多少 / 怎么买」）'
     + '<small><b>2026-09-24 按用户要求合并</b>：原「板块动态复核（买入前五闸门 / 持续性评分）」表与原「板块五级分级」主表已<b>删除</b>，两表全部列并入本表｜'
@@ -16876,12 +17130,13 @@ function ladderPanelHtml(gs){
     + '<b>2026-10-09 第68轮（用户要求）</b>：<b>硬否决全部取消、一律改为风控提醒</b>（含大盘退潮/冰点、板块退潮、拉高出货、独苗/纯首板、持续性&lt;46），'
     + '能不能买由使用者自行判断；结论列改为输出<b>买入的标的类型</b>（高标龙头 / 龙头 / 中军接力 / 低位补涨 / 低位首板，口径＝梯队结构推导）｜'
     + '<b>2026-10-09 第70轮（用户文章）</b>：新增<b>🌙 甜蜜窗口</b>列 —— 逐日决策树（第1日确认只建底仓 → 第2日广度 → 第3日缩量分歧三条件 → 第5日重确认三问 → 到期冻结），只写判断后的结论、不写逻辑；退潮六信号随行提示，纪律优先级高于窗口日历｜'
+    + '<b>2026-10-09 第74轮（用户文章）</b>：新增<b>🔥 今日形态</b>列 —— 昨日热点的五种今日形态（主升延续加速 / 良性分歧 / 分歧换手·高低切 / 一日游 / 退潮出清 / 反包二波），分级＝今日家数/昨日家数（≥80% 强延续 · 50~79% 良性 · 30~49% 弱分歧 · &lt;30% 退潮），晋级·溢价·大面三重校验、批量大面或晋级断层一票否决「延续」｜'
     + '排序＝按<b>可操作性</b>（可买 ' + openN + ' 个 → 休市 → 未达复核门槛），同级按持续性降序｜数据源与既有引擎同源，零额外请求</small></h2>';
   h += '<div class="twrap"><table class="mini-tbl"><thead><tr>'
     + '<th>等级</th><th>板块</th><th>情绪周期<small style="font-weight:400;color:#94a3b8">板块自身</small></th>'
     + '<th>梯队结构<small style="font-weight:400;color:#94a3b8">高标/中位/首板</small></th>'
     + '<th>形态 / 强度</th>'
-    + '<th>结论 · 仓位 / 操作</th><th>🌙 甜蜜窗口<small style="font-weight:400;color:#94a3b8">逐日决策树</small></th><th>关键风险</th>'
+    + '<th>结论 · 仓位 / 操作</th><th>🌙 甜蜜窗口<small style="font-weight:400;color:#94a3b8">逐日决策树</small></th><th>🔥 今日形态<small style="font-weight:400;color:#94a3b8">昨日热点五形态</small></th><th>关键风险</th>'
     + '</tr></thead><tbody>' + body + '</tbody></table></div>';
   /* ★ 2026-09-24（用户要求）：判定依据（逐条）从表格列移到表底折叠 —— 默认收起，点开按板块逐条复核。 */
   h += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#9fb4ff">📖 判定依据（逐条 · 共 ' + allWhys.length + ' 个板块 · 点击展开复核）</summary><div style="padding:4px 2px">';
@@ -16905,6 +17160,11 @@ function ladderPanelHtml(gs){
     + '日历＝第1日确认（联动≥3家＋三板以上高度＋1进2晋级率&gt;30%＋启动放量≥5日均量1.5倍 → 主线候选·只建底仓）→ 第2日广度（≥60%延续 / &lt;50%分化 / &lt;30%熄火；昨日≥5家方向无三板不接力）→ 第3日缩量分歧三条件（齐备＝健康分歧续持；缩量破位＝危险分歧降仓）→ 第5日收盘前重确认（再放量≥峰值1.2倍＋龙头换手板续板 → 顺延5日，否则降档只持不加）→ 到期未重确认＝窗口失效（底仓观察、新仓冻结）。'
     + '<b>退潮六信号</b>（任一触发即降级，纪律高于窗口日历）随行 ⚠ 提示：龙头断板不反包→移出主线池 / 板块炸板率&gt;40% / 晋级率&lt;15%（&gt;50%单日跌破30%只卖不买）/ 放量滞涨→只减不加两周 / 家数较峰值腰斩→续持不加 / 高潮次日低开&gt;3点→兑现；另 2进3全绿盘＝接力生态死亡。'
     + '<b>诚实披露</b>：①「新催化续杯」不可量化 → 顺延结论仍需人工确认催化；②板块指数无稳定日K源 → 三条件趋势/破位以<b>板块龙头股日K</b>为锚（K线未就绪显示「待验」，不冒充）；③量能＝板块成交额（收盘 wb_secsnap 优先、盘中 AF 资金榜实时兜底）；5日均量有效样本 &lt;4 → 量能待补、不确认新窗口；④峰值/晋级率前值/龙头断板计数按收盘口径推进，盘中不落盘。仅为技术分析，不构成投资建议。</div>';
+  h += '<div class="note" style="margin-top:6px"><b>🔥 今日形态列口径（2026-10-09 第74轮 · 用户文章「昨日热点的五种今日形态」落地）</b>：只写结论不写逻辑。'
+    + '分级＝今日板块涨停家数 / 昨日家数（≥80% 主升延续加速 / 50~79% 良性分歧（最低合格线）/ 30~49% 弱分歧警惕 / &lt;30% 退潮）；'
+    + '<b>良性分歧前提</b>＝至少 1 只昨日涨停股晋级连板 + 昨日涨停股平均溢价为正 + 无批量大面，缺一降档；'
+    + '<b>一票否决</b>＝晋级 0（全是新首板，梯队断层）→ 「低位零散脉冲」不算延续；批量大面（≥40%）+ 溢价为负 → 「一日游」；跌停 ≥3 家 + 龙头断板/晋级率骤降 → 「退潮出清」；调整数日后重启（3~6 天前峰值 ≥5 家、昨日 ≤2 家、今日 ≥3 家）→ 「反包二波」。'
+    + '<b>诚实披露</b>：①昨日跌停家数无历史源 →「跳增」用今日板块跌停 ≥3 家绝对线近似；②反包历史 = wb_secsnap 每日板块涨停家数（收盘后落盘），序列不足 3 个有效日 → 反包不出（留白待积累）；③「板块跌幅居前」以昨日涨停股平均溢价为代理（等权口径）；④昨日涨停 1 家的板块无统计意义 → 不出形态。</div>';
   h += '<div class="note" style="margin-top:6px">' +
     '<b>修正说明（梯队形态部分 · 相对《板块梯队分级判断策略（AI可执行版）》原文，2026-09-24 全网核验）</b>：' +
     '① <b>形态优先于标准档</b> —— 原文「三层都有→S级」先出结论、再查特殊形态，导致要求"三层都有"的形态 5/6/7 永远不可达；现改为先判形态（互斥）再落标准档。' +
@@ -26734,6 +26994,8 @@ function wtMainLineCardsHtml() {
     if (pz3 != null) meta.push('<span style="color:#94a3b8">昨涨停 ' + pz3 + ' 家</span>');
     /* ★ 2026-10-09（第71轮）：🪜 分台阶晋级率 + 梯队完整性 + 真普涨/假普涨标注（PT 引擎，与 ⑤ 同一把尺） */
     try { var ptC7 = ptChipHtml(g.name); if (ptC7) meta.push(ptC7); } catch (ePT) { }
+    /* ★ 2026-10-09（第74轮）：🔥 昨日热点今日形态（主升延续/高低切/一日游/退潮出清/反包二波） */
+    try { var yfC7 = yfTagHtml(g.name); if (yfC7) meta.push(yfC7); } catch (eYF) { }
     if (g.zb) meta.push('炸板 ' + g.zb);
     if (g.dt) meta.push('跌停 ' + g.dt);
     meta.push('宽度 ' + bTxt);

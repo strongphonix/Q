@@ -1220,7 +1220,7 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
 
 <!-- 模块 7.5 板块五级分级（从模块7抽出，置于④之后） -->
 <section class="card" id="m75">
-<h2>7.5 板块总表 <span style="color:#26c281">（7.5B · 已合并原「五级分级」主表与原「五闸门 / 持续性」表）</span> + 买入后漂移监控<small><b style="color:#f0453a">↑ 板块周期优先级高于个股 MA5/dev，加速（高潮）期禁止新开仓</b> ｜ 一张表给出：等级 S/A/B/C + <b>⛔ 风险否决</b>（有涨停即 ≥B；风险不再改等级） ｜ 板块（题材）自身情绪周期：启动 / 确认 / 发酵 / 加速 / 分歧 / 反包 / 退潮（≠ 大盘情绪周期）｜ 梯队结构（高标/中位/首板）+ 指标一致性（高度/层数/家数）｜ 五闸门 + 持续性评分 + 档位·仓位（<b>冲突取更严者</b>）｜ 板块宽度分 0~10 ｜ 判定依据逐条（<b>表底折叠</b>，点开复核） ｜ 判定标准：四锚点（家数 / 高度 / 晋级率 / 成交额占比）+ 五维复核</small></h2>
+<h2>7.5 板块总表 <span style="color:#26c281">（7.5B · 已合并原「五级分级」主表与原「五闸门 / 持续性」表）</span> + 买入后漂移监控<small><b style="color:#26c281">★ 2026-10-09 第68轮起：硬否决全部取消、一律改风控提醒（能否买入自行判断），结论列给出买入标的类型（龙头 / 中军接力 / 低位首板等）</b> ｜ 一张表给出：等级 S/A/B/C + <b>⛔ 风险否决</b>（有涨停即 ≥B；风险不再改等级） ｜ 板块（题材）自身情绪周期：启动 / 确认 / 发酵 / 加速 / 分歧 / 反包 / 退潮（≠ 大盘情绪周期）｜ 梯队结构（高标/中位/首板）+ 指标一致性（高度/层数/家数）｜ 五闸门（全提醒化）+ 持续性评分 + 档位·仓位 ｜ 判定依据逐条（<b>表底折叠</b>，点开复核） ｜ 判定标准：四锚点（家数 / 高度 / 晋级率 / 成交额占比）+ 五维复核</small></h2>
 <div id="m7_5"><div class="loading">数据加载中…</div></div>
 </section>
 
@@ -10603,6 +10603,134 @@ function m5FeatLegendHtml(zt, ctx, lhb){
 }
 /* ==== M5F-END ==== */
 
+/* ---------------- 🪜 PT 组装 + 渲染（第71轮 · 纯函数内核见 PT-BEGIN/END）----------------
+   数据源（零额外请求）：D.prev（昨日池，lbc 分台阶）/ D.zt（今日池）/ D.prevQ（昨涨停今日行情，
+   后排同步用）/ D.ztGroup + prevZtBySector（板块分组，同一把主题尺）/ ztIsLimit20（20cm 判定复用）。
+   跨日落盘 wb_promotier_v1：{日期:{t1:{n,p},t2,t3,t4}}，同日键覆盖（收盘最后一轮即收盘口径），
+   留 30 个交易日；跨日接力链判定读 < D.date 的最近一天（不依赖连续在线）。 */
+var PT_KEY = 'wb_promotier_v1', PT_C = { seq: -1, date: '', v: null }, PT_SEC = { t: 0, v: null };
+function ptZtMap(){
+  var m = {};
+  (D.zt || []).forEach(function(x){ if(x && x.c) m[x.c] = x; });
+  return m;
+}
+/* 每日落盘（同日覆盖）：全市场分台阶 {n,p}。写入失败静默（只影响跨日判定，不影响当日面板）。 */
+function ptSaveDaily(tiers){
+  try{
+    var all = lsGet(PT_KEY, {}) || {};
+    var o = {};
+    tiers.forEach(function(t){ o[t.k] = { n: t.n, p: t.p }; });
+    all[D.date] = o;
+    var ks = Object.keys(all).sort();
+    while(ks.length > 30){ delete all[ks.shift()]; }
+    lsSet(PT_KEY, all);
+  }catch(eP){}
+}
+function ptPrevSaved(){
+  try{
+    var all = lsGet(PT_KEY, {}) || {};
+    var ks = Object.keys(all).filter(function(k){ return k < D.date; }).sort();
+    return ks.length ? all[ks[ks.length - 1]] : null;
+  }catch(e){ return null; }
+}
+/* 全市场上下文（RENDER_SEQ+日期缓存）：分台阶晋级率 + 梯队完整性 + 跨日接力链 */
+function ptCtxCached(){
+  if(PT_C.seq === RENDER_SEQ && PT_C.date === D.date) return PT_C.v;
+  var prev = D.prev || [], zt = D.zt || [];
+  var tiers = ptPromoTiers(prev, ptZtMap());
+  var lad = ptLadderIntegrity(zt);
+  var pv = ptPrevSaved() || {};
+  var cross = {};
+  tiers.forEach(function(t){
+    var p = pv[t.k];
+    cross[t.k] = ptCrossJudge(t.rate, p && p.n ? p.p / p.n : null);
+  });
+  var v = { tiers: tiers, ladder: lad, cross: cross, hasPrev: prev.length > 0 };
+  try{ ptSaveDaily(tiers); }catch(eS){}
+  PT_C.seq = RENDER_SEQ; PT_C.date = D.date; PT_C.v = v;
+  return v;
+}
+/* 板块级数据（60s 进程内缓存）：今日组 = D.ztGroup[name]；昨日组 = prevZtBySector 同尺 */
+function ptSecData(name){
+  var now = Date.now();
+  if(PT_SEC.v && PT_SEC.name === name && now - PT_SEC.t < 60000) return PT_SEC.v;
+  var g = (D.ztGroup || {})[name] || [];
+  var prevRows = null;
+  try{
+    var m = prevZtBySector();
+    var tk = themeKey(name);
+    prevRows = (m[name] != null) ? m[name] : ((tk && m[tk] != null) ? m[tk] : null);
+  }catch(eP){ prevRows = null; }
+  var todayN = g.length;
+  var topLbc = 0, firstN = 0, lianN = 0, n20 = 0, n10 = 0;
+  g.forEach(function(x){
+    var l = (x.lbc || 1);
+    if(l > topLbc) topLbc = l;
+    if(l <= 1) firstN++; else lianN++;
+    if(typeof ztIsLimit20 === 'function' && ztIsLimit20(x)) n20++; else n10++;
+  });
+  var topCode = null;
+  g.forEach(function(x){ if((x.lbc || 1) === topLbc && !topCode) topCode = x.c; });
+  /* 后排同步：昨日板块涨停股（剔除最高板）今日平均涨幅（D.prevQ 口径） */
+  var backAvg = null;
+  if(prevRows && prevRows.length && D.prevQ){
+    var ps = [];
+    prevRows.forEach(function(r){ if(r.c !== topCode){ var q = D.prevQ[r.c]; if(q && q.pct != null && !isNaN(q.pct)) ps.push(q.pct); } });
+    if(ps.length) backAvg = ps.reduce(function(a, b){ return a + b; }, 0) / ps.length;
+  }
+  var promo = null, promoN = 0;
+  if(prevRows && prevRows.length){
+    var tAll = ptPromoTiers(prevRows, ptZtMap());
+    var n = 0, p = 0;
+    tAll.forEach(function(t){ n += t.n; p += t.p; });
+    promoN = n; promo = n ? p / n : null;
+  }
+  var v = { todayN: todayN, prevN: prevRows ? prevRows.length : null, topLbc: topLbc,
+    firstN: firstN, lianN: lianN, n20: n20, n10: n10, backAvg: backAvg,
+    promo: promo, promoN: promoN, lad: ptLadderIntegrity(g) };
+  PT_SEC = { t: now, name: name, v: v };
+  return v;
+}
+/* 板块 chip（三类卡 meta / ⑤ 板块分组头共用）：🪜 晋级 p/n · 梯队 · 普涨结论。数据缺 → '' 留白 */
+function ptChipHtml(name){
+  try{
+    var d = ptSecData(name);
+    if(!d || !d.todayN) return '';
+    var seg = [];
+    if(d.promoN > 0 && d.promo != null) seg.push('🪜 晋级 ' + d.promoN + '中' + Math.round(d.promo * d.promoN));
+    if(d.lad && d.lad.label) seg.push('<span class="' + (d.lad.tone === 'up' ? 'up' : d.lad.tone === 'dn' ? 'dn' : d.lad.tone === 'yel' ? 'yel' : 'flat') + '">' + d.lad.label.split(' · ')[0] + '</span>');
+    var b = ptBroadJudge(d);
+    if(b && b.label) seg.push('<b class="' + b.tone + '">' + b.label + '</b>');
+    else if(b && b.items) seg.push('<span class="flat" style="font-size:10px">普涨核对不足</span>');
+    if(!seg.length) return '';
+    return '<span class="flat" style="font-size:10.5px" title="🪜 晋级率分台阶与普涨核对（第71轮）：' + esc(b && b.items ? ptBroadTip(b.items) : '') + (d.lad ? ' ｜ ' + d.lad.label : '') + '">' + seg.join(' · ') + '</span>';
+  }catch(e){ return ''; }
+}
+/* 全市场分台阶面板（⑤ 涨停复盘 · 板块分组上方）：禁止用总晋级率代替的「分台阶」清单 */
+function ptPanelHtml(){
+  try{
+    var c = ptCtxCached();
+    if(!c || !c.hasPrev) return '';
+    var ztMap = ptZtMap();
+    var h = '<div class="note" style="margin:6px 0"><b>🪜 分台阶晋级率</b>（前一日涨停个股次日继续涨停概率 · 按板位分层，禁止用总晋级率代替）　';
+    h += '<span class="' + (c.ladder.tone === 'up' ? 'up' : c.ladder.tone === 'dn' ? 'dn' : c.ladder.tone === 'yel' ? 'yel' : 'flat') + '">梯队：' + c.ladder.label + '</span>';
+    h += '<span class="flat">（低' + c.ladder.low + '/中' + c.ladder.mid + '/高' + c.ladder.hi + '）</span><br>';
+    h += c.tiers.map(function(t){
+      var health = ptTierHealth(t);
+      var cr = c.cross[t.k];
+      var pct = (t.n && t.rate != null) ? Math.round(t.rate * 1000) / 10 + '%' : '样本 ' + t.n;
+      var tone = health ? (health.tone === 'up' ? 'up' : health.tone === 'dn' ? 'dn' : health.tone === 'yel' ? 'yel' : 'flat') : 'flat';
+      return '<span class="' + tone + '" style="margin-right:12px">' + t.k + ' <b>' + (t.n && t.rate != null ? t.p + '/' + t.n + '＝' + pct : '—') + '</b>'
+        + '（基准 ' + PT_RULE.base[t.k] + '%）'
+        + (health ? ' ' + health.txt : '')
+        + (cr ? ' <span class="' + (cr.tone === 'up' ? 'up' : 'dn') + '">' + cr.txt + '</span>' : '')
+        + '</span>';
+    }).join('');
+    h += '</div>';
+    return h;
+  }catch(e){ return ''; }
+}
+
 /* ==== AFP-BEGIN ==== */
 /* ================================================================================
    2026-10-07 · 涨停板块资金性质标识（游资主导 / 机构主导 / 机构+游资合力）+ 当日攻防判断
@@ -11619,12 +11747,18 @@ function renderM5(){
     var rows = gs.sort(function(a, b){ return (b.lbc || 1) - (a.lbc || 1) || (a.fbt || 0) - (b.fbt || 0); }).map(function(x){
       return '<div class="g-row" data-wbbcode="' + esc(x.c) + '"><span>' + ((x.lbc || 1) >= 2 ? '<span class="tag tag-r">' + (x.lbc || 1) + '板</span>' : '<span class="tag tag-b">首板</span>') + '</span><span class="mono">' + esc(x.c) + '</span><span><b data-wbbjump="' + esc(x.c) + '" style="cursor:pointer" title="点击打开生命周期工作台诊断该股">' + esc(x.n) + '</b>' + rankBadgeAny(x.c) + ztLimitTag(x) + afStockTagHtml(x.c, x, m5ctx, true) + wbbPickTagHtml(x.c) + m5FeatTagsHtml(x, m5ctx, m5lhb) + '</span><span class="flat">' + fmtFbt(x.fbt) + '</span><span class="mono">炸' + (x.zbc || 0) + '</span><span class="yel">' + esc((typeof ind2Canon === 'function') ? ind2Canon(x.hybk || '') : (x.hybk || '')) + '</span></div>';
     }).join('');
-    return '<div class="grp"><div class="grp-h"><span class="gn">' + esc(dname) + '</span>' + afSecTagHtml(dname) + afRotTagHtml(dname) + '<span class="tag tag-y">' + cata + '</span><span class="flat">' + gs.length + '只</span><span class="up mono">最高' + ml + '板</span>' +
+    return '<div class="grp"><div class="grp-h"><span class="gn">' + esc(dname) + '</span>' + afSecTagHtml(dname) + afRotTagHtml(dname) +
+      /* ★ 2026-10-09（第71轮）：🪜 分台阶晋级率 + 梯队完整性 + 真普涨/假普涨（PT 引擎，悬停见逐项核对） */
+      (() => { try { return ptChipHtml(dname); } catch (ePT5) { return ''; } })() +
+      '<span class="tag tag-y">' + cata + '</span><span class="flat">' + gs.length + '只</span><span class="up mono">最高' + ml + '板</span>' +
       '<span class="tag tag-b" style="cursor:pointer" data-wbbpush="' + esc(gs.map(function(x){ return x.c + '|' + (x.n || ''); }).join(',')) + '" title="把本组涨停股整组推入生命周期工作台自选（对方页面需打开）">⇒生命周期自选</span>' +
       (g20 ? '<span class="badge b-r">20cm ' + g20 + '</span>' : '') + (g30 ? '<span class="badge b-o">30cm ' + g30 + '</span>' : '') +
       '</div><div class="grp-b">' + rows + '</div></div>';
   }).join('');
-  setHtml($('m5grp'), gh || '<div class="loading">暂无板块分组数据</div>');
+  /* ★ 2026-10-09（第71轮）：🪜 全市场分台阶晋级率面板（1进2/2进3/3进4/4板+ · 梯队完整性 · 跨日接力链） */
+  var ptPanel = '';
+  try { ptPanel = ptPanelHtml(); } catch (ePTP) { ptPanel = ''; }
+  setHtml($('m5grp'), ptPanel + (gh || '<div class="loading">暂无板块分组数据</div>'));
   /* 按题材分组（东财概念 · 多标签）：与「按板块分组」并列，供短线按题材找主线 */
   var tg = thmGroups();
   var tnames = Object.keys(tg).sort(function(a, b){ return tg[b].cnt - tg[a].cnt || tg[b].maxLbc - tg[a].maxLbc; });
@@ -12641,6 +12775,184 @@ function emoRevDirsCore(dt, prev, prevPct, ztCodes, indOf, limit){
 }
 /* ==== REV-END ==== */
 
+/* ==== FC-BEGIN ==== */
+/* ============ 💧 资金延续分（2026-10-09 新增 · 挂在「定量化情绪温度」卡内） ============
+   用户命题四问 → 量化打分（0.6V + 0.4Q）：
+     ① 两市成交额连续 5 日 < 2万亿 → 存量博弈：板块只能快速轮动，重仓追高必被轮；
+     ② 板块成交额连续 3 日递增 → 真增量：可沿主线加仓；
+     ③ 量不增但家数高（涨停家数多而成交萎缩）→ 腾挪：降半仓预期；
+     ④ 两融余额（T+1）连续减 → 节前降杠杆防守：不开新仓。
+   资金延续分 = 0.6 × V（量能资金延续） + 0.4 × Q（情绪质量交叉）；档位 ≥80 强 / 50–79 良性 / <50 弱。
+   数据源（零新增请求）：
+     · 两市成交额序列 = wb_hist30_v1.amt（亿元；amt<=0 为历史脏值不计）+ 今日 D.amtToday（单位＝亿，禁止再换算）；
+     · 板块成交额序列 = 今日成交额榜最大行业板块的实时 f6（元）+ wb_secsnap 跨日快照（收盘后落盘）；
+       取「今日成交额最大的行业板块」为观察对象（≈主线板块的资金读数）；
+     · 两融 = 7.45 辅助指标手工录入（wb_aux_v1：两融成交占比 hist 序列 + 融资余额单日增减），
+       官方口径 T+1 披露，本卡如实按 T+1 读数，占比序列代替余额序列判「连续增减」（如实披露，不冒充）；
+     · 家数 / 炸板率 / 跌停 = 今日涨停池 + 炸板池 + 跌停池（D.zt / D.zb / D.dt / D.prev）。
+   缺数据 = 该项「待补」不参与计分，绝不用缺省值冒充（本台通则）。 */
+var FC_RULE = {
+  amtStock: 20000,          /* 两市成交额存量线（亿）：连续 5 日 < 此值 = 存量博弈 */
+  amtDays: 5,               /* ① 需要的连续天数 */
+  secDays: 3,               /* ② 板块成交额递增天数（含今日） */
+  ztHot: 45,                /* 「家数高」活跃线：涨停 ≥45 家（或较昨日增多）视作家数高 */
+  amtShrink: 0.95,          /* 缩量线（与 7.44 amtR 分档同口径：≤0.95 = 缩量） */
+  amtExpand: 1.05,          /* 放量线（>1.05 = 放量） */
+  mgDays: 3,                /* ④ 两融占比需 ≥3 个有效样本判「连续」 */
+  zbcGood: 25, zbcMid: 40,  /* 炸板率：<25% 积极 / 25–40% 分歧 / ≥40% 退潮（多源共识，与 REV 分档拐点同口径） */
+  dtHeavy: 10,              /* 跌停 ≥10 家 = 亏钱效应压制（⑥ DT_DEMOTE 同口径） */
+  wV: 0.6, wQ: 0.4,
+  band: [{ min: 80, k: 'strong', label: '强', tone: '#f0453a' },
+         { min: 50, k: 'ok',     label: '良性', tone: '#fbbf24' },
+         { min: -1, k: 'weak',   label: '弱', tone: '#10b981' }]
+};
+/* 纯函数：两市成交额序列（旧→新，亿）→ 存量博弈判定（须凑满 5 个有效样本才下结论） */
+function fcStockSignal(amts){
+  var v = (amts || []).filter(function(x){ return x != null && !isNaN(x) && x > 0; }).slice(-FC_RULE.amtDays);
+  var ok = v.length >= FC_RULE.amtDays;
+  return { n: v.length, ok: ok, vals: v, hit: ok && v.every(function(x){ return x < FC_RULE.amtStock; }) };
+}
+/* 纯函数：板块成交额序列（旧→新，元，含今日）→ 真增量判定（严格递增，相等不算） */
+function fcSec3Signal(series){
+  var v = series || [];
+  var ok = v.length >= FC_RULE.secDays && v.every(function(x){ return x != null && !isNaN(x) && x > 0; });
+  return { n: v.length, ok: ok, vals: v, hit: ok && v[0] < v[1] && v[1] < v[2] };
+}
+/* 纯函数：两融占比序列（旧→新）+ 融资余额单日增减（亿）→ 降杠杆 / 加杠杆判定。
+   「连续减」= 近 3 个有效样本严格递减，或当日融资余额单日净减（chg<0）佐证成立。 */
+function fcMarginSignal(rSeries, chg){
+  var v = (rSeries || []).filter(function(x){ return x != null && !isNaN(x); });
+  var tail = v.slice(-FC_RULE.mgDays);
+  var down = tail.length >= FC_RULE.mgDays && tail.every(function(x, i){ return i === 0 || x < tail[i - 1]; });
+  var up = tail.length >= FC_RULE.mgDays && tail.every(function(x, i){ return i === 0 || x > tail[i - 1]; });
+  return { n: v.length, ok: v.length > 0, hit: down || (chg != null && !isNaN(chg) && chg < 0),
+    up: up || (chg != null && !isNaN(chg) && chg > 0), vals: tail, chg: (chg == null || isNaN(chg)) ? null : chg };
+}
+/* 纯函数内核：四问判定 + 0.6V + 0.4Q。inp 缺的字段一律 null → 对应问「待补」，不参与计分。 */
+function fcCore(inp){
+  var R = FC_RULE, miss = [], warns = [];
+  var stock = fcStockSignal(inp.amts);
+  if(!stock.ok) miss.push('两市成交额5日序列（' + stock.n + '/' + R.amtDays + '）');
+  var sec3 = fcSec3Signal(inp.secSeries);
+  if(!sec3.ok) miss.push('板块成交额3日序列（' + sec3.n + '/' + R.secDays + '）');
+  var mg = fcMarginSignal(inp.mgSeries, inp.mgChg);
+  if(!mg.ok) miss.push('两融（7.45 手工录入，T+1）');
+  var zt = (inp.zt == null || isNaN(inp.zt)) ? null : inp.zt;
+  var ztPrev = (inp.ztPrev == null || isNaN(inp.ztPrev)) ? null : inp.ztPrev;
+  var amtR = (inp.amtR == null || isNaN(inp.amtR)) ? null : inp.amtR;
+  var zbc = (inp.zbc == null || isNaN(inp.zbc)) ? null : inp.zbc;
+  var dt = (inp.dt == null || isNaN(inp.dt)) ? null : inp.dt;
+  if(zt == null) miss.push('涨停家数');
+  if(amtR == null) miss.push('成交额环比');
+  if(zbc == null) miss.push('炸板率');
+  /* ③ 腾挪：量不增（缩量）但家数高。三态：true 命中 / false 数据在但不命中 / null 数据缺 */
+  var ztHigh = (zt != null) && (zt >= R.ztHot || (ztPrev != null && zt > ztPrev));
+  var shift = (amtR == null || zt == null) ? null : (amtR <= R.amtShrink && ztHigh);
+  var inc = sec3.ok && sec3.hit;
+  /* V（量能资金延续） */
+  var v = 50;
+  if(stock.hit){ v -= 18; warns.push('存量博弈：板块只能快速轮动，重仓追高必被轮'); }
+  if(inc){ v += 15; warns.push('真增量：可沿主线加仓'); }
+  if(mg.hit){ v -= 22; warns.push('两融/融资余额连续减＝降杠杆防守：不开新仓'); }
+  else if(mg.up){ v += 12; }
+  if(amtR != null){ if(amtR > R.amtExpand) v += 8; else if(amtR <= R.amtShrink) v -= 8; }
+  var V = Math.max(0, Math.min(100, v));
+  /* Q（情绪质量交叉） */
+  var q = 50;
+  if(zbc != null){ if(zbc < R.zbcGood) q += 15; else if(zbc < R.zbcMid) q += 5; else q -= 15; }
+  if(shift === true){ q -= 25; warns.push('量不增但家数高＝腾挪（高低切换）：降半仓预期'); }
+  else if(shift === false && amtR > R.amtExpand){ q += 15; }
+  if(dt != null && dt >= R.dtHeavy) q -= 10;
+  var Q = Math.max(0, Math.min(100, q));
+  var score = Math.round(R.wV * V + R.wQ * Q);
+  var band = R.band.filter(function(b){ return score >= b.min; })[0];
+  /* 数据不足：三大数据源缺 ≥2 或质量项缺 → 分数仅供参考（band 照常给出，渲染层灰显标注） */
+  var naN = (stock.ok ? 0 : 1) + (sec3.ok ? 0 : 1) + (mg.ok ? 0 : 1) + ((amtR != null && zbc != null) ? 0 : 1);
+  return { V: V, Q: Q, score: score, band: band, na: naN >= 2, naN: naN,
+    conds: [
+      { k: 'stock', icon: '🥀', name: '存量博弈', hit: stock.ok ? stock.hit : null, txt: '两市成交额连续 5 日 < 2万亿 → 板块只能快速轮动，重仓追高必被轮' },
+      { k: 'inc', icon: '🌊', name: '真增量', hit: sec3.ok ? inc : null, txt: '板块成交额连续 3 日递增 → 可沿主线加仓' },
+      { k: 'shift', icon: '🔁', name: '腾挪', hit: shift, txt: '量不增但家数高（涨停多而成交萎缩）→ 降半仓预期' },
+      { k: 'delev', icon: '🪫', name: '降杠杆防守', hit: mg.ok ? mg.hit : null, txt: '两融余额（T+1）连续减 → 节前降杠杆防守，不开新仓' }
+    ],
+    miss: miss, warns: warns,
+    det: { stock: stock, sec3: sec3, mg: mg, zt: zt, ztPrev: ztPrev, amtR: amtR, zbc: zbc, dt: dt } };
+}
+/* ==== FC-END ==== */
+/* ---------- 💧 资金延续分：取数组装 + 渲染（读 D / hist / secsnap / aux，零额外请求） ---------- */
+var FC_C = { seq: -1, r: null };
+function fcCtx(){
+  if(FC_C.seq === RENDER_SEQ) return FC_C.r;
+  FC_C.seq = RENDER_SEQ;
+  var r = null;
+  try{
+    /* 两市成交额序列（亿）：历史有效样本（amt>0，脏值 0 不计）+ 今日 */
+    var h = histLoad() || {};
+    var ks = Object.keys(h).filter(function(k){ return k < D.date; }).sort();
+    var histAmt = ks.map(function(k){ return h[k] && h[k].amt; }).filter(function(v){ return v != null && !isNaN(v) && v > 0; }).slice(-4);
+    var amts = histAmt.concat((D.amtToday != null && !isNaN(D.amtToday) && D.amtToday > 0) ? [D.amtToday] : []);
+    /* 板块成交额序列：今日成交额最大的行业板块（≈主线资金读数），今日实时 f6（元）+ 前两日 secsnap */
+    var secSeries = [], topName = null, topAmt = -1;
+    (D.secAmt || []).forEach(function(s){ var a = num(s.f6); if(a != null && a > topAmt){ topAmt = a; topName = s.f14; } });
+    if(topName){
+      secSeries.push(topAmt);
+      try{
+        var all = secSnapAll();
+        var ds = Object.keys(all).filter(function(d){ return d < D.date; }).sort().reverse().slice(0, 2);
+        ds.forEach(function(d){ var s = all[d] && all[d][topName]; if(s && s.amt > 0) secSeries.unshift(s.amt); });
+      }catch(e1){ }
+      while(secSeries.length < 3) secSeries.unshift(null);
+    }
+    /* 两融：7.45 手工录入（占比 hist 序列 + 融资余额单日增减） */
+    var aux = jdAuxGet();
+    var mgSeries = (Array.isArray(aux.hist) ? aux.hist : []).map(function(x){ return x && x.r; });
+    /* 家数 / 环比 / 炸板率 / 跌停 */
+    var zt = (D.zt || []).length, ztPrev = (D.prev || []).length || null;
+    var amtR = null;
+    if(D.amtToday != null && !isNaN(D.amtToday) && D.amtToday > 0 && histAmt.length >= 1 && histAmt[histAmt.length - 1] > 0) amtR = D.amtToday / histAmt[histAmt.length - 1];
+    var zbc = (zt + (D.zb || []).length) > 0 ? Math.round((D.zb || []).length / (zt + (D.zb || []).length) * 1000) / 10 : null;
+    r = fcCore({ amts: amts, secSeries: secSeries, mgSeries: mgSeries,
+      mgChg: (aux.marginChg != null ? aux.marginChg : null),
+      zt: zt, ztPrev: ztPrev, amtR: amtR, zbc: zbc, dt: (D.dt || []).length });
+    if(r && r.det) r.det.topName = topName;
+  }catch(e0){ r = null; }
+  FC_C.r = r;
+  return r;
+}
+function fcHtml(){
+  var r = fcCtx();
+  if(!r) return '';
+  var tone = r.na ? '#94a3b8' : r.band.tone;
+  var h = '<div class="rt-head" style="margin-top:14px"><h3>💧 资金延续分 · ' + r.score + '（' + esc(r.band.label) + (r.na ? ' · 数据不足' : '') + '）</h3>' +
+    '<span class="rt-sub">0.6 × V 量能资金延续（' + r.V + '） + 0.4 × Q 情绪质量交叉（' + r.Q + '）｜ ≥80 强 · 50–79 良性 · <50 弱' +
+    (r.na ? ' ｜ ⚠ ' + r.naN + ' 类数据源缺 → 分数仅供参考' : '') + '</span></div>';
+  h += '<div style="margin-top:6px">';
+  r.conds.forEach(function(c){
+    var tc, tag;
+    if(c.hit === true){ tc = '#f0453a'; tag = '<span class="tag tag-r">命中</span>'; }
+    else if(c.hit === false){ tc = '#94a3b8'; tag = '<span class="tag tag-b">未命中</span>'; }
+    else { tc = '#fbbf24'; tag = '<span class="tag tag-y">待补</span>'; }
+    h += '<div style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;font-size:12px">' +
+      '<span style="width:96px;flex:none;color:' + tc + ';font-weight:700">' + c.icon + ' ' + esc(c.name) + '</span>' +
+      '<span style="flex:none;padding-top:1px">' + tag + '</span>' +
+      '<span style="color:#cbd5e1">' + esc(c.txt) + '</span></div>';
+  });
+  h += '</div>';
+  if(r.warns.length){
+    h += '<div style="margin-top:6px;font-size:12px">' + r.warns.map(function(w){ return '<div class="yel" style="padding:2px 0">⚠ ' + esc(w) + '</div>'; }).join('') + '</div>';
+  }
+  h += '<div class="rt-foot" style="margin-top:8px"><b>口径：</b>两市成交额 = 7.19 快照 wb_hist30_v1（亿）+ 今日实时；' +
+    '板块成交额 = 今日成交额榜最大行业板块（' + esc(r.det.topName || '—') + '）实时 f6 + wb_secsnap 跨日快照（收盘后落盘）；' +
+    '两融 = 7.45 辅助指标<b>手工录入</b>（两融成交占比序列 ≥3 日判连续 + 融资余额单日增减佐证，官方口径 T+1）；' +
+    '炸板率 = 炸板 ÷（涨停＋炸板）；缩量/放量线 0.95/1.05 与 7.44 amtR 同口径。<br>' +
+    '<b>未接入：</b>两融余额官方逐日序列本机无免费稳定源 → 「连续增减」以手工录入的<b>两融成交占比序列</b>判定并如实披露，缺就是缺，绝不冒充。' +
+    (r.miss.length ? '<br><b>本次待补（对应问不计分）：</b>' + esc(r.miss.join('、')) : '') +
+    '</div>';
+  return h;
+}
+/* 盯盘渲染安全包装：异常只报一行，不拖垮「定量化情绪温度」卡 */
+function fcSafe(){ try { return fcHtml(); } catch(eFc){ return '<div class="rt-foot">资金延续分渲染失败：' + esc((eFc && eFc.message) || eFc) + '</div>'; } }
+
 /* ---------- ⑧ 反向情绪温度：取数包装（读 D.*，按渲染轮次缓存）+ 渲染 ---------- */
 var RT_C = { seq: -1, st: null, dirs: null, prevPct: null };
 function emoRevGet(){
@@ -12732,6 +13044,8 @@ function emoRevHtml(){
      纯函数内核 emoRevDragCore 保留（test_rev E 节单测 + 数据可复算能力不丢） ---- */
   /* ---- C. 今日领跌 / 反向方向：已于 2026-09-26 移入「实施盯盘 · 六、风险与操作」工作区 ----
      （emoRevDirsBlockHtml；读同一份 D.* 池子与 emotion()，走盯盘卡 #wtMods 同一条指纹重画通道） */
+  /* ---- D. 资金延续分（2026-10-09 新增）：四问判定 + 0.6V + 0.4Q（数据缺 = 待补不计分） ---- */
+  h += fcSafe();
   return h;
 }
 /* 今日领跌 / 反向方向（真实跌停 & 断板）—— 独立块函数（2026-09-26 自 ⑥ REV 块 C 段抽出搬入盯盘卡）。
@@ -14970,12 +15284,10 @@ function m74SetOpen(open){
 
 var DBG_RULE = {
   /* ── 闸门① 周期闸门：各阶段可否新开仓 ──
-     依据（全网多源一致）：退潮期「禁止一切高位接力、以防守为先」＝唯一周期硬否决（→ cut）。
-     ★ 2026-10-09 第67轮放宽（用户要求：避免过严始终无法开仓，风控改提示）：
-       加速(高潮)期「只止盈不进场」→ ok=null（hold，观察·不加仓，不再红标否决）；
-       分歧期「首次分歧＝核心买点」→ 可开仓 + 小仓提示；反包期 → 可小仓试错提示；
-       发酵期超 3 日 → 仓位打折提示。原 stageNoAdd=['accel','diverge'] / stageHoldOnly=['rebound']
-       两常量随之废止（保留注释防误恢复）。 */
+     ★ 2026-10-09 第68轮（用户要求）：硬否决全部取消 —— stageCut 仅保留作为「退潮」识别键，
+     命中后走「可买 + 风控提醒」（dbgGates g1.warn），不再产生任何 noadd/cut。
+     历史依据（全网多源一致）：退潮期「禁止一切高位接力」＝共识方法论，现仅作提醒呈现。
+     第67轮：加速(高潮)→观察、分歧→可开仓+小仓提示；反包→可小仓试错；发酵超3日→仓位打折。 */
   stageCut: ['ebb'],
   /* stageNoAdd: ['accel', 'diverge'],   ← 第67轮废止：accel→hold、diverge→open+小仓提示 */
   /* stageHoldOnly: ['rebound'],         ← 第67轮废止：rebound→open+小仓试错提示 */
@@ -15023,12 +15335,13 @@ var DBG_RULE = {
 var DBG_GRADE_ORDER = { S: 0, A: 1, B: 2, C: 3, D: 4 };
 function dbgGradeRank(g){ return DBG_GRADE_ORDER[g] == null ? 9 : DBG_GRADE_ORDER[g]; }
 
-/* 四档结论 */
+/* 两档结论（★ 2026-10-09 第68轮按用户要求：硬否决全部取消，改为提醒，使用者自行判断）
+   ——「买在分歧」：分歧/退潮/独苗等全部不再是禁买条件，风险由风控提示承担；
+   系统改为提示「买入的标的类型」（龙头 / 中军接力 / 低位首板等，见 dbgTargetOf）。
+   仅保留「休市」一档：非交易时段无法成交，是物理事实不是策略。 */
 var DBG_VERDICT = {
-  open:  { label: '✅ 可新开仓',      cls: 'dbg-v-open',  act: '条件满足：按 7.5 参考仓位介入；逐条核对风控提示（仓位打折项），试仓-加仓、破位即走' },
-  hold:  { label: '⚠️ 观察·不加仓',   cls: 'dbg-v-hold',  act: '条件未齐或时点未到：不新开仓；已有底仓可持，等下一个确认窗口' },
-  noadd: { label: '⛔ 禁止新开仓',    cls: 'dbg-v-noadd', act: '结构性风险：只观察，等结构修复' },
-  cut:   { label: '🔴 主动减仓',      cls: 'dbg-v-cut',   act: '结构转弱：分批降仓防守，勿用个股形态对抗板块周期' }
+  open:  { label: '✅ 可买',   cls: 'dbg-v-open',  act: '自行风控：逐条核对风控提示与仓位打折项，试仓-加仓、破位即走' },
+  hold:  { label: '⏸ 休市',   cls: 'dbg-v-hold',  act: '非交易时段无法成交：复盘模式，开盘后按提示执行' }
 };
 /* 闸门标记样式 */
 function dbgGateCls(o){ return o.bad ? 'dbg-g-bad' : (o.ok === true ? 'dbg-g-ok' : (o.ok === null ? 'dbg-g-mid' : 'dbg-g-no')); }
@@ -15178,19 +15491,20 @@ function dbgGates(g, r, ctx){
   var R = DBG_RULE, out = [];
   var stage = r ? r.key : null;
 
-  /* ① 周期闸门 */
+  /* ① 周期闸门（★ 第68轮：全部改提醒，不再硬否决） */
   var g1 = { k: 'stage', name: '①周期', ok: null, bad: false, det: '' };
   if(stage == null){
-    g1.txt = '阶段未判定（缺跨日样本）→ 保守视为不可介入'; g1.bad = true;
+    g1.warn = '阶段未判定（缺跨日样本）：结构未知，自行判断、建议轻仓';
+    g1.txt = '阶段未判定（缺跨日样本）→ 如实标注，不臆造';
   } else if(R.stageCut.indexOf(stage) >= 0){
-    g1.ok = false; g1.bad = true;
-    g1.txt = SECC_STAGES[stage].label + '期：题材瓦解 → 禁止新开仓，持仓主动分批降仓';
+    g1.ok = true;
+    g1.warn = SECC_STAGES[stage].label + '期：题材瓦解、接力亏钱效应扩散 → 仓位降到最低，仅限龙头/低位反包轻仓或观望（自行判断）';
+    g1.txt = SECC_STAGES[stage].label + '期：题材瓦解（风控提示见上，不再硬否决）';
   } else if(stage === 'accel'){
-    /* ★ 2026-10-09 第67轮放宽：加速(高潮)期从「⛔ 禁止新开仓」降为「⚠️ 观察·不加仓」——
-       三轮检索多源强共识「高潮只止盈不进场」仍不开新仓，但不再硬红标否决（已有底仓者可持有分批兑现）。 */
-    g1.ok = null;
-    g1.warn = '加速(高潮)期：多源共识「只止盈不进场」→ 本轮不新开仓，已有底仓分批兑现';
-    g1.txt = SECC_STAGES[stage].label + '期＝高潮段：整体只减不加（哪怕盘面依旧很强，次日大概率分歧）';
+    /* ★ 2026-10-09 第68轮：高潮期「只止盈不进场」共识也降为提醒（用户要求：自行判断） */
+    g1.ok = true;
+    g1.warn = '加速(高潮)期：多源共识「只止盈不进场」→ 仅限龙头持仓兑现，新开仓风险自担、仓位最低';
+    g1.txt = SECC_STAGES[stage].label + '期＝高潮段（哪怕盘面依旧很强，次日大概率分歧）';
   } else if(stage === 'diverge'){
     /* ★ 2026-10-09 第67轮放宽：分歧期从「⛔ 不新增高位仓位」改为「可开仓 + 风控提示」——
        三轮检索多源一致（头条·情绪周期龙头战法闭环 / 淘股吧·龙头战法 / 约投顾×2 / 雪球·分歧买入指南）：
@@ -15209,13 +15523,13 @@ function dbgGates(g, r, ctx){
   } else {
     /* ★ 2026-09-24（用户要求）：可介入阶段也要过「跨日趋势」——
        单日标签可能只是"从更高档掉下来的第一根"（如 发酵→分歧 的第一天，还挂在确认/发酵上）。
-       趋势 = 见顶回落 / 初现转弱 / 反复震荡 / 轨迹不足 → 不当"可开仓"处理，降为「〜 仅持有等待」。 */
+       ★ 第68轮：轨迹降档从「仅持有」改为「可买 + 提醒」。 */
     var tr1 = null;
     try{ tr1 = seccTrend(g.name, stage); }catch(e){ tr1 = null; }
     if(tr1 && tr1.downgrade){
-      g1.ok = null;
-      g1.txt = SECC_STAGES[stage].label + '期本属可介入，但对照近 5 日轨迹（' + tr1.trail + '）趋势为「' + tr1.label +
-        '」→ 降为「仅持有等待」：' + tr1.note;
+      g1.ok = true;
+      g1.warn = '近 5 日轨迹（' + tr1.trail + '）趋势为「' + tr1.label + '」→ ' + tr1.note + '：轻仓、快进快出';
+      g1.txt = SECC_STAGES[stage].label + '期本属可介入，但对照近 5 日轨迹（' + tr1.trail + '）趋势为「' + tr1.label + '」';
     } else {
       g1.ok = true;
       g1.txt = SECC_STAGES[stage].label + '期：处于可介入阶段（' + (r.streak > 1 ? '已 ' + r.streak + ' 日' : '本日新出') + '）' +
@@ -15242,8 +15556,10 @@ function dbgGates(g, r, ctx){
       : ((L.first >= 3) ? ('2 板高度无中位层，由后排首板 ' + L.first + ' 家接棒') : ('2 板高度无中位层，由连板 ' + L.multi + ' 家接力'));
     g2.txt = '完整梯队：高标 ' + L.tMax + '板 · ' + basis + ' ｜ ' + brTxt;
   } else if(L.st === 'orphan'){
-    g2.ok = false; g2.bad = true;
-    g2.txt = '高标独苗：' + L.tMax + ' 板却是全场唯一连板（连板仅 ' + L.multi + ' 家、无中位层）→ 独苗次日溢价低，高危形态 ｜ ' + lTxt + ' ｜ ' + brTxt;
+    /* ★ 2026-10-09 第68轮：独苗从硬否决改为提醒（用户要求：自行判断） */
+    g2.ok = true;
+    g2.warn = '高标独苗（' + L.tMax + ' 板全场唯一连板）：次日溢价低的高危形态 → 仅超短博弈、仓位最低';
+    g2.txt = '高标独苗：' + L.tMax + ' 板却是全场唯一连板（连板仅 ' + L.multi + ' 家、无中位层）→ 高危形态已提示 ｜ ' + lTxt + ' ｜ ' + brTxt;
   } else if(L.st === 'thin'){
     /* ★ 2026-10-09 第67轮放宽：thin 从「仅持有」改为「可开仓 + 仓位减半提示」——
        多源口径：接力打折的正确应对是降仓位，不是不参与（风控由提示承担）。 */
@@ -15251,8 +15567,10 @@ function dbgGates(g, r, ctx){
     g2.warn = '梯队偏单薄：接棒层不足（中位 ' + L.mid + ' 家 / 首板 ' + L.first + ' 家 / 连板 ' + L.multi + ' 家）→ 接力打折，仓位减半';
     g2.txt = '梯队偏单薄：有 ' + L.tMax + ' 板高度但接棒层不足 → 可参与但仓位减半 ｜ ' + brTxt;
   } else {
-    g2.ok = false; g2.bad = true;
-    g2.txt = '只有首板 ' + L.zt + ' 家、无连板高度 → 无梯队，典型日内脉冲（资金在"找方向"不是"做方向"）';
+    /* ★ 2026-10-09 第68轮：纯首板脉冲从硬否决改为提醒 */
+    g2.ok = true;
+    g2.warn = '只有首板 ' + L.zt + ' 家、无连板高度：典型日内脉冲（资金在"找方向"不是"做方向"）→ 一日游风险高，只做低位首板轻仓';
+    g2.txt = '只有首板 ' + L.zt + ' 家、无连板高度 → 纯首板脉冲已提示 ｜ ' + brTxt;
   }
   out.push(g2);
 
@@ -15262,8 +15580,10 @@ function dbgGates(g, r, ctx){
   var f62 = g.f62, f3 = g.f3;
   var g3 = { k: 'fund', name: '③量价', ok: null, bad: false, det: '' };
   if(f3 != null && f3 > 0 && f62 != null && f62 <= 0){
-    g3.ok = false; g3.bad = true;
-    g3.txt = '板块上涨却主力净流出 ' + (f62 / 1e8).toFixed(2) + '亿 → 拉高出货形态（一票否决）';
+    /* ★ 2026-10-09 第68轮：拉高出货从硬否决改为提醒（用户要求：自行判断） */
+    g3.ok = true;
+    g3.warn = '板块上涨却主力净流出 ' + (f62 / 1e8).toFixed(2) + '亿 → 拉高出货嫌疑：只轻仓或观望，防接最后一棒';
+    g3.txt = '板块上涨却主力净流出 ' + (f62 / 1e8).toFixed(2) + '亿（拉高出货嫌疑已提示）';
   } else if(f3 != null && f3 > 0 && vr != null && vr < 1){
     /* ★ 2026-10-09 第67轮放宽：缩量冲高从「一票否决」降为「仓位打折提示」——
        多源口径「缩量分歧可低吸、放量分歧要回避」，量比单独不构成否决；拉高出货（上涨净流出）仍保留硬否决。 */
@@ -15307,7 +15627,7 @@ function dbgGates(g, r, ctx){
       g4.txt = '午后交易时段：真主线资金回流验证中，正常执行';
     }
   } else {
-    g4.txt = '已收盘：非交易时段无法成交 → 复盘模式下档位最高为「观察·不加仓」';
+    g4.txt = '已收盘：非交易时段无法成交 → 休市档（开盘后按提示执行）';
   }
   if(bt && bt.n >= 3 && bt.late >= R.lateShareBad && g4.ok === true){
     g4.warn = '板块涨停股中 ' + (bt.late * 100).toFixed(0) + '% 在 14:00 后首封（n=' + bt.n + '）→ 尾盘偷袭为主，仓位减半、次日冲高兑现';
@@ -15326,8 +15646,10 @@ function dbgGates(g, r, ctx){
     g5.txt = '大盘情绪关键维度未就绪（缺 ' + ((ctx.e.missing && ctx.e.missing.length) ? ctx.e.missing.join('、') : '核心数据') +
       '）→ 总闸门本次不生效：不按当前读数「' + cyc + '」否决赛道（数据到位后自动重判，勿把"未取到"当"大盘走弱"）';
   } else if(R.mktBlock.indexOf(cyc) >= 0){
-    g5.ok = false; g5.bad = true;
-    g5.txt = '大盘处于「' + cyc + '」期：主线板块持续性本身就差 → 降低整体仓位，原则上不开新仓';
+    /* ★ 2026-10-09 第68轮：大盘退潮/冰点从总硬否决改为提醒（用户要求：自行判断） */
+    g5.ok = true;
+    g5.warn = '大盘处于「' + cyc + '」期：主线板块持续性本身就差 → 整体仓位降到最低、原则上观望（自行判断）';
+    g5.txt = '大盘处于「' + cyc + '」期（风控提示见上，不再硬否决）';
   } else if(cyc === '分歧' || cyc === '高潮'){
     g5.ok = null; g5.txt = '大盘「' + cyc + '」期：容错率下降，只做最强主线、仓位减半；板块周期与大盘取更严者';
     g5.warn = '大盘「' + cyc + '」期：仓位减半，只做最强主线';
@@ -15446,28 +15768,28 @@ function dbgPersist(g, r, ctx){
   return { score: score, band: band, cls: cls, dims: dims };
 }
 
-/* ── 结论判定：风险优先的有序判定（先否决 → 再降级 → 最后放行）──
-   纪律顺序与策略原文一致：大盘总闸门 → 板块周期 → 量价一票否决 → 梯队结构 →
-   持续性下限 → 时点窗（买点后置）。任一环节不满足即停在对应档位，不放行。 */
+/* ── 买入标的类型提示（★ 2026-10-09 第68轮，用户要求）──
+   硬否决取消后，系统不再替用户决定「能不能买」，改为提示「买什么类型的标的」。
+   口径＝梯队结构推导（dbgLadderState）：独苗高标 / 高标龙头 / 龙头 / 中军接力 / 低位补涨 / 低位首板。
+   阶段语义（分歧低吸 / 高潮兑现等）由风控提示承载，不混入类型。 */
+function dbgTargetOf(g, r){
+  var L = dbgLadderState(r, g);
+  if(L.st === 'orphan') return '独苗高标（仅超短）';
+  if(L.tMax >= 4) return '高标龙头';
+  if(L.tMax === 3) return '龙头';
+  if(L.tMax === 2) return (L.mid >= 1) ? '中军接力' : '低位补涨';
+  return '低位首板';
+}
+
+/* ── 结论判定：★ 2026-10-09 第68轮（用户要求）硬否决全部取消、一律改提醒 ──
+   原五类结构性硬否决（大盘退潮/冰点、板块退潮/未判定、拉高出货、独苗/纯首板脉冲、
+   持续性 <46）全部降为风控提示（见 dbgGates 各闸门 g.warn + dbgRows warns 汇总），
+   使用者自行判断；加速(高潮)期共识「只止盈不进场」也降为提示。
+   结论只余两档：休市 hold（非交易时段无法成交，物理事实） / 可买 open。 */
 function dbgVerdictOf(gates, pv, ctx){
   var k = {};
   gates.forEach(function(x){ k[x.k] = x; });
-  /* ★ 2026-10-09 第67轮放宽（策略重制，三轮检索交叉核验）：
-     硬否决收敛为「真结构性风险」五类 —— 大盘退潮/冰点、板块退潮/未判定、拉高出货、
-     独苗/纯首板脉冲、持续性 <46；分歧/反包/梯队单薄/缩量冲高/持续性偏弱等一律
-     改为「可开仓 + 风控提示」（提示见 dbgRows 的 warns，渲染在 7.5B 合并列）。
-     加速(高潮)期按多源强共识「只止盈不进场」保持不开新仓（hold）。 */
-  if(dbgMktReady(ctx.e) && DBG_RULE.mktBlock.indexOf(ctx.e.cyc) >= 0) return 'noadd';
-  if(k.stage.bad){                                                        /* ① 板块周期：退潮 / 未判定 */
-    if(ctx.stageKey === 'ebb') return 'cut';
-    return 'noadd';
-  }
-  if(k.fund.bad) return 'noadd';                                          /* ③ 拉高出货（上涨净流出） */
-  if(k.ladder.bad) return 'noadd';                                        /* ② 独苗 / 仅首板脉冲 */
-  if(pv.score < DBG_RULE.bandWeak) return 'noadd';                        /* 持续性过低 */
-  if(k.time.ok !== true) return 'hold';                                   /* ④ 非交易时段（盘前/午休/收盘后） */
-  if(k.stage.ok === null) return 'hold';                                  /* 加速(高潮)期 / 轨迹降档：只止盈不进场 */
-  if(ctx.stageKey === 'accel') return 'hold';                             /* 双保险：高潮共识不开新仓 */
+  if(k.time && k.time.ok !== true) return 'hold';   /* 盘前/午休/收盘后：无法成交 */
   return 'open';
 }
 
@@ -15555,6 +15877,274 @@ function dbgRecord(gs){
 }
 /* ==== DBG-END ==== */
 
+/* ==== SW-BEGIN ==== */
+/* ── 🌙 甜蜜窗口 · 逐日决策树（2026-10-09 第70轮 · 用户文章落地，7.5B 只写结论不写逻辑）──
+   日历（交易日序号，锚 = 确认日）：
+     第1日 确认日：联动≥3家 + 三板以上高度 + 1进2晋级率>30% + 板块成交额启动放量（≥5日均量1.5倍）
+            → 升级「主线候选」，当日只建底仓（≤计划仓位一半），不追高潮。
+     第2日 观察日：涨停家数 ≥前日60% 且封单均值不降 = 延续；<50% = 分化（持有不加仓）；<30% = 熄火；
+            昨日≥5家涨停方向次日无三板 → 不接力不隔夜。
+     第3日 分歧日：正常出现第一次缩量分歧（量缩至启动量0.8倍以下）。缩量回踩三条件
+            （①上升趋势未坏 ②缩量 ③不破启动日低点/MA20）齐备 = 健康分歧续持；缩量但破位 = 危险分歧降仓。
+     第4日：回踩缩量（≤启动量0.5倍）观察第三拍；否则窗口内持有。
+     第5日（及顺延后每第5日）收盘前重确认：①新催化续杯【不可量化→人工】②第三拍再放量（≥首轮峰值1.2倍）
+            ③龙头换手板续板非一字。②③齐过 = 顺延5日；未过 = 到期降档，只持不加。
+     第6日起未重确认 = 窗口失效：底仓观察、新开仓与加仓冻结 —— 不是「继续持有」。
+   退潮六信号（任一触发即降级，纪律优先级高于窗口日历）：
+     ①龙头断板且次日不反包→移出主线池 ②板块炸板率>40%（≥50%抛压沉重） ③晋级率<15%（<10%严重熄火；
+     从>50%单日跌破30%→只卖不买） ④放量滞涨（量较10日前放大>20%而10日累计涨幅<3%）→只减不加两周
+     ⑤家数较峰值腰斩且无新首板→续持不加仓 ⑥高潮（前日情绪≥80）次日板块核心股集体低开≥3pp→兑现。
+   附加纪律：2进3全部绿盘 = 接力生态死亡，第3日起不接中位飞刀。
+   ── 口径与诚实披露（改码前必读）──
+   · 板块指数无稳定日K源（push2his 族本机不可达）→ 三条件之①③以「板块龙头股（当日最高连板）」日K为
+     趋势锚（用户文章自述：看板块用等权口径/个股中位数，不看加权指数；龙头即板块最强股）。K线未就绪
+     → 结论「待验」，不冒充。
+   · 「①新催化续杯」不可量化 → 顺延结论即视为「②③已过、①请人工确认」，绝不替人工点头。
+   · 量能 = 板块成交额（收盘口径 wb_secsnap 优先，盘中 AF 资金榜实时 f6 兜底，单位元）；5日均量取
+     确认日前 5 个交易日有效样本（<4 → 量能待补，不确认新窗口）。
+   · 启动放量上限 2.0 倍不拦（第67/68轮纪律：只提醒不否决），>2.0 附「超常放量」提示。
+   · 数据缺口一律「待补/待验」留白，不编数。纯函数段：禁止 document / localStorage / lsGet / D.* 。 */
+var SW_RULE = {
+  volLo: 1.5, volHiSoft: 2.0,      /* 启动放量 vs 5日均量：≥1.5 确认；>2.0 提示（不拦） */
+  promMin: 0.30, hiMin: 3, linkMin: 3, maSamples: 4, maSamplesMax: 5,
+  cont60: 0.60, cont50: 0.50, cont30: 0.30,
+  shrHi: 0.8, shrLo: 0.6, deepShr: 0.5,
+  reVolLo: 1.2, reVolHi: 1.5, winLen: 5,
+  zbc40: 40, zbc50: 50, promo15: 15, promo10: 10, promHi: 50, promCrash: 30,
+  ztBigN: 5, stagAmt: 1.2, stagPct: 3, gap3: -3, emoHot: 80, peakCutMin: 6, zbcMinN: 5
+};
+function swRound1(x){ return Math.round(x * 10) / 10; }
+/* 1进2晋级率（板块口径）：prevRows＝该板块昨日涨停行（已按板块过滤），ztMap＝今日涨停池按 code 索引 */
+function swPromoOf(prevRows, ztMap){
+  var n1 = 0, p = 0, i, r, z;
+  for(i = 0; i < prevRows.length; i++){
+    r = prevRows[i];
+    if(!r || !r.c || (r.lbc || 1) !== 1) continue;
+    n1++;
+    z = ztMap[r.c];
+    if(z && (z.lbc || 1) >= 2) p++;
+  }
+  return { n1: n1, p: p, rate: n1 ? p / n1 : null };
+}
+/* 第2日广度分档：≥60% 延续 / <30% 熄火 / 其余（含 50~60% 从严）分化 */
+function swBand(ztN, ztPrevN){
+  if(ztN == null || !ztPrevN) return null;
+  var r = ztN / ztPrevN;
+  if(r >= SW_RULE.cont60) return 'cont';
+  if(r < SW_RULE.cont30) return 'die';
+  return 'diverge';
+}
+/* 确认日 = 第几个交易日（dates 升序且含今日；conf 早于样本首日 → 超窗 99） */
+function swDayIdx(conf, dates){
+  var i = dates.indexOf(conf);
+  if(i < 0) return (dates.length && conf < dates[0]) ? 99 : 1;
+  return dates.length - i;
+}
+/* 龙头K线趋势锚（三条件之①③）：bars=[[d,c,l],...]（升序），conf=确认日 yyyymmdd */
+function swAnchorOf(bars, conf){
+  if(!bars || bars.length < 21) return { na: true };
+  var i, cs = [], n = bars.length;
+  for(i = 0; i < n; i++) cs.push(bars[i][1]);
+  function avg(a){ var s = 0; for(var j = 0; j < a.length; j++) s += a[j]; return s / a.length; }
+  var ma20 = avg(cs.slice(-20)), ma20p = avg(cs.slice(-21, -1));
+  var ma60 = n >= 60 ? avg(cs.slice(-60)) : null;
+  var close = cs[n - 1], lowConf = null;
+  for(i = 0; i < n; i++){ if(String(bars[i][0]).replace(/-/g, '') === String(conf)) lowConf = bars[i][2]; }
+  return { na: false, ok: (ma60 != null && close > ma60) || ma20 > ma20p,
+    brk: close < ma20 || (lowConf != null && close < lowConf) };
+}
+/* 决策树（纯函数）。o 关键字段：day/expire/renewed/band/sealR/amtR/peakR/no3bar/trend/leadRe/
+   zbc/zbcN/promo/promoN/promoPrev/firstN/peakZt/ztN/stag/peakCut/gap3/twoThree/dead/deadWhy */
+function swTree(o){
+  var w = [];
+  if(o.twoThree) w.push('2进3全绿盘 · 接力生态死亡 · 不接中位飞刀');
+  if(o.zbc != null && o.zbcN >= SW_RULE.zbcMinN){
+    if(o.zbc >= SW_RULE.zbc50) w.push('板块炸板率 ' + swRound1(o.zbc) + '%≥50% · 抛压沉重');
+    else if(o.zbc >= SW_RULE.zbc40) w.push('板块炸板率 ' + swRound1(o.zbc) + '%>40% · 弱延续');
+  }
+  if(o.promo != null && o.promoN >= 3){
+    if(o.promo < SW_RULE.promo10 / 100) w.push('晋级率 ' + swRound1(o.promo * 100) + '%<10% · 严重熄火');
+    else if(o.promo < SW_RULE.promo15 / 100) w.push('晋级率 ' + swRound1(o.promo * 100) + '%<15% · 降仓一档');
+    if(o.promoPrev != null && o.promoPrev > SW_RULE.promHi / 100 && o.promo < SW_RULE.promCrash / 100)
+      w.push('晋级率 ' + swRound1(o.promoPrev * 100) + '%→' + swRound1(o.promo * 100) + '% 单日跌破30% · 只卖不买');
+  }
+  if(o.stag) w.push('放量滞涨 · 只减不加（两周不接回）');
+  if(o.peakCut) w.push('家数较峰值腰斩且无新首板 · 续持不加仓');
+  if(o.gap3) w.push('高潮次日核心股集体低开>3点 · 兑现');
+  if(o.dead) return { txt: o.deadWhy || '龙头断板不反包 · 移出主线池', tone: 'dn', warns: w, dead: true, expire: false, renewed: false };
+  var txt, tone, renewed = false;
+  if(o.expire){ txt = '窗口失效 · 底仓观察 · 新仓冻结'; tone = 'yel'; }
+  else if(o.day <= 1){ txt = '第1日 · 确认 · 主线候选 · 只建底仓'; tone = 'up'; }
+  else if(o.day === 2){
+    if(o.no3bar){ txt = '第2日 · 无三板 · 不接力不隔夜'; tone = 'yel'; }
+    else if(o.band === 'cont'){
+      txt = (o.sealR != null && o.sealR < 1) ? '第2日 · 家数延续封单转弱 · 持有' : '第2日 · 延续 · 持有'; tone = 'up';
+    }
+    else if(o.band === 'diverge'){ txt = '第2日 · 分化 · 持有不加仓'; tone = 'yel'; }
+    else if(o.band === 'die'){ txt = '第2日 · 熄火 · 离场'; tone = 'dn'; }
+    else { txt = '第2日 · 广度待补'; tone = 'flat'; }
+  }
+  else if(o.day === 3){
+    if(o.amtR == null){ txt = '第3日 · 量能待补'; tone = 'flat'; }
+    else if(o.amtR <= SW_RULE.shrHi){
+      var t3 = o.trend || { na: true };
+      if(!t3.na && t3.ok === true && t3.brk === false){ txt = '第3日 · 健康分歧 · 续持（买在分歧）'; tone = 'up'; }
+      else if(!t3.na && (t3.brk === true || t3.ok === false)){ txt = '第3日 · 危险分歧 · 降仓'; tone = 'yel'; }
+      else { txt = '第3日 · 缩量分歧 · 趋势/破位待验'; tone = 'flat'; }
+    }
+    else { txt = '第3日 · 分歧未现（未缩量）· 持有'; tone = 'flat'; }
+  }
+  else if(o.day === 4){
+    if(o.amtR != null && o.amtR <= SW_RULE.deepShr){ txt = '第4日 · 回踩缩量 · 观察第三拍'; tone = 'flat'; }
+    else { txt = '第4日 · 窗口内 · 持有'; tone = 'flat'; }
+  }
+  else {
+    var due = (o.day % SW_RULE.winLen) === 0;
+    if(due){
+      var reV = o.peakR != null && o.peakR >= SW_RULE.reVolLo;
+      if(reV && o.leadRe){
+        if(o.peakR > SW_RULE.reVolHi) w.push('第三拍量达峰值 ' + swRound1(o.peakR) + ' 倍（>1.5）· 警惕过热');
+        txt = '第' + o.day + '日 · 重确认过（再放量+龙头续板）· 顺延'; tone = 'up'; renewed = true;
+      } else { txt = '第' + o.day + '日 · 重确认未过 · 降档只持不加'; tone = 'yel'; }
+    } else { txt = '第' + o.day + '日 · 顺延窗口 · 持有'; tone = 'flat'; }
+  }
+  return { txt: txt, tone: tone, warns: w, dead: false, expire: false, renewed: renewed };
+}
+/* ==== SW-END ==== */
+
+/* ==== PT-BEGIN ==== */
+/* ── 🪜 晋级率分台阶 × 梯队完整性 × 真普涨/假普涨（2026-10-09 第71轮 · 用户文章落地）──
+   口径（用户原话，改码前必读）：
+   · 晋级率 = 前一日涨停个股次日继续涨停的概率，**按板位分层**；梯队延续 = 高/中/低各板位是否都有活口。
+   · 每日收盘后必须「分台阶」拆晋级率，禁止用全市场总晋级率代替 —— ③/⑥ 的 promoPct（分母=昨连板）
+     就是「总晋级率」，与本轮分台阶是**两把尺**（同名不同义），并存不互替（与 SKILL §2.6 口径注一致）。
+   · 分台阶基准（连板网 990 个交易日统计）：1进2 16.2% / 2进3 33.8% / 3进4 46.2% / 4板+ 50.8%。
+   · 跨日门槛：连续两日 ≥30% = 接力链健康、板块可持续；单日 >30% 次日跌回 <20% = 接力断裂。
+   · 实战：1进2 实测 <15% = 退潮或无主线；<20% = 首板多为套利、次日易闷杀。
+   · 梯队完整性：高（≥5板）/中（3-4板）/低（首板-2板）三层都有板 = 梯队完整；
+     只剩最高板独撑、中位断档 = 中军断档；全是首板无空间龙 = 高度断层。
+   · 真普涨/假普涨（次日收盘后逐项核对）：①家数延续比 ≥60% ②后排同步（非只龙头独涨）
+     ③首板+连板环节齐 ④20cm 与 10cm 同步 ⑤有空间龙高度（非全首板堆广度）。
+     命中 ≥4/有效项 = 真普涨；≤1 = 假普涨；其间 = 普涨分歧；有效项 <3 = 不出结论（留白）。
+   ── 诚实披露 ──
+   · 板块级样本小（昨日该板位可能仅 1-2 只）→ 只给「p/n」不冒充比率，n<2 不给健康判定；
+   · 「后排同步」用昨日涨停股（剔除最高板）今日平均涨幅近似（D.prevQ 口径），缺行情 → 留白；
+   · 「封单均值不降」（第2日口径）东财池无稳定封单额历史 → 不判，不编。
+   纯函数段：禁止 document / localStorage / lsGet / D.*。 */
+var PT_RULE = {
+  base: { '1进2': 16.2, '2进3': 33.8, '3进4': 46.2, '4板+': 50.8 },  /* 分台阶历史基准 %（连板网990日） */
+  cross: 30, crossBack: 20,       /* 跨日门槛：连续两日 ≥30 健康；单日>30 次日<20 = 断裂 */
+  t1Bad: 15, t1Warn: 20,          /* 1进2 实战线 */
+  baseCut: 0.6,                   /* 2进3/3进4/4板+：低于基准 6 成 = 不达标 */
+  cont60: 0.60,                   /* 家数延续比 ≥60% */
+  backFlat: -2,                   /* 后排同步线：非最高板昨日股今日均涨 > −2pp = 同步 */
+  hiBo: 5,                        /* 高板层下限（≥5板） */
+  minValid: 3                     /* 普涨结论最少有效项 */
+};
+/* 分台阶晋级率：prevRows=昨日涨停行数组（行带 lbc），ztMap=今日涨停池 {code:{lbc}}。
+   台阶按「昨日板位」划分：lbc=1→1进2（今日≥2板）；=2→2进3；=3→3进4；≥4→4板+（今日续板）。 */
+function ptPromoTiers(prevRows, ztMap){
+  var defs = [[1, '1进2', 2], [2, '2进3', 3], [3, '3进4', 4], [4, '4板+', 5]];
+  var out = [];
+  for(var i = 0; i < defs.length; i++){
+    var d = defs[i], n = 0, p = 0;
+    for(var j = 0; j < prevRows.length; j++){
+      var r = prevRows[j];
+      if(!r || !r.c) continue;
+      var lb = r.lbc || 1;
+      if(d[0] < 4 ? lb !== d[0] : lb < 4) continue;
+      n++;
+      var z = ztMap[r.c];
+      if(z && (z.lbc || 1) >= d[2]) p++;
+    }
+    out.push({ k: d[1], n: n, p: p, rate: n ? p / n : null });
+  }
+  return out;
+}
+/* 单台阶健康判定 → {tone, txt}；无样本返回 null（缺失≠0，不冒充） */
+function ptTierHealth(t){
+  if(!t || !t.n || t.rate == null) return null;
+  var pct = Math.round(t.rate * 1000) / 10;
+  if(t.k === '1进2'){
+    if(pct < PT_RULE.t1Bad) return { tone: 'dn', txt: '退潮/无主线' };
+    if(pct < PT_RULE.t1Warn) return { tone: 'yel', txt: '首板套利·易闷杀' };
+    if(pct >= PT_RULE.cross) return { tone: 'up', txt: '健康' };
+  } else {
+    var base = PT_RULE.base[t.k];
+    if(pct < base * PT_RULE.baseCut) return { tone: 'dn', txt: '不达标（<基准' + Math.round(base * PT_RULE.baseCut) + '%）' };
+    if(pct >= PT_RULE.cross) return { tone: 'up', txt: '健康' };
+  }
+  return { tone: 'flat', txt: '中性' };
+}
+/* 跨日接力链判定（1进2 主指标）：cur/prev = 0-1 晋级率或 null。
+   连续两日 ≥30% → 健康；昨日 >30% 今日 <20% → 断裂；其余 null（首日无比对 → 留白）。 */
+function ptCrossJudge(cur, prev){
+  if(cur == null) return null;
+  var c = cur * 100;
+  if(prev != null){
+    var p = prev * 100;
+    if(p > PT_RULE.cross && c < PT_RULE.crossBack) return { tone: 'dn', txt: '接力断裂（' + Math.round(p) + '%→' + Math.round(c) + '%）' };
+    if(p >= PT_RULE.cross && c >= PT_RULE.cross) return { tone: 'up', txt: '连续两日≥30% · 接力链健康' };
+  }
+  if(c >= PT_RULE.cross) return { tone: 'up', txt: '≥30%' };
+  if(c < PT_RULE.crossBack) return { tone: 'dn', txt: '<20%' };
+  return null;
+}
+/* 梯队完整性：rows=涨停行数组。低(1-2板)/中(3-4板)/高(≥5板)三层活口统计。 */
+function ptLadderIntegrity(rows){
+  var low = 0, mid = 0, hi = 0, maxL = 0, i;
+  for(i = 0; i < rows.length; i++){
+    var l = (rows[i] && rows[i].lbc) || 1;
+    if(l > maxL) maxL = l;
+    if(l >= PT_RULE.hiBo) hi++;
+    else if(l >= 3) mid++;
+    else low++;
+  }
+  var k, label, tone;
+  if(maxL <= 2){ k = 'nofloor'; label = '高度断层 · 全是首板无空间龙'; tone = 'dn'; }
+  else if(hi > 0 && mid === 0){ k = 'midgap'; label = '中军断档 · 只剩最高板独撑'; tone = 'yel'; }
+  else if(hi > 0 && mid > 0 && low > 0){ k = 'full'; label = '梯队完整 · 三层都有活口'; tone = 'up'; }
+  else if(hi === 0 && mid > 0){ k = 'nohi'; label = '缺高板 · 中低层有活口'; tone = 'flat'; }
+  else { k = 'thin'; label = '梯队单薄'; tone = 'flat'; }
+  return { k: k, label: label, tone: tone, low: low, mid: mid, hi: hi, maxLbc: maxL };
+}
+/* 板块普涨核对（纯函数）。o = {
+     prevN 昨日板块涨停家数, todayN 今日家数,
+     promo 板块内昨日涨停今日续板率(0-1|null), promoN 样本,
+     topLbc 最高板, firstN 首板家数, lianN 连板家数,
+     backAvg 非最高板昨日股今日均涨(pp|null), n20 今日20cm家数, n10 今日10cm家数 }
+   返回 { k:'true'/'fake'/'mid'/'na', label, tone, items:[{k,hit,txt}] } */
+function ptBroadJudge(o){
+  var items = [];
+  if(o.prevN > 0 && o.todayN != null){
+    var r = o.todayN / o.prevN;
+    items.push({ k: '家数延续', hit: r >= PT_RULE.cont60, txt: Math.round(r * 100) + '%' });
+  } else items.push({ k: '家数延续', hit: null, txt: '—' });
+  if(o.backAvg != null){
+    items.push({ k: '后排同步', hit: o.backAvg > PT_RULE.backFlat, txt: (o.backAvg > 0 ? '+' : '') + o.backAvg.toFixed(1) + 'pp' });
+  } else items.push({ k: '后排同步', hit: null, txt: '—' });
+  if(o.todayN != null && o.todayN > 0){
+    items.push({ k: '环节齐', hit: o.firstN > 0 && o.lianN > 0, txt: o.firstN + '首+' + o.lianN + '连' });
+  } else items.push({ k: '环节齐', hit: null, txt: '—' });
+  if(o.n20 != null && o.n10 != null && (o.n20 + o.n10) > 0){
+    items.push({ k: '20/10同步', hit: !(o.n20 > 0 && o.n10 === 0), txt: o.n20 + '+' + o.n10 });
+  } else items.push({ k: '20/10同步', hit: null, txt: '—' });
+  if(o.topLbc != null && o.topLbc > 0){
+    items.push({ k: '空间龙', hit: o.topLbc >= 3, txt: o.topLbc + '板' });
+  } else items.push({ k: '空间龙', hit: null, txt: '—' });
+  var valid = items.filter(function(it){ return it.hit != null; });
+  if(valid.length < PT_RULE.minValid) return { k: 'na', label: '', tone: '', items: items };
+  var yes = valid.filter(function(it){ return it.hit; }).length;
+  if(yes >= 4) return { k: 'true', label: '真普涨', tone: 'up', items: items };
+  if(yes <= 1) return { k: 'fake', label: '假普涨', tone: 'dn', items: items };
+  return { k: 'mid', label: '普涨分歧', tone: 'yel', items: items };
+}
+/* 悬停明细（纯函数）：items → 一行文字 */
+function ptBroadTip(items){
+  return items.map(function(it){ return it.k + (it.hit == null ? '：—' : (it.hit ? ' ✓' : ' ✗') + '（' + it.txt + '）'); }).join('　');
+}
+/* ==== PT-END ==== */
+
 /* ---------------- 以下为渲染层（取数 / DOM），不参与纯函数单测 ---------------- */
 /* 锚点读写（进场时刻，用于"买入后漂移监控"） */
 function dbgAnchorGet(){ var v = lsGet(DBG_RULE.anchorKey, DBG_RULE.anchorDefault); return DBG_RULE.anchors.indexOf(v) >= 0 ? v : DBG_RULE.anchorDefault; }
@@ -15573,14 +16163,17 @@ function dbgRows(gs, ctx){
     var pv = dbgPersist(g, r, ctx);
     var vk = dbgVerdictOf(gates, pv, { e: ctx.e, stageKey: r ? r.key : null });
     /* ★ 2026-10-09 第67轮：放行不再等于无条件 —— open 档位必须附带风控提示（warns），
-       由各闸门的 g.warn + 持续性偏弱 + 大盘分歧/高潮 汇总而成，渲染在 7.5B 合并列。 */
+       由各闸门的 g.warn + 持续性偏弱 + 大盘分歧/高潮 汇总而成，渲染在 7.5B 合并列。
+       ★ 第68轮：原硬否决五类全部降级为 warn 后，也在这里统一收集（gates 已带 warn）。 */
     var warns = [];
     gates.forEach(function(t){ if(t.warn) warns.push({ k: t.k, name: t.name, txt: t.warn }); });
-    if(vk === 'open' && pv.score < DBG_RULE.bandMid)
+    if(pv.score < DBG_RULE.bandWeak)
+      warns.push({ k: 'pv', name: '持续性', txt: '持续性 ' + pv.score + ' 分（<46 易断）：轻仓或观望，自行判断' });
+    else if(pv.score < DBG_RULE.bandMid)
       warns.push({ k: 'pv', name: '持续性', txt: '持续性 ' + pv.score + ' 分（<62 偏弱）：小仓试错、快进快出、破位即走' });
     if(ctx.e && dbgMktReady(ctx.e) && (ctx.e.cyc === '分歧' || ctx.e.cyc === '高潮'))
       warns.push({ k: 'mkt', name: '⑤大盘', txt: '大盘「' + ctx.e.cyc + '」期：仓位减半，只做最强主线' });
-    return { g: g, r: r, gates: gates, pv: pv, vk: vk, warns: warns, drift: dbgDrift(g, r, ctx) };
+    return { g: g, r: r, gates: gates, pv: pv, vk: vk, tgt: dbgTargetOf(g, r), warns: warns, drift: dbgDrift(g, r, ctx) };
   });
 }
 /* ── 同轮缓存：五闸门 / 持续性 / 档位一行数据（2026-09-24 新增）──
@@ -15610,8 +16203,6 @@ function dbgRowsCached(gs){
 function dbgBannerHtml(rows, ctx){
   var openCnt = rows.filter(function(x){ return x.vk === 'open'; }).length;
   var holdCnt = rows.filter(function(x){ return x.vk === 'hold'; }).length;
-  var blockCnt = rows.filter(function(x){ return x.vk === 'noadd'; }).length;
-  var cutCnt = rows.filter(function(x){ return x.vk === 'cut'; }).length;
   var redDrift = rows.filter(function(x){ return x.drift.has && x.drift.level === 'red'; });
   var yelDrift = rows.filter(function(x){ return x.drift.has && x.drift.level === 'yel'; });
   var ph = winPhase(ctx.hm);
@@ -15622,14 +16213,14 @@ function dbgBannerHtml(rows, ctx){
     '<span class="dbg-iron-t">铁律：板块是动态轮动的，强势只是一个瞬时状态 —— 不要把早盘热度当成持续性。</span>' +
     '<span class="dbg-iron-t2">先定板块生命周期 → 再等午后资金回流确认 → 板块周期优先级高于个股 MA5/dev 指标。</span>' +
     '<div class="dbg-iron-l">' +
-      '① <b>买入前</b>：五闸门逐条过（周期 / 梯队 / 量价 / 时点 / 大盘）。★ 2026-10-09 第67轮按用户要求放宽：硬否决收敛为五类结构性风险（大盘退潮/冰点、板块退潮/未判定、拉高出货、独苗/纯首板脉冲、持续性&lt;46），<u>其余一律「可开仓 + 风控提示」</u>；加速（高潮）期按多源共识仍不开新仓（观察·不加仓）；全交易时段均可介入，分时段给风控提示；<br>' +
+      '① <b>买入前</b>：五闸门逐条看（周期 / 梯队 / 量价 / 时点 / 大盘）。★ 2026-10-09 第68轮按用户要求：<u>硬否决全部取消、一律改为风控提醒</u>（含大盘退潮/冰点、板块退潮/未判定、拉高出货、独苗/纯首板脉冲、持续性&lt;46），能不能买由使用者自行判断；系统改为提示<b>买入的标的类型</b>（龙头 / 中军接力 / 低位首板等）；全交易时段均可介入，分时段给风控提示；<br>' +
       '② <b>买入前</b>：看「持续性评分」而不只看当下强度 —— 无梯队、无中军、无量能递增的强势多半是一日游；<br>' +
       '③ <b>买入后</b>：每天（盘中也按半小时）复核板块评级与阶段，<u>一旦转分歧/退潮就主动分批降仓</u>，不管个股 dev 多好看。' +
     '</div>' +
   '</div>' +
-  '<div class="stgbar ' + (openCnt > 0 ? 'safe' : (cutCnt > 0 ? '' : 'warn')) + '">' +
+  '<div class="stgbar safe">' +
     '<div class="sg" style="flex:1.1"><div class="l">当前时段（' + ctx.hm + '）</div><div class="v" style="font-size:15px">' + ph.name + '</div><div class="d">' + ph.txt + '</div></div>' +
-    '<div class="sg"><div class="l">可新开仓板块</div><div class="v ' + (openCnt ? 'up' : 'flat') + '">' + openCnt + ' 个</div><div class="d">仅持有等待 ' + holdCnt + ' 个 · 禁止新开仓 ' + blockCnt + ' 个' + (cutCnt ? ' · 需减仓 ' + cutCnt + ' 个' : '') + '（★ 第67轮起放行均附风控提示，逐条核对后再动手）</div></div>' +
+    '<div class="sg"><div class="l">可买板块</div><div class="v ' + (openCnt ? 'up' : 'flat') + '">' + openCnt + ' 个</div><div class="d">休市 ' + holdCnt + ' 个（★ 第68轮起硬否决全部取消、一律提醒，标的类型见结论列；逐条核对风控提示再动手）</div></div>' +
     '<div class="sg"><div class="l">我的进场锚点</div><div class="v ora" style="font-size:17px">' + anchor + '</div><div class="d">' + (anchorRows.length ? '已对比锚点后 ' + anchorRows.length + ' 个板块走势：' + btnTxt : '锚点后暂无落点数据（每半小时自动记录一次）') + '</div></div>' +
     '<div class="sg"><div class="l">大盘情绪周期</div><div class="v ' + (dbgMktReady(ctx.e) && ctx.e.cyc === '主升' ? 'up' : (dbgMktReady(ctx.e) && (ctx.e.cyc === '退潮' || ctx.e.cyc === '冰点') ? 'dn' : 'yel')) + '" style="font-size:17px">' + (ctx.e ? ctx.e.cyc : '—') + '</div><div class="d">' + (ctx.e ? ('仓位上限 ' + ctx.e.pos + (dbgMktReady(ctx.e) ? (DBG_RULE.mktBlock.indexOf(ctx.e.cyc) >= 0 ? ' · 总闸门：不开新仓' : ' · 总闸门：不否决') : ' · ⚠ 关键数据未就绪，总闸门本次不生效')) : '未取到') + '</div></div>' +
   '</div>';
@@ -15711,6 +16302,9 @@ function dbgNotesHtml(){
   var body = rows.map(function(r){
     return '<tr><td style="white-space:normal;width:20%"><b>' + r[0] + '</b></td><td style="white-space:normal">' + r[1] + '</td><td class="flat" style="white-space:normal;font-size:11px">' + r[2] + '</td></tr>';
   }).join('');
+  /* ★ 2026-10-09 第68轮（用户要求）：下表是全网佐证的「方法论共识」，自本轮起本台不再把其中任何一条
+     作为硬否决执行 —— 全部降为风控提醒呈现（含「高潮禁止新开仓」「退潮空仓」等），由使用者自行判断。 */
+  body = '<tr><td colspan="3" class="yel" style="font-size:11px">⚠ 第68轮起口径：以下共识<b>仅作风控提醒</b>呈现（不再作为硬否决拦截开仓），结论列只给「可买 + 标的类型 + 提示」，买不买、买多少由使用者自行判断。</td></tr>' + body;
   var limit = [
     ['<b>它是「条件满足度」，不是胜率预测。</b>五闸门与持续性评分只回答"当前结构是否支持它继续强"，不产生概率。所谓板块周期，是<b>描述性框架而非定时工具</b>。',
       'TradeVae《Emotional Cycles in Markets》「descriptive and not timing tools」；MarketPsych 同结论'],
@@ -15920,16 +16514,250 @@ function secLadder(name, g){
       逐条明细保留在表底「📖 判定依据（逐条）」折叠区，不丢信息。
    —— ★ 2026-09-24（用户要求）：原第 13 列「判定依据（逐条）」**移出表格**，折叠在表底
       「📖 判定依据（逐条）」按板块列出 —— 表已经很宽，判定依据是低频复核信息，不该占一列。
-   —— 排序＝按「可操作性」：可新开仓 → 观察·不加仓 → 禁止新开仓 → 主动减仓 → 未达复核门槛；
+   —— 排序＝按「可操作性」（★ 第68轮：可买 → 休市 → 未达复核门槛；硬否决已全部取消）；
             同级按持续性降序、再按涨停家数 / 最高板降序（机会在前）。
-   —— 取更严者（两处口径冲突的处置，本项目通则「同一结论不得有两套口径」）：
-        ① 梯队形态档仓位 vs 五闸门档位 → 档位为「禁止新开仓 / 主动减仓」时实际仓位压为 0；
+   —— 取更严者（★ 第68轮口径简化：档位只剩「可买 / 休市」，不再有「压为 0」的档位否决；
+        风险由风控提示承担）：
         ② 梯队形态档 vs 五级引擎等级 → secLadder 内部已取更严者（等级列下方小字写出梯队档）。
    —— 数据：全部复用既有引擎（gradeSectors / SECC 七阶段 / dbgRows 五闸门+持续性 / wtBreadthScore），零额外请求。 */
+/* ── 🌙 甜蜜窗口 · 页面组装（第70轮）：状态落盘 wb_sweetwin_v1 + 取数组装 + 7.5B 单元格 ──
+   状态机：确认日/启动量/5日均量/峰值（量·家数）/顺延次数/失效/移出 落盘跨日；
+   第几日由交易日历（wb_secsnap 日期键 ∪ 今日）推导，不依赖连续在线。
+   峰值 / 晋级率前值 / 龙头断板计数 只在收盘口径（≥15时）推进，盘中值不落盘（与 saveSecSnapshot 同规矩）。
+   结论每轮实时重算（缓存 = RENDER_SEQ+日期）；龙头日K锚异步补拉，到货后失效缓存自动补画。 */
+var SW_KEY = 'wb_sweetwin_v1';
+var SW_C = { seq: -1, date: '', map: {}, n: 0 };
+var SW_K = {};                                   /* 龙头日K锚：code → { t, bars:[[d,c,l],...] } */
+var SW_KK = { date: '', sig: '', busy: false };
+function swStore(){
+  try{
+    var v = lsGet(SW_KEY, null);
+    if(v && v.v === 1 && v.secs) return v;
+  }catch(e){}
+  return { v: 1, emos: {}, secs: {} };
+}
+function swTradeDates(){
+  var all = secSnapAll(), ds = [], k;
+  for(k in all){ if(/^\d{8}$/.test(k)) ds.push(k); }
+  if(D.date && ds.indexOf(D.date) < 0) ds.push(D.date);
+  return ds.sort();
+}
+function swThemeEqRow(row, name){
+  try{ return !!themeEq(ind2C((row && row.hybk) || ''), name); }catch(e){ return false; }
+}
+function swPrevRows(name){
+  var out = [], i, a = D.prev || [];
+  for(i = 0; i < a.length; i++){ if(swThemeEqRow(a[i], name)) out.push(a[i]); }
+  return out;
+}
+function swZbN(name){
+  var n = 0, i, a = D.zb || [];
+  for(i = 0; i < a.length; i++){ if(swThemeEqRow(a[i], name)) n++; }
+  return n;
+}
+function swZtRows(name){ try{ return ztg(name) || []; }catch(e){ return []; } }
+function swLiveAmt(name){
+  var all = secSnapAll(), t = all[D.date];
+  if(t && t[name] && t[name].amt > 0) return t[name].amt;         /* 收盘口径优先 */
+  try{
+    if(typeof AF_AMT !== 'undefined' && AF_AMT.map && AF_AMT.map[name] && AF_AMT.map[name].amt > 0)
+      return AF_AMT.map[name].amt;                                 /* 盘中：AF 资金榜实时 f6（元） */
+  }catch(e){}
+  return null;
+}
+function swMa5(name, dates){
+  var all = secSnapAll(), vals = [], i;
+  for(i = dates.length - 1; i >= 0 && vals.length < SW_RULE.maSamplesMax; i--){
+    var d = dates[i];
+    if(d >= D.date) continue;
+    var e = all[d] && all[d][name];
+    if(e && e.amt > 0) vals.push(e.amt);
+  }
+  if(vals.length < SW_RULE.maSamples) return null;
+  return vals.reduce(function(a, b){ return a + b; }, 0) / vals.length;
+}
+function swTopOf(rows){
+  var top = null, i;
+  for(i = 0; i < rows.length; i++){
+    if(!rows[i] || !rows[i].c) continue;
+    if(!top || (rows[i].lbc || 1) > (top.lbc || 1) ||
+       ((rows[i].lbc || 1) === (top.lbc || 1) && (rows[i].fbt || 999999) < (top.fbt || 999999))) top = rows[i];
+  }
+  return top;
+}
+function swAvgFund(rows){
+  var t = 0, n = 0, i;
+  for(i = 0; i < rows.length; i++){
+    var f = num(rows[i] && rows[i].fund);
+    if(f != null){ t += f; n++; }
+  }
+  return n ? t / n : null;
+}
+function swEmoPrev(st){
+  if(!st.emos) return null;
+  var best = null, k;
+  for(k in st.emos){ if(/^\d{8}$/.test(k) && k < D.date && (!best || k > best)) best = k; }
+  return best ? st.emos[best] : null;
+}
+/* 单板块当日观察值 → 喂给 swTree */
+function swObsOf(name, s, day, ztMap, dates, isClose, emoPrev){
+  var rows = swZtRows(name), prevRows = swPrevRows(name);
+  var ztN = rows.length, zbn = swZbN(name);
+  var ztPrevN = null; try{ ztPrevN = prevZtCntOf(name); }catch(e0){ ztPrevN = null; }
+  var pr = swPromoOf(prevRows, ztMap);
+  var zbc = (ztN + zbn) >= SW_RULE.zbcMinN ? zbn / (ztN + zbn) * 100 : null;
+  var amt = swLiveAmt(name);
+  var amtR = (amt != null && s.startAmt > 0) ? amt / s.startAmt : null;
+  var peakR = (amt != null && s.peakAmt > 0) ? amt / s.peakAmt : null;
+  var fNow = swAvgFund(rows), fPrev = swAvgFund(prevRows);
+  var sealR = (fNow != null && fPrev != null && fPrev > 0) ? fNow / fPrev : null;
+  var maxLbcToday = 1, firstN = 0, i;
+  for(i = 0; i < rows.length; i++){
+    maxLbcToday = Math.max(maxLbcToday, rows[i].lbc || 1);
+    if((rows[i].lbc || 1) === 1) firstN++;
+  }
+  var no3bar = (ztPrevN != null && ztPrevN >= SW_RULE.ztBigN && day === 2 && maxLbcToday < SW_RULE.hiMin);
+  var prevTop = swTopOf(prevRows), topNow = swTopOf(rows);
+  /* 信号①：龙头断板（昨日池最高板股今日缺席）——盘中只提示；收盘口径连续两日缺席 → 移出主线池 */
+  var leadLiveMiss = !!(prevTop && prevTop.c && day >= 2 && !ztMap[prevTop.c]);
+  var leadRe = !!(topNow && prevTop && (topNow.lbc || 1) > (prevTop.lbc || 1) && (topNow.fbt || 0) > 92500);
+  /* 信号④：放量滞涨（量 vs 10日前 >1.2 且 10日累计涨幅<3%，f3 逐日累加近似） */
+  var stag = false, all = secSnapAll(), ds10 = [], k;
+  for(k in all){ if(/^\d{8}$/.test(k) && k < D.date) ds10.push(k); }
+  ds10.sort();
+  var dsSel = ds10.slice(-10);
+  var amt0 = null, pct10 = 0, ok10 = 0;
+  for(i = 0; i < dsSel.length; i++){
+    var e = all[dsSel[i]] && all[dsSel[i]][name];
+    if(e){ if(amt0 == null) amt0 = e.amt; if(e.f3 != null){ pct10 += e.f3; ok10++; } }
+  }
+  if(amt0 > 0 && amt != null && amt / amt0 > SW_RULE.stagAmt && ok10 >= 6 && pct10 < SW_RULE.stagPct) stag = true;
+  /* 信号⑤：家数较峰值腰斩且无新首板 */
+  var peakZt = s.peakZt || ztN;
+  var peakCut = (peakZt >= SW_RULE.peakCutMin && ztN <= peakZt / 2 && firstN === 0);
+  /* 信号⑥：高潮次日核心股集体低开≥3pp（开盘溢价均值，D.prevQ） */
+  var gap3 = false;
+  if(emoPrev != null && emoPrev >= SW_RULE.emoHot){
+    var s2 = 0, n2 = 0;
+    for(i = 0; i < rows.length; i++){
+      var q = D.prevQ && D.prevQ[rows[i].c];
+      if(q && q.openPrem != null){ s2 += q.openPrem; n2++; }
+    }
+    if(n2 >= 3 && s2 / n2 <= SW_RULE.gap3) gap3 = true;
+  }
+  /* 附加：2进3全绿盘 */
+  var twoThree = false, t3n = 0, t3g = 0;
+  for(i = 0; i < prevRows.length; i++){
+    if((prevRows[i].lbc || 1) === 2){
+      t3n++;
+      var q2 = D.prevQ && D.prevQ[prevRows[i].c];
+      if(q2 && q2.pct != null && q2.pct < 0) t3g++;
+    }
+  }
+  if(t3n >= 2 && t3g === t3n) twoThree = true;
+  var trend = { na: true };
+  if(s.leaderCode && SW_K[s.leaderCode]) trend = swAnchorOf(SW_K[s.leaderCode].bars, s.conf);
+  var allowed = SW_RULE.winLen + (s.ext || 0) * SW_RULE.winLen;
+  return { day: day, expire: !!s.expire || day > allowed, renewed: false, dead: !!s.dead, deadWhy: s.deadWhy || '',
+    band: swBand(ztN, ztPrevN), sealR: sealR, amtR: amtR, peakR: peakR, no3bar: no3bar, trend: trend, leadRe: leadRe,
+    zbc: zbc, zbcN: ztN + zbn, promo: pr.rate, promoN: pr.n1, promoPrev: s.promoPrev != null ? s.promoPrev : null,
+    firstN: firstN, peakZt: peakZt, ztN: ztN, stag: stag, peakCut: peakCut, gap3: gap3, twoThree: twoThree,
+    _leadLiveMiss: leadLiveMiss, _prevTop: prevTop, _amt: amt, _promo: pr.rate };
+}
+function swCellHtml(name){
+  var v = SW_C.map ? SW_C.map[name] : null;
+  if(!v) return '<span class="flat" style="font-size:10.5px">—</span>';
+  var cls = ({ up: 'up', dn: 'dn', yel: 'yel', flat: 'flat' })[v.tone] || 'flat';
+  var h = '<div class="' + cls + '" style="font-size:10.5px;font-weight:700">🌙 ' + esc(v.txt) + '</div>';
+  (v.warns || []).forEach(function(w){ h += '<div class="yel" style="font-size:10px;margin-top:1px">⚠ ' + esc(w) + '</div>'; });
+  return h;
+}
+function swKickLeaders(st){
+  var codes = [], nm, s;
+  for(nm in st.secs){
+    s = st.secs[nm];
+    if(s && s.leaderCode && !s.dead && !s.expire && !SW_K[s.leaderCode]) codes.push(s.leaderCode);
+  }
+  var sig = codes.slice().sort().join(',');
+  if(!codes.length || (SW_KK.date === D.date && SW_KK.sig === sig) || SW_KK.busy) return;
+  SW_KK.date = D.date; SW_KK.sig = sig; SW_KK.busy = true;
+  Promise.all(codes.map(function(c){
+    return klineBarsL(c).then(function(bars){
+      if(bars && bars.length >= 21) SW_K[c] = { t: Date.now(), bars: bars.slice(-70).map(function(b){ return [b.d, b.c, b.l]; }) };
+    }).catch(function(){ });
+  })).then(function(){
+    SW_KK.busy = false;
+    SW_C.seq = -1;
+    try{ if(typeof renderAllAsync === 'function') renderAllAsync(false); }catch(e){ }
+  }).catch(function(){ SW_KK.busy = false; });
+}
+function swCalcCached(gs){
+  if(SW_C.seq === RENDER_SEQ && SW_C.date === D.date) return SW_C;
+  var st = swStore(), dates = swTradeDates(), changed = false;
+  var now = new Date(), isClose = now.getHours() >= 15;
+  var emoPrev = swEmoPrev(st);
+  try{ var eE = emotion(); if(eE && eE.score != null){ if(!st.emos) st.emos = {}; st.emos[D.date] = Math.round(eE.score * 10) / 10; } }catch(e0){ }
+  var ztMap = {}, i;
+  (D.zt || []).forEach(function(x){ if(x && x.c) ztMap[x.c] = x; });
+  var map = {}, tracked = {};
+  /* A. 既有窗口 → 逐日结论 + 状态推进 */
+  for(var nmA in st.secs){
+    var s = st.secs[nmA]; tracked[nmA] = 1;
+    if(!s || !s.conf){ delete st.secs[nmA]; changed = true; continue; }
+    var day = swDayIdx(s.conf, dates);
+    var obs = null;
+    try{ obs = swObsOf(nmA, s, day, ztMap, dates, isClose, emoPrev); }catch(e1){ obs = null; }
+    if(!obs){ map[nmA] = { txt: '数据待补', tone: 'flat', warns: [] }; continue; }
+    var v = swTree(obs);
+    if(v.dead){ if(!s.dead){ s.dead = true; s.deadWhy = v.txt; changed = true; } }
+    else{
+      if(v.expire && !s.expire){ s.expire = true; changed = true; }
+      if(v.renewed && s.renewedAt !== D.date){ s.ext = (s.ext || 0) + 1; s.renewedAt = D.date; changed = true; }
+      /* 收盘口径推进：峰值 / 晋级率前值 / 龙头断板计数（两日不反包 → 移出） */
+      if(isClose){
+        if(obs._promo != null && s.promoPrev !== obs._promo){ s.promoPrev = obs._promo; changed = true; }
+        if(obs._amt != null && obs._amt > (s.peakAmt || 0)){ s.peakAmt = obs._amt; changed = true; }
+        if(obs.ztN > (s.peakZt || 0)){ s.peakZt = obs.ztN; changed = true; }
+        var miss = obs._prevTop && obs._prevTop.c && !ztMap[obs._prevTop.c];
+        var missN = miss ? (s.leadMiss || 0) + 1 : 0;
+        if(missN !== (s.leadMiss || 0)){ s.leadMiss = missN; changed = true; }
+        if(missN >= 2 && !s.dead){ s.dead = true; s.deadWhy = '龙头断板次日未反包 · 移出主线池'; changed = true; }
+      }
+    }
+    var warns2 = (v.warns || []).slice();
+    if(!s.dead && obs._leadLiveMiss) warns2.unshift('龙头断板 · 次日不反包即移出');
+    map[nmA] = { txt: v.txt, tone: v.tone, warns: warns2, day: day };
+  }
+  /* B. 新确认（第1日）：联动≥3 + 三板以上高度 + 晋级率>30% + 启动放量≥5日均量1.5倍 */
+  (gs || []).forEach(function(g){
+    if(!g || !g.name || tracked[g.name] || map[g.name]) return;
+    var tMax = Math.max(g.maxLbc || 0, (g.secc && g.secc.tMax) || 0);
+    if((g.zt || 0) < SW_RULE.linkMin || tMax < SW_RULE.hiMin) return;
+    var pr = swPromoOf(swPrevRows(g.name), ztMap);
+    if(pr.n1 < 2 || pr.rate == null || pr.rate <= SW_RULE.promMin) return;
+    var amt = swLiveAmt(g.name), ma5 = swMa5(g.name, dates);
+    if(amt == null || ma5 == null || ma5 <= 0) return;
+    var ratio = amt / ma5;
+    if(ratio < SW_RULE.volLo) return;
+    var rows0 = swZtRows(g.name), top0 = swTopOf(rows0);
+    st.secs[g.name] = { conf: D.date, startAmt: amt, ma5: ma5, peakAmt: amt, peakZt: g.zt || rows0.length,
+      leaderCode: top0 ? top0.c : '', ext: 0, renewedAt: '', expire: false, dead: false, leadMiss: 0,
+      promoPrev: pr.rate };
+    changed = true;
+    var w1 = (ratio > SW_RULE.volHiSoft) ? ['启动量达5日均量 ' + swRound1(ratio) + ' 倍（>2）· 超常放量'] : [];
+    map[g.name] = { txt: '第1日 · 确认 · 主线候选 · 只建底仓', tone: 'up', warns: w1, day: 1 };
+  });
+  if(changed){ try{ lsSet(SW_KEY, st); }catch(e2){ } }
+  SW_C = { seq: RENDER_SEQ, date: D.date, map: map, n: Object.keys(map).length };
+  try{ swKickLeaders(st); }catch(e3){ }
+  return SW_C;
+}
 function ladderPanelHtml(gs){
   var C = null;
   try{ C = dbgRowsCached(gs); }catch(e){ C = null; }
   var dmap = (C && C.map) ? C.map : {};
+  /* 🌙 甜蜜窗口（第70轮）：逐日决策树结论，缓存于 swCalcCached（RENDER_SEQ+日期），异常静默降级为「—」 */
+  try{ swCalcCached(gs); }catch(eSW){ }
   var list = [];
   gs.forEach(function(g){
     var x = null; try{ x = secLadder(g.name, g); }catch(e){ x = null; }
@@ -15937,7 +16765,7 @@ function ladderPanelHtml(gs){
   });
   if(!list.length) return '';
   var V = (typeof DBG_VERDICT !== 'undefined' && DBG_VERDICT) ? DBG_VERDICT : {};
-  var vrank = { open: 0, hold: 1, noadd: 2, cut: 3 };
+  var vrank = { open: 0, hold: 1 };   /* ★ 第68轮：noadd/cut 已废止（硬否决取消） */
   function vrk(o){ return o.d ? (vrank[o.d.vk] == null ? 9 : vrank[o.d.vk]) : 5; }
   list.sort(function(a, b){
     return vrk(a) - vrk(b)
@@ -15951,8 +16779,7 @@ function ladderPanelHtml(gs){
     var g = o.g, x = o.x, d = o.d;
     var cons = null; try{ cons = consOf(g.name, g); }catch(e){ cons = null; }
     var VK = (d && V[d.vk]) ? V[d.vk] : null;
-    var blocked = !!(d && (d.vk === 'noadd' || d.vk === 'cut'));
-    var holdOnly = !!(d && d.vk === 'hold');
+    var holdOnly = !!(d && d.vk === 'hold');   /* ★ 第68轮：仅剩「休市」一档 hold（无法成交），无 blocked */
     var st = x.strength || '';
     var strCls = st.indexOf('强') === 0 ? 'up' : ((st.indexOf('断层') >= 0 || st.indexOf('孤立') >= 0) ? 'dn' : 'ora');
     /* ① 等级（与梯队形态档不一致时，下方小字写出梯队档；取更严者已由 secLadder 完成）
@@ -15991,38 +16818,34 @@ function ladderPanelHtml(gs){
        并被 7.10B 清单与「等级」列（宽度分一档微调）消费；逐条明细仍在表底判定依据折叠区。
        需要恢复时，完整实现见备份 index.html.bak_before_删7.5B三列_*.html。 */
     /* ⑩⑪ 结论 · 仓位 / 操作（2026-10-09 第65轮 · 用户要求：原「档位/仓位」与「结论/操作」两列合并为一列）
-       ★ 仓位单源（2026-10-09 全网三轮检索交叉核对，详见 SKILL §65）：「仓位跟着档位走，仓位即结论」——
-       最终仓位只由档位（五闸门复核 DBG_VERDICT）决定，梯队形态档的 x.pos 只是「未放行时的参考上限」：
-         档位否决(noadd/cut) → 实际 0 成；观察·不加仓(hold) → 新开仓 0 成仅持有；放行(open) → 可开梯队档仓位。
-       操作文案与最终仓位严格一致 —— 未放行时梯队形态的「小仓 X 成」类操作**不得**作为主文案
-       （否则出现「新开仓 0 成」与「支线：小仓 2 成」并排的自相矛盾，2026-10-09 用户截图指出的医药医疗案例），
-       降为「梯队档参考（未放行）」小字；放行（open）时梯队形态操作为主文案、档位动作为补充小字。 */
+       ★ 第68轮（用户要求）：硬否决全部取消 → 结论列改输出「可买 + 标的类型（dbgTargetOf）+ 风控提示」，
+       能不能买由使用者自行判断；hold 仅剩「休市」一档（非交易时段无法成交）。
+       仓位单源仍成立：可买 → 梯队档仓位；休市 → 无法成交（复盘）。 */
+    var tgt = (d && d.tgt) ? d.tgt : null;
     var c10pos, c10cls;
-    if (blocked) { c10pos = '实际 0 成（档位否决）'; c10cls = 'dn'; }
-    else if (holdOnly) { c10pos = '新开仓 0 成（仅持有）'; c10cls = 'flat'; }
+    if (holdOnly) { c10pos = '休市（无法成交）'; c10cls = 'flat'; }
     else if (VK) { c10pos = (x.pos === '0 成') ? '0 成（梯队档不给仓位）' : '可开 ' + esc(x.pos); c10cls = 'up'; }
     else { c10pos = (x.pos === '0 成') ? '0 成' : '梯队档 ' + esc(x.pos); c10cls = (x.pos === '0 成') ? 'flat' : 'up'; }
     var c10act, c10subs = [];
     if (!VK) { c10act = x.act || ''; }
-    else if (!blocked && !holdOnly) { c10act = x.act || VK.act; if (VK.act && x.act) c10subs.push(VK.act); }
-    else {
-      c10act = VK.act;
-      if (blocked) c10subs.push('梯队档 ' + esc(x.pos) + ' → 被档位压为 0');
-      if (x.act && x.act !== '不参与') c10subs.push('梯队档参考（未放行）：' + x.act);
-    }
+    else if (!holdOnly) { c10act = x.act || VK.act; if (VK.act && x.act) c10subs.push(VK.act); }
+    else { c10act = VK.act; }
     var c10 = '<td style="white-space:normal;min-width:210px">'
-      + (VK ? '<span class="dbg-v ' + VK.cls + '" style="font-size:10.5px">' + VK.label + '</span>'
+      + (VK ? '<span class="dbg-v ' + VK.cls + '" style="font-size:10.5px">' + VK.label + (tgt ? ' · <b>' + esc(tgt) + '</b>' : '') + '</span>'
             : '<span class="flat" style="font-size:10.5px">未复核</span>')
       + '<div class="' + c10cls + '" style="font-size:11.5px;font-weight:800">' + c10pos + '</div>'
       + '<div style="font-size:10.5px;margin-top:1px">' + esc(c10act || '') + '</div>'
-      /* ★ 2026-10-09 第67轮：放行(open)行的风控提示逐条列出（仓位打折项）——
-         「避免过严始终无法开仓」的代价是风控前移到提示层，提示不得省略。 */
-      + ((VK && !blocked && d && d.warns && d.warns.length)
+      /* ★ 第67/68轮：风控提示逐条列出（含原五类硬否决降级而来的提醒）——提示不得省略。 */
+      + ((VK && d && d.warns && d.warns.length)
           ? d.warns.map(function(wW){ return '<div class="yel" style="font-size:10px;margin-top:1px">⚠ ' + esc(wW.txt) + '</div>'; }).join('')
           : '')
       + c10subs.map(function(tS){ return '<div class="flat" style="font-size:10px;margin-top:1px">' + esc(tS) + '</div>'; }).join('')
       + '</td>';
-    /* ⑫ 关键风险 */
+    /* ⑫ 🌙 甜蜜窗口（第70轮 · 用户文章）：逐日决策树只写结论，不写逻辑 —— 数据待补留白、不冒充 */
+    var c11;
+    try{ c11 = '<td style="white-space:normal;min-width:150px">' + swCellHtml(g.name) + '</td>'; }
+    catch(e11){ c11 = '<td><span class="flat" style="font-size:10.5px">—</span></td>'; }
+    /* ⑬ 关键风险 */
     var c12 = '<td class="note" style="white-space:normal;min-width:150px">' + esc(x.risk || '—')
       + ((x.gate && x.gate.length) ? '<div class="yel" style="font-size:10.5px">［闸门：' + esc(x.gate.join('；')) + '］</div>' : '') + '</td>';
     /* ⑬ 判定依据（逐条）：五闸门明细 + 形态/梯队判定 + 容量资金闸门 + 三指标一致性 */
@@ -16041,7 +16864,7 @@ function ladderPanelHtml(gs){
        只是从"每行一列"改为"表底低频复核区"。 */
     allWhys.push({ name: g.name, tag: (esc(g.grade || '—') + ' · ' + esc(x.act || '—')), why: why });
     return '<tr' + ((d && d.vk === 'open') ? ' style="background:rgba(240,69,58,.06)"' : '') + '>'
-      + c1 + c2 + c3 + c4 + c6 + c10 + c12 + '</tr>';
+      + c1 + c2 + c3 + c4 + c6 + c10 + c11 + c12 + '</tr>';
   }).join('');
   var h = '<h2 style="font-size:14px;margin-top:16px;border-color:#26c281;color:#26c281">7.5B 板块总表（梯队形态分级 + 情绪周期 + 结论·仓位/操作 → 一张表回答「能不能买 / 买多少 / 怎么买」）'
     + '<small><b>2026-09-24 按用户要求合并</b>：原「板块动态复核（买入前五闸门 / 持续性评分）」表与原「板块五级分级」主表已<b>删除</b>，两表全部列并入本表｜'
@@ -16049,15 +16872,16 @@ function ladderPanelHtml(gs){
     + '<b>2026-10-09 按用户要求并列</b>：原「档位/仓位」与「结论/操作」两列<b>合并为一列</b>「结论 · 仓位 / 操作」——'
     + '<b>仓位单源＝档位</b>（五闸门复核），梯队形态档仓位未放行时仅作参考小字，操作文案与最终仓位严格一致'
     + '（杜绝「新开仓 0 成」与「支线：小仓 2 成」并排的自相矛盾）｜'
-    + '<b>2026-10-09 第67轮策略重制</b>：全交易时段均可开仓；硬否决收敛为五类结构性风险，'
-    + '<b>放行（✅）行均附「⚠ 风控提示」</b>（仓位打折项，逐条核对后再动手）｜'
-    + '排序＝按<b>可操作性</b>（可新开仓 ' + openN + ' 个 → 观察·不加仓 → 禁止新开仓 → 主动减仓 → 未达复核门槛），同级按持续性降序｜'
-    + '<b>冲突取更严者</b>：档位为禁止/减仓时实际仓位压为 0；梯队形态档与等级不一致时取更严（等级列下方小字给出梯队档）｜数据源与既有引擎同源，零额外请求</small></h2>';
+    + '<b>2026-10-09 第67轮策略重制</b>：全交易时段均可开仓，放行行附「⚠ 风控提示」｜'
+    + '<b>2026-10-09 第68轮（用户要求）</b>：<b>硬否决全部取消、一律改为风控提醒</b>（含大盘退潮/冰点、板块退潮、拉高出货、独苗/纯首板、持续性&lt;46），'
+    + '能不能买由使用者自行判断；结论列改为输出<b>买入的标的类型</b>（高标龙头 / 龙头 / 中军接力 / 低位补涨 / 低位首板，口径＝梯队结构推导）｜'
+    + '<b>2026-10-09 第70轮（用户文章）</b>：新增<b>🌙 甜蜜窗口</b>列 —— 逐日决策树（第1日确认只建底仓 → 第2日广度 → 第3日缩量分歧三条件 → 第5日重确认三问 → 到期冻结），只写判断后的结论、不写逻辑；退潮六信号随行提示，纪律优先级高于窗口日历｜'
+    + '排序＝按<b>可操作性</b>（可买 ' + openN + ' 个 → 休市 → 未达复核门槛），同级按持续性降序｜数据源与既有引擎同源，零额外请求</small></h2>';
   h += '<div class="twrap"><table class="mini-tbl"><thead><tr>'
     + '<th>等级</th><th>板块</th><th>情绪周期<small style="font-weight:400;color:#94a3b8">板块自身</small></th>'
     + '<th>梯队结构<small style="font-weight:400;color:#94a3b8">高标/中位/首板</small></th>'
     + '<th>形态 / 强度</th>'
-    + '<th>结论 · 仓位 / 操作</th><th>关键风险</th>'
+    + '<th>结论 · 仓位 / 操作</th><th>🌙 甜蜜窗口<small style="font-weight:400;color:#94a3b8">逐日决策树</small></th><th>关键风险</th>'
     + '</tr></thead><tbody>' + body + '</tbody></table></div>';
   /* ★ 2026-09-24（用户要求）：判定依据（逐条）从表格列移到表底折叠 —— 默认收起，点开按板块逐条复核。 */
   h += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#9fb4ff">📖 判定依据（逐条 · 共 ' + allWhys.length + ' 个板块 · 点击展开复核）</summary><div style="padding:4px 2px">';
@@ -16070,12 +16894,17 @@ function ladderPanelHtml(gs){
   /* ★ 2026-09-24（用户要求）：表下的口径/修正说明**默认折叠** —— 表本身已经很长，说明文字占版面。 */
   h += '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#9fb4ff">📖 口径与修正说明（五闸门图例 / 持续性说明 / 梯队形态分级修正 / 等级列关系 · 点击展开）</summary>' +
     '<div style="padding:6px 2px">' +
-    '<div class="dbg-legend" style="margin-top:6px"><b>五闸门</b>＝①周期（加速/分歧/退潮禁新开仓）②梯队（高标+中位+首板+广度，孤龙/纯首板否决）③量价（上涨却净流出、缩量冲高一票否决）④时点（买点后置：10:00 前不动、14:45 后不追、尾盘偷袭不参与）⑤大盘（退潮/冰点为总闸门）。'
-    + '标记读法：<b>✓</b> 通过 / <b>〜</b> 条件不足（本次不按可开仓处理；多数是等 10:00-10:30 / 13:00-13:30 确认窗，到点自动转 ✓）/ <b>—</b> 不适用 / <b>✕</b> 硬否决（一票否决）。'
+    '<div class="dbg-legend" style="margin-top:6px"><b>五闸门</b>＝①周期 ②梯队 ③量价 ④时点 ⑤大盘。'
+    + '★ 2026-10-09 第68轮起<u>硬否决全部取消</u>：五道闸门不再产生「✕ 一票否决」，全部风险（退潮 / 高潮 / 独苗 / 纯首板 / 拉高出货 / 缩量 / 大盘退潮冰点 / 持续性偏弱）一律降为<b>⚠ 风控提醒</b>，能不能买由使用者自行判断；结论列改为输出<b>买入的标的类型</b>（高标龙头 / 龙头 / 中军接力 / 低位补涨 / 低位首板，口径＝梯队结构推导）。'
+    + '标记读法：<b>✓</b> 通过（可能附风控提醒）/ <b>〜</b> 条件不足或休市 / <b>—</b> 不适用。'
     + '<b>持续性</b>＝梯队结构 / 量能递增 / 资金·广度 / 封板质量 / 阶段健康 各 20 分，衡量「当前结构支持它继续强的程度」，<u>不是胜率预测</u>。'
-    + '<b>档位</b>＝买入前五闸门的最终放行结果（可新开仓 / 观察·不加仓 / 禁止新开仓 / 主动减仓）。'
-    + '<b>2026-10-09 起「档位/仓位」与「结论/操作」并为一列</b>：仓位单源＝档位，梯队形态档仓位未放行时仅作参考小字（操作文案与最终仓位一致）。'
-    + '<b>口径</b>：本表判的是<b>板块能不能开仓</b>，大盘周期只作「⑤大盘」总闸门 —— <b>大盘主升 ≠ 任一板块可开仓</b>，两处冲突时<b>取更严者</b>执行。</div>';
+    + '<b>档位</b>＝「✅ 可买 / ⏸ 休市」两档（休市＝非交易时段无法成交，物理事实）。'
+    + '<b>2026-10-09 起「档位/仓位」与「结论/操作」并为一列</b>：仓位单源＝档位（可买 → 梯队档仓位；休市 → 无法成交）。'
+    + '<b>口径</b>：本表判的是<b>板块</b>，大盘周期作「⑤大盘」提示 —— <b>大盘主升 ≠ 任一板块可买</b>，自行把握。</div>';
+  h += '<div class="note" style="margin-top:6px"><b>🌙 甜蜜窗口列口径（2026-10-09 第70轮 · 用户文章落地）</b>：只写判断后的结论，不写逻辑。'
+    + '日历＝第1日确认（联动≥3家＋三板以上高度＋1进2晋级率&gt;30%＋启动放量≥5日均量1.5倍 → 主线候选·只建底仓）→ 第2日广度（≥60%延续 / &lt;50%分化 / &lt;30%熄火；昨日≥5家方向无三板不接力）→ 第3日缩量分歧三条件（齐备＝健康分歧续持；缩量破位＝危险分歧降仓）→ 第5日收盘前重确认（再放量≥峰值1.2倍＋龙头换手板续板 → 顺延5日，否则降档只持不加）→ 到期未重确认＝窗口失效（底仓观察、新仓冻结）。'
+    + '<b>退潮六信号</b>（任一触发即降级，纪律高于窗口日历）随行 ⚠ 提示：龙头断板不反包→移出主线池 / 板块炸板率&gt;40% / 晋级率&lt;15%（&gt;50%单日跌破30%只卖不买）/ 放量滞涨→只减不加两周 / 家数较峰值腰斩→续持不加 / 高潮次日低开&gt;3点→兑现；另 2进3全绿盘＝接力生态死亡。'
+    + '<b>诚实披露</b>：①「新催化续杯」不可量化 → 顺延结论仍需人工确认催化；②板块指数无稳定日K源 → 三条件趋势/破位以<b>板块龙头股日K</b>为锚（K线未就绪显示「待验」，不冒充）；③量能＝板块成交额（收盘 wb_secsnap 优先、盘中 AF 资金榜实时兜底）；5日均量有效样本 &lt;4 → 量能待补、不确认新窗口；④峰值/晋级率前值/龙头断板计数按收盘口径推进，盘中不落盘。仅为技术分析，不构成投资建议。</div>';
   h += '<div class="note" style="margin-top:6px">' +
     '<b>修正说明（梯队形态部分 · 相对《板块梯队分级判断策略（AI可执行版）》原文，2026-09-24 全网核验）</b>：' +
     '① <b>形态优先于标准档</b> —— 原文「三层都有→S级」先出结论、再查特殊形态，导致要求"三层都有"的形态 5/6/7 永远不可达；现改为先判形态（互斥）再落标准档。' +
@@ -25903,6 +26732,8 @@ function wtMainLineCardsHtml() {
        昨日池未就绪 → 留白；N=0 照常标（昨日无涨停 = 新热点信号，缺失 ≠ 0）。 */
     var pz3 = null; try { pz3 = prevZtCntOf(g.name); } catch (eP3) { pz3 = null; }
     if (pz3 != null) meta.push('<span style="color:#94a3b8">昨涨停 ' + pz3 + ' 家</span>');
+    /* ★ 2026-10-09（第71轮）：🪜 分台阶晋级率 + 梯队完整性 + 真普涨/假普涨标注（PT 引擎，与 ⑤ 同一把尺） */
+    try { var ptC7 = ptChipHtml(g.name); if (ptC7) meta.push(ptC7); } catch (ePT) { }
     if (g.zb) meta.push('炸板 ' + g.zb);
     if (g.dt) meta.push('跌停 ' + g.dt);
     meta.push('宽度 ' + bTxt);

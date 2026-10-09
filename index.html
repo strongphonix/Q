@@ -119,8 +119,6 @@ section{scroll-margin-top:var(--hdr-off,108px);}
 .c-ora{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);}
 .c-blu{background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.3);}
 .c-grn{background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.3);}
-/* 7.43 主线识别新增：⚠️ 分歧加剧 用紫色与「跌/涨」语义色区分开（避免被误读成看空信号） */
-.c-pur{background:rgba(168,85,247,.09);border:1px solid rgba(168,85,247,.35);}
 .m11-title{font-size:14.5px;font-weight:800;margin:6px 0 2px;padding:8px 12px;background:linear-gradient(90deg,rgba(240,69,58,.14),rgba(15,23,42,.3));border:1px solid rgba(240,69,58,.4);border-radius:8px;}
 .m11-news{padding:5px 10px;border-left:3px solid rgba(96,165,250,.5);background:rgba(96,165,250,.05);margin:3px 0;border-radius:4px;font-size:12.3px;line-height:1.7;}
 .m11-news-top{border-left-color:#f59e0b;background:rgba(245,158,11,.07);}
@@ -393,7 +391,7 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
    ⚠ content-visibility 绝对不能加到含图表的卡片上（④ idxChart / ⑥ emoChart）：
      （7.19 原有 5 张 m719chart1-5，已于 2026-09-21 按用户要求删除，此处同步移除）
      屏幕外被跳过时容器尺寸为 0，echarts.init 会拿到 0×0 → 图表空白。 */
-#m75,#m7top35,#m7top24,#m5,#m8,#m11,#m3{content-visibility:auto;contain-intrinsic-size:auto 700px}
+#m75,#m7top24,#m5,#m8,#m11,#m3{content-visibility:auto;contain-intrinsic-size:auto 700px}
 .wb-base-badge{font-weight:800}
 .wb-base-badge.yel{color:#fbbf24}
 .wb-base-badge.up{color:#34d399}
@@ -1026,7 +1024,6 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
     <a href="#m75" data-sec="m75" title="7.5 板块总表 · 分级 S/A/B/C + 风险否决">7.5 板块分级</a>
     <a href="#m710b" data-sec="m710b" title="7.10B 可买入组合清单">7.10B 可买组合</a>
     <a href="#m741" data-sec="m741" title="7.41 个股 12 维复盘">7.41 12维复盘</a>
-    <a href="#m7top43" data-sec="m7top43" title="7.43 主线识别 · 属性聚合 × 行为指纹（谁是真主线 / 谁是轮动支线）">7.43 主线识别</a>
     <a href="#m7top16" data-sec="m7top16" title="7.16 个人持仓 · 四指标 v3 实时监控">7.16 个人持仓</a>
     <span class="hl-gap" aria-hidden="true"></span>
     <a href="#m7top44" data-sec="m7top44" style="color:#fbbf24;font-weight:700" title="7.44 赚亏钱效应分析工作区 · 赚钱效应 A / 亏钱效应 B 双力净值 + 观测指标边际对照表 + 组合信号矩阵（63 格逻辑关系 · 整行可折叠）+ 失效边界守卫（仓位与 ⑥ 取更严者）">🔗 7.44 赚亏钱效应</a>
@@ -1241,39 +1238,10 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
 </section>
 
 
-<!-- 7.35 题材聚类（东财概念板块）· 新增维度：短线找主线用；不改动行业分类 -->
-<section class="card" id="m7top35">
-<h2 style="border-color:#fbbf24">7.35 题材聚类（东财概念 · 短线找主线）<small>题材＝东财概念板块（多标签）｜题材热度榜按「今日涨停家数」排序 ｜ 主题材 / 全题材归属 ｜ 与「行业」（单标签分区）是两套口径 · <b>新增维度，不改动行业分类</b></small></h2>
-<div id="m7_35"><div class="loading">数据加载中…</div></div>
-</section>
+<!-- 7.42 题材热度 · 连板与资金共振方向：已于 2026-09-27 按用户要求整卡删除；
+     7.35 题材聚类与 7.43 主线识别亦已于 2026-10-09 按用户要求整卡删除（数据通道保留供 m5 题材列消费）。 -->
 
-<!-- 7.42 题材热度 · 连板与资金共振方向：已于 2026-09-27 按用户要求整卡删除
-     （7.35 题材聚类与 7.43 主线识别保留，职责覆盖不变）。 -->
-
-<!-- 7.43 主线识别 · 属性聚合 × 行为指纹（2026-09-26 新增）
-     用户诉求：「为什么参考复盘能发现『海峡西岸/福建国资是主线、出版/机器人/高端装备是支线』，
-     我的平台分析不出来，请做到同等水平。」
-     诊断（已用 2026-09-24 真实涨停池实证）：
-       ① 地域属性被硬过滤 —— thmPickRows 的 `if(t==='板块'||t==='行业') return;` 把「福建板块」
-          整批丢弃，而语义等价的「长江三角」（BOARD_TYPE=null）却能进榜 → 同类标签两种命运。
-       ② 单标签计数口径 → 宽泛标签霸榜：当日 52 只涨停里「央国企改革」覆盖 24 只（46.2%）排第一，
-          毫无区分力；真主线被拆散在多个窄标签里，永远看不到。
-       ③ 只看静态家数/高度，不算「行为指纹」：参考模板的核心论据是「尾盘 12 只集体异动」——
-          那是**时间维度的同步性**（组织性资金进攻），平台的 fbt 字段只被用来排序，没被用来识别行为。
-     本卡在 7.35 / 7.42 之上加一层「属性聚合 + 行为指纹 + 角色定性」，回答：
-       **谁是主线（真合力）、谁是支线（轮动）、谁是脉冲（一日游）、谁在分歧加剧。**
-     与既有模块的分工（互不替代）：
-       7.35 = 哪些题材有涨停（东财概念单标签 · 家数榜）
-       7.42 = 哪些题材是「真热度」（连板梯队 × 资金 双验证）
-       7.43 = 谁是主线/支线（**多属性聚合**：概念 + 地域 + 产业链 + 国资 × **行为指纹**）
-     数据源：完全复用 7.35 的东财 F10 通道（当日 1 次，含 BOARD_TYPE 已可判地域）+ 涨停池自带
-             fbt/zbc/lbc/fund/amount，**零额外请求**。
-     ⚠️ 不做的部分（不臆造）：昨日同方向的「退潮」判定需要昨日池的 F10 属性（额外请求成本高），
-        本卡改用「方向内连板家数」间接衡量延续性，并在界面如实标注该口径边界。 -->
-<section class="card" id="m7top43">
-<h2 style="border-color:#a855f7;color:#c084fc">7.43 主线识别 · 属性聚合 × 行为指纹<small>回答「<b>谁是主线、谁是支线</b>」——把散落在多个窄标签里的同一批股票<b>聚合成大方向</b>（概念 ⊕ 地域 ⊕ 产业链），再用<b>行为指纹</b>（封板时点分布 · 同步性 · 封板质量 · 炸板率）判组织性 ｜ 角色四态：🎯 真主线（组织性合力）/ ⚡ 轮动支线（有高度无组织）/ 💤 脉冲（一日游）/ ⚠️ 分歧加剧（炸板抬升）｜ <b>区分力加权</b>：覆盖率 &gt; 40% 的宽泛标签降权标注（如「央国企改革」当日覆盖 46% 涨停股，无区分力）｜ 数据源复用 7.35 的东财 F10 通道 + 涨停池自带 fbt/zbc/lbc，<b>零额外请求</b> ｜ 与 7.35（哪些题材有涨停）/ 7.42（哪些是真热度）<b>三层递进、互不替代</b></small></h2>
-<div id="m7_43"><div class="loading">数据加载中…</div></div>
-</section>
+<!-- 7.43 主线识别 · 属性聚合 × 行为指纹：已于 2026-10-09 按用户要求整卡删除（含 MLI 引擎 / mliGroups / renderM743）。 -->
 
 <!-- 7.41 个股 12 维复盘（趋势与位置 7 + 量能 5）· 2026-09-24 新增
      来源：用户提供的 12 维复盘面板截图，经全网核验后的修正版（与 SLW 侧同一套阈值与闸门） -->
@@ -3330,6 +3298,7 @@ function refreshAll(manual){
   }).then(function(k10){
     D.k10 = keepGood('k10', k10, 10);
     buildGroups();                        /* 同步派生态到此全部就绪（ztGroup / indMap / idxList） */
+    ztIndEnsure();                        /* ★ 2026-10-09：涨停池 F10 行业补查（到货后按新行业键重算分组重渲） */
     RENDER_SEQ++;                         /* ← 现在才失效「按轮次缓存」：见上方 2026-09-22 的说明 */
     D.analysis = analyzePrev();
     saveSecSnapshot();                    /* 收盘后落盘当日板块快照，供次日"连续2日"验证 */
@@ -3388,14 +3357,129 @@ function keepGood(key, newV, minN){
 }
 
 /* ================= 分组与分析 ================= */
+/* ★★ 2026-10-09（用户要求）：行业分类策略统一切换为「十三、全市场涨幅>5% 统计」同款 ——
+   F10 行业（东财数据中心 BOARD_TYPE='行业'，wb_gt5_indmap 7 天缓存，与 GT5 / wtIndTag 同源同缓存）优先，
+   涨停池 hybk（ind2C 归一）兜底。换键点：buildGroups（D.ztGroup → 7.5 板块总表 / ⑤ 涨停复盘分组 /
+   ztCountBySector 全部消费方）与 wtFetch sectors 聚合（三类卡）。
+   F10 反查是异步批量 → 聚合时先用缓存命中的部分 + hybk 兜底，缺的由 ztIndEnsure 补查，
+   到货后重算分组并重渲（会话级去重绝不风暴）。vm/桩环境无 F10 缓存 → 全走兜底，行为与旧口径逐字节一致。 */
+var SECIND_C = { t: 0, m: null };
+function secIndMapC(){
+  var now = Date.now();
+  if(!SECIND_C.m || now - SECIND_C.t > 60000){
+    SECIND_C.t = now;
+    try{ SECIND_C.m = lsGet('wb_gt5_indmap'); }catch(e){ SECIND_C.m = null; }
+    if(!SECIND_C.m || typeof SECIND_C.m !== 'object') SECIND_C.m = {};
+  }
+  return SECIND_C.m;
+}
+function secIndOf(code, hybk){
+  var fb = (typeof ind2Canon === 'function') ? ind2Canon(hybk || '其他') : (hybk || '其他');
+  try{
+    var k = String(code || '').replace(/^(sh|sz|bj)/i, '');
+    var e = k ? secIndMapC()[k] : null;
+    if(e && e.ind && e.ind !== '—') return themeOf(e.ind);   /* F10 行业优先（十三模块同源）→ 热点主题层 */
+  }catch(eF){ }
+  return themeOf(fb);   /* 兜底行业同样过主题层（同一家族 hybk 缩写与 F10 全称聚到同一键） */
+}
+var ZTI_REQ = {};
+function ztIndEnsure(rows){
+  try{
+    if(typeof gt5LoadIndustries !== 'function') return;
+    var all = (rows || []).concat(D.zt || [], D.zb || []);
+    var map = secIndMapC(), now = Date.now(), need = [];
+    all.forEach(function (x) {
+      var k = String((x && x.c) || '').replace(/^(sh|sz|bj)/i, '');
+      if (!k || ZTI_REQ[k]) return;
+      var e = map[k];
+      if (e && e.ind && e.ind !== '—' && (now - (e.ts || 0)) < GT5_RULE.indTtl) return;
+      ZTI_REQ[k] = 1; need.push(k);
+    });
+    if (!need.length) return;
+    gt5LoadIndustries(need, map).then(function (r) {
+      lsSet('wb_gt5_indmap', r.map);
+      SECIND_C.t = 0;                                /* 强制重读行业缓存 */
+      try { GS_C.fp = ''; } catch (eG) { }           /* 7.5 分级缓存失效 → 按新行业键重算 */
+      try { buildGroups(); } catch (eB) { }
+      try { EMOCTX_C.seq = -1; EMO_C.seq = -1; } catch (eE) { }
+      try { if (WT.snap && WT.snap.zt) WT.snap.sectors = wtAggSectors(WT.snap.zt, WT.snap.zb); } catch (eW) { }
+      try { wtRender(); } catch (eR) { }             /* 三类卡即时重画 */
+      try { renderAllAsync(false); } catch (eA) { }  /* 7.5 / ⑤ 分组等消费方重渲 */
+    }).catch(function () { });
+  } catch (eZ) { }
+}
+/* 三类卡板块聚合（自 wtFetch 抽出，供 F10 到货后重算同一把尺）：键 = secIndOf（F10 优先 / hybk 兜底） */
+function wtAggSectors(zt, zb){
+  var secMap = {}, sectors = [];
+  (zt || []).forEach(function (z) {
+    var k = secIndOf(z.c, String(z.hybk || '—').trim()) || '—';
+    var s = secMap[k] || (secMap[k] = { name: k, cnt: 0, zb: 0, amount: 0, maxLbc: 0, rows: [], late: 0, lateRows: [] });
+    s.cnt++; s.amount += (+z.amount || 0); s.maxLbc = Math.max(s.maxLbc, +z.lbc || 1); s.rows.push(z);
+    if ((+z.fbt || 0) >= WT_LATE_FBT) { s.late++; s.lateRows.push(z); }
+  });
+  (zb || []).forEach(function (z) {
+    var k = secIndOf(z.c, String(z.hybk || '—').trim()) || '—';
+    if (secMap[k]) secMap[k].zb++;
+  });
+  return Object.keys(secMap).map(function (k) { return secMap[k]; }).sort(function (a, b) { return b.cnt - a.cnt || b.amount - a.amount; });
+}
 /* ⚠ 2026-09-22 口径统一：D.ztGroup 的键一律改为「东财二级行业全称」——
    涨停池 hybk 被接口截断到 4 汉字（汽车零部/计算机设…），拿它当键会让「缩写」与「全称」成为两个
    互不相同的行业（同一行业被拆成两行、家数被拆开），并且与板块榜 f14（全称）永远匹配不上。
-   代价：所有按原始缩写查表的调用方会静默落空（家数恒 0）→ 已统一改走 ztg()（见其注释）。 */
+   代价：所有按原始缩写查表的调用方会静默落空（家数恒 0）→ 已统一改走 ztg()（见其注释）。
+   ★ 2026-10-09：键再升级为 secIndOf —— F10 行业优先、hybk 归一兜底（见上方总注释）。 */
+/* ★★ 2026-10-09 第二层（用户要求「不要把电池、锂电池、电池化学品分开」）：热点主题层。
+   方法论（2026-10-09 全网检索归纳，见 SKILL §63）：
+   ① 官方行业分类（证监会/申万/东财 86 行业）= 静态基本面归属，颗粒细（电池/锂电池/电池化学品各自成业）；
+   ② 概念/主题板块（东财 297 概念）= 资金共识的动态标签，短线资金实际按这个尺抱团；
+   ③ 产业链映射（锂电 = 锂矿→四大材料→电芯→回收，炒作沿链轮动）；
+   ④ 资金行为聚类（同涨同跌/co-trading，能发现行业表外的新热点）；
+   ⑤ 驱动因子（政策/业绩/消息/资金）。本层落地 ②+③：把高共动、同催化的细分行业**并成一个热点主题**，
+   与「传媒 15 家」同类聚合；只并「公认同热点」的家族，宁缺勿滥 —— 表外行业原样透传（缺失≠猜）。
+   顺序敏感：先命中先赢，细名放前面防被宽名误吞（如「电子化学品」不得落进「半导体」）。 */
+var IND_THEME = [
+  ['锂电池', ['电池', '锂电', '电解液', '隔膜', '正极材料', '负极材料', '能源金属', '锂矿', '盐湖提锂', '固态电池', '钠电池', '储能']],
+  ['光伏风电', ['光伏', '太阳能', '风能', '风电']],
+  ['电网设备', ['电网']],
+  ['半导体', ['半导体', '芯片', '集成电路', '晶圆', '封测', '存储芯片', '光刻']],
+  ['消费电子', ['消费电子', '电子元件', '印制电路板', 'PCB', '被动元件', '连接器', '光学光电子', '面板', '显示器件', '摄像头', '声学']],
+  ['传媒', ['传媒', '出版', '影视', '广告营销', '数字媒体', '游戏', '广电', '文化传媒']],
+  ['软件算力', ['软件', '计算机', 'IT 服务', 'IT服务', '云计算', '信息安全', '信创', '人工智能']],
+  ['通信', ['通信设备', '通信服务', '光模块', '光通信', '物联网']],
+  ['汽车产业链', ['汽车整车', '汽车零部件', '汽车服务', '汽车电子', '乘用车', '商用车', '汽车拆解']],
+  ['军工', ['航天', '航空装备', '军工', '国防', '兵装', '船舶制造']],
+  ['医药医疗', ['制药', '医药', '医疗', '生物制品', '中药', '疫苗', 'CXO', '医疗器械', '医疗服务']],
+  ['白酒食品', ['白酒', '饮料', '食品', '乳品', '调味', '预制菜', '休闲食品', '啤酒']],
+  ['农业养殖', ['种植', '养殖', '农业', '种业', '渔业', '饲料', '畜牧', '动物保健']],
+  ['有色金属', ['有色金属', '工业金属', '贵金属', '小金属', '黄金', '稀土', '磁材', '铜', '铝']],
+  ['煤炭石油', ['煤炭', '石油', '油气', '油服', '焦炭']],
+  ['化工', ['化学制品', '化学原料', '化学纤维', '化纤', '化工', '橡胶', '塑料', '氟化工', '磷化工', '民爆', '涂料', '日化']],
+  ['大金融', ['证券', '保险', '多元金融', '期货', '信托', '金融科技', '互联网金融']],
+  ['机械设备', ['通用设备', '专用设备', '工程机械', '工业母机', '机床', '机器人', '自动化设备', '仪器仪表']],
+  ['交运物流', ['物流', '航运', '港口', '铁路', '公路', '航空', '机场', '快递']],
+  ['家电', ['家电', '白色家电', '黑色家电', '小家电', '厨卫电器', '照明设备']],
+  ['纺织服装', ['纺织', '服装', '家纺', '鞋帽']],
+  ['轻工家居', ['造纸', '包装', '家居', '轻工', '文娱用品']],
+  ['旅游酒店', ['旅游', '酒店', '餐饮', '景点', '免税']],
+  ['建筑建材', ['建筑装饰', '建筑材料', '基建', '城建设施', '路桥', '水泥', '玻璃', '耐火']],
+  ['房地产', ['房地产', '物业', '园区开发']],
+  ['环保水务', ['环保', '水务', '固废', '废气', '节能']]
+];
+function themeOf(ind){
+  ind = String(ind || '').trim();
+  if(!ind || ind === '—' || ind === '其他') return ind;
+  for(var i = 0; i < IND_THEME.length; i++){
+    var ks = IND_THEME[i][1];
+    for(var j = 0; j < ks.length; j++){
+      if(ind.indexOf(ks[j]) >= 0) return IND_THEME[i][0];
+    }
+  }
+  return ind;   /* 表外行业原样透传 —— 归类不硬凑 */
+}
 function buildGroups(){
   D.ztGroup = {};
   D.zt.forEach(function(x){
-    var k = (typeof ind2Canon === 'function') ? ind2Canon(x.hybk || '其他') : (x.hybk || '其他');
+    var k = secIndOf(x.c, x.hybk || '其他');
     if(!D.ztGroup[k]) D.ztGroup[k] = [];
     D.ztGroup[k].push(x);
   });
@@ -3407,7 +3491,26 @@ function ztg(name){
   if(!name) return [];
   if(g[name]) return g[name];
   var k = (typeof ind2Canon === 'function') ? ind2Canon(name) : name;
-  return g[k] || [];
+  if(g[k]) return g[k];
+  /* ★ 2026-10-09：主题层兜底 —— 调用方手上的名字可能是原始行业（hybk 全称/缩写），
+     而组键已是主题名（锂电池/传媒…）。全称直查与缩写还原都落空时，再过一次 themeOf 找主题组。 */
+  var t = themeKey(name);
+  return (t && g[t]) ? g[t] : [];
+}
+/* ★ 2026-10-09 第64轮：主题键助手（IND_THEME 热点主题层，§63）。
+   themeKey(v)：行业名（hybk 缩写 / f100 全称）→ ind2C 归一 → themeOf 主题合并。
+   用于「无 code 上下文、只能拿行业名当分组键」的模块（集合竞价 / ③ 昨涨停 / 7.5 炸板跌停计数 /
+   7.43 行业构成 / jdCtx 板块清单）—— 与 buildGroups 的 secIndOf 同一把主题尺。
+   themeEq(a,b)：两侧都过主题层再比 —— 主题分组名 ↔ 池行原始 hybk 的「家族内」匹配
+   （组名「锂电池」要能数到 hybk=「电池」的炸板；hybkEq 只做全称相等，数不到）。 */
+function themeKey(v){
+  var s = String(v == null ? '' : v).trim();
+  if(!s || s === '—' || s === '其他') return s;
+  try{ return themeOf((typeof ind2C === 'function') ? ind2C(s) : s) || s; }catch(eT){ return s; }
+}
+function themeEq(a, b){
+  var ka = themeKey(a), kb = themeKey(b);
+  return !!ka && !!kb && ka === kb;
 }
 /* 涨停池行业名比较（2026-09-22）：两侧都归一到东财二级行业全称再比（原来直接 === 会在标准化后失效） */
 function hybkEq(a, b){
@@ -3627,7 +3730,9 @@ function t1Verify(name, prevMap){
 }
 function prevZtBySector(){
   var m = {};
-  D.prev.forEach(function(x){ var k = ind2C(x.hybk); if(k){ if(!m[k]) m[k] = []; m[k].push(x); } });
+  /* ★ 2026-10-09：键过主题层（themeKey）—— 与 D.ztGroup 的 secIndOf 主题键同尺，
+     否则 seccPromo / seccJudge 用主题组名（锂电池）查不到 hybk=电池 的昨日池成员。 */
+  D.prev.forEach(function(x){ var k = themeKey(x.hybk); if(k){ if(!m[k]) m[k] = []; m[k].push(x); } });
   return m;
 }
 /* ★ 2026-10-08（用户要求）：板块级「昨日涨停家数」备注 —— 实时盯盘「三、主线板块（三类卡）」
@@ -3639,7 +3744,9 @@ function prevZtCntOf(name){
   try{
     if(!name || !D.prev || !D.prev.length) return null;
     var m = prevZtBySector();
-    var rows = m[name] != null ? m[name] : m[ind2C(name)];
+    /* ★ 2026-10-09：name 可能是主题组名 / 原始全称 / 缩写 —— 按序三级兜底（键已主题化）。 */
+    var tk = themeKey(name);
+    var rows = (m[name] != null) ? m[name] : ((tk && m[tk] != null) ? m[tk] : m[ind2C(name)]);
     return rows ? rows.length : 0;
   }catch(e){ return null; }
 }
@@ -4795,8 +4902,10 @@ function seccTrend(name, todayKey, days){
    ==================================================================================== */
 function secRiskVeto(name, o){
   o = o || {};
-  var zb = (o.zb != null) ? o.zb : (D.zb || []).filter(function(x){ return hybkEq(x.hybk, name); }).length;
-  var dt = (o.dt != null) ? o.dt : (D.dt || []).filter(function(x){ return hybkEq(x.hybk, name); }).length;
+  /* ★ 2026-10-09：name 已是主题组名 —— 匹配放宽到主题家族（themeEq），否则 hybk=电池 的
+     炸板/跌停数不到组名=锂电池 的板块上（§63 换键后的遗留失配）。 */
+  var zb = (o.zb != null) ? o.zb : (D.zb || []).filter(function(x){ return hybkEq(x.hybk, name) || themeEq(x.hybk, name); }).length;
+  var dt = (o.dt != null) ? o.dt : (D.dt || []).filter(function(x){ return hybkEq(x.hybk, name) || themeEq(x.hybk, name); }).length;
   var zt = (o.zt != null) ? o.zt : ztg(name).length;
   var rate = (o.zbRate != null) ? o.zbRate : ((zt + zb) > 0 ? zb / (zt + zb) : null);
   if(dt > 0) return { veto: true, why: '板块内出现跌停 ' + dt + ' 家（退潮特征）', zb: zb, dt: dt, rate: rate };
@@ -4813,8 +4922,9 @@ function seccJudge(name, o){
   var gz = ztg(name);
   var pz = seccPrevMap()[name] || [];
   var tZt = gz.length, tMax = (o.maxLbc != null) ? o.maxLbc : maxLbcOf(gz);
-  var zb = (o.zb != null) ? o.zb : (D.zb || []).filter(function(x){ return hybkEq(x.hybk, name); }).length;
-  var dt = (o.dt != null) ? o.dt : (D.dt || []).filter(function(x){ return hybkEq(x.hybk, name); }).length;
+  /* ★ 2026-10-09：同 secRiskVeto —— 主题家族内匹配（组名=锂电池 ↔ hybk=电池 的炸板/跌停）。 */
+  var zb = (o.zb != null) ? o.zb : (D.zb || []).filter(function(x){ return hybkEq(x.hybk, name) || themeEq(x.hybk, name); }).length;
+  var dt = (o.dt != null) ? o.dt : (D.dt || []).filter(function(x){ return hybkEq(x.hybk, name) || themeEq(x.hybk, name); }).length;
   var denom = tZt + zb, zbRate = denom ? zb / denom : null;
   /* ── 四锚点：家数 / 高度（上面已算）+ 成交额占比 / 晋级率 ── */
   var ctx = seccCtx();
@@ -5403,8 +5513,10 @@ function gradeSectors(){
   if(GS_C.fp === fp) return GS_C.v;
   var zc = ztCountBySector();
   var zbc = {}, dtc = {};
-  D.zb.forEach(function(x){ var k = ind2C(x.hybk) || '其他'; zbc[k] = (zbc[k] || 0) + 1; });
-  D.dt.forEach(function(x){ var k = ind2C(x.hybk) || '其他'; dtc[k] = (dtc[k] || 0) + 1; });
+  /* ★ 2026-10-09：键过主题层（themeKey）—— zc（ztCountBySector）键 = D.ztGroup 主题键，
+     zbc/dtc 若仍用 ind2C 原始行业键，「锂电池 vs 电池」「传媒 vs 出版」这类合并家族会数成 0。 */
+  D.zb.forEach(function(x){ var k = themeKey(x.hybk) || '其他'; zbc[k] = (zbc[k] || 0) + 1; });
+  D.dt.forEach(function(x){ var k = themeKey(x.hybk) || '其他'; dtc[k] = (dtc[k] || 0) + 1; });
   var newsSec = newsSectorHits();
   var out = [];
   Object.keys(zc).forEach(function(name){
@@ -6408,11 +6520,9 @@ function renderAll(){
   renderStageQuick();
   renderM3(); renderM4(); renderM5(); renderM6();
   renderM7(); renderM8();  renderM11();
-  renderM735();  /* 7.35 题材聚类（东财概念板块；当日 1 次 F10 请求 + 30 分钟概念列表缓存，其余读本地缓存） */
+  /* 7.35 题材聚类与 7.43 主线识别已于 2026-10-09 按用户要求整卡删除（renderM735/renderM743 不再存在） */
   renderM710B(); /* 7.10B 可买入组合清单（修正版）：读 ⑥ 大盘周期 + 7.5 板块级别/周期，自动高亮命中组合 */
   renderM741();  /* 7.41 个股 12 维复盘（修正版）：只重渲染已有结果，不自动取数（查询由按钮触发） */
-  /* 7.42 题材热度已于 2026-09-27 按用户要求删除（renderM742 不再存在） */
-  renderM743();  /* 7.43 主线识别 · 属性聚合 × 行为指纹：同一份 F10 数据，聚合成"方向"后做角色定性 */
   renderM744();  /* 7.44 赚亏钱效应（2026-09-27 新增）：读 emoCtx()/emotion()/D.analysis + 本卡自身落盘，零额外请求 */
   renderAnom();  /* 🚨 盘中异动监控（2026-10-08 新增）：读 ANOM 自采快照 + 当日落盘事件，只重渲染不取数（取数走 anomTick 自有 12 秒轮） */
   renderDiv();   /* 置顶风控信号：指数 vs 情绪 背离判断（置顶横幅，每刷新实时更新） */
@@ -6426,14 +6536,14 @@ function renderAll(){
    总耗时不变，但每帧都有空闲给浏览器做样式/布局/绘制与响应输入 → 不再"卡住"。
    ⚠️ 桩环境走同步 renderAll，本函数只在 refreshAll 里按 WB_IO_ON 择一调用，回归套件不受影响。 */
 var RA_TASKS = [renderTimeline, renderStageQuick, renderM3, renderM4, renderM5, renderM6,
-  renderM7, renderM8, renderM11, renderM735, renderM710B, renderM741, renderM743,
-  renderM744,   /* 7.44 赚亏钱效应（2026-09-27 新增）。同 renderM743：**必须同时**登记在这里和同步版 renderAll，
+  renderM7, renderM8, renderM11, renderM710B, renderM741,
+  renderM744,   /* 7.44 赚亏钱效应（2026-09-27 新增）。**必须同时**登记在这里和同步版 renderAll，
                    只加同步版 → 桩环境测试通过、真实页面永远"加载中"（§5 踩过）。 */
   renderAnom,   /* 🚨 盘中异动监控（2026-10-08 新增）。同上：两处都要登记，否则真页面整卡停「监控启动中」 */
   renderDiv, renderVerdict];   /* renderVerdict：结论前置条（2026-09-26 新增），读 ⑥/7.5/⑦ 缓存，放末尾让缓存全热 */
-/* ⚠️ renderM743（7.43 主线识别）必须**同时**登记在这里和同步版 renderAll 里。
-   真实浏览器走的是本表的分帧版（renderAllAsync）；只在同步版里加 → 桩环境测试通过、
-   真实页面永远显示"加载中"。2026-09-26 就这么踩过一次，靠真实数据路径验证才抓出来。 */
+/* ⚠️ 新增渲染模块必须**同时**登记在 RA_TASKS 和同步版 renderAll 里（历史教训：2026-09-26 renderM743
+   只加同步版 → 桩环境测试通过、真实页面永远"加载中"，靠真实数据路径验证才抓出来；
+   该卡已于 2026-10-09 按用户要求删除，此纪律保留给后续新增模块）。 */
 var RA_BUSY = false, RA_AGAIN = false, RA_I = 0;
 function renderAllAsync(auto){
   if(RA_BUSY){ RA_AGAIN = true; return; }   /* 上一轮还没跑完：本轮数据已进 D.*，跑完再补一轮全量 */
@@ -6514,7 +6624,9 @@ function m3SecHlp(){
   };
 }
 function m3SecNameOf(x){
-  try { var n = ind2C((x && x.hybk) || ''); return n || '未归类'; } catch (eI3) { return '未归类'; }
+  /* ★ 2026-10-09：键过主题层（themeKey）—— 板块今日表现表与 D.ztGroup/集合竞价同一把主题尺
+     （电池/锂电池/电池化学品 并成「锂电池」，出版/影视 并成「传媒」）。 */
+  try { var n = themeKey((x && x.hybk) || ''); return n || '未归类'; } catch (eI3) { return '未归类'; }
 }
 /* 聚合：prev=昨日涨停池 zt=今日涨停池 prevQ=昨池股今日行情 → 按板块聚合行数组（今日家数降序） */
 function m3SecPerfAgg(prev, zt, prevQ){
@@ -7493,8 +7605,10 @@ function lifeCtxOf(code, name, sec, px, opt){
   try{ ctx.isZb = (D.zb || []).some(function(x){ return x.c === code; }); }catch(e){ ctx.isZb = false; }
   try{ ctx.isDt = (D.dt || []).some(function(x){ return x.c === code; }); }catch(e){ ctx.isDt = false; }
   if(sec && sec !== '—'){
+    /* ★ 2026-10-09：ztg 已带主题层兜底（原始行业名也能命中主题组）；
+       nZb 同步放宽到主题家族 —— 共振计数与组员口径一致（组名=锂电池 ↔ hybk=电池 的炸板）。 */
     var g = ztg(sec);
-    var nZb = (D.zb || []).filter(function(x){ return hybkEq(x.hybk, sec); }).length;
+    var nZb = (D.zb || []).filter(function(x){ return hybkEq(x.hybk, sec) || themeEq(x.hybk, sec); }).length;
     /* 「板块共振」= 该板块涨停 + 炸板家数（炸板同样属资金异动）；与全站「按板块分组」同一事实源 */
     ctx.reso = g.length + nZb;
     ctx.isTopInSec = (g.length > 0) && (maxLbcOf(g) === (opt.lbc || 0)) && ((opt.lbc || 0) >= 2);
@@ -7639,7 +7753,10 @@ function lifeQueue(delay){
 }
 
 /* ==================================================================
-   7.35 题材聚类（东财概念板块）· 短线「找主线」专用 · 2026-09-17 新增
+   东财概念题材通道（THM）· 2026-09-17 随 7.35 题材聚类新增；7.35 卡与 7.43 主线识别
+   已于 2026-10-09 按用户要求整卡删除，本通道保留 —— 现消费方：
+     m5 涨停复盘连板股表「题材」列（thmCell）/ 板块分组旁的按题材分组（thmGroups）/
+     个股题材标注（THM.map）/ ⑪ 自动分析总结「已归类 N 只」计数。
    ------------------------------------------------------------------
    为什么不是开盘啦（已实测，非推测）：开盘啦只有 App 接口 —— 需 Token + DeviceID +
    VerSion/apiv，且**服务端校验 Dalvik UA**（非 Dalvik UA 直接返回空），Token 由抓包
@@ -7813,8 +7930,9 @@ function thmGroups(){
   Object.keys(THM.map).forEach(function(c){
     var st = byCode[c]; if(!st) return;
     THM.map[c].forEach(function(t){
-      if(t.region) return;   /* 地域标签不进「概念题材」池 —— 7.35 / 7.42 口径与输出保持不变；
-                                地域维度由 7.43 主线识别引擎（mliGroups）单独消费 */
+      if(t.region) return;   /* 地域标签不进「概念题材」池（口径自 2026-09-26 起不变）。
+                                7.43 主线识别（mliGroups，曾单独消费地域维度）已于 2026-10-09 删除 ——
+                                region 标签仍采集并保留在 THM.map 供复盘，当前无 UI 消费方 */
       if(!g[t.name]) g[t.name] = { name: t.name, bk: t.bk, stocks: [] };
       g[t.name].stocks.push(st);
     });
@@ -7858,10 +7976,9 @@ function thmTop(code, g){
   return best;
 }
 /* ==================================================================
-   7.42 题材热度 · 连板与资金共振方向 —— 已于 2026-09-27 按用户要求整卡删除。
-   原实现（M742_RULE / m742Ladder / M742_QUAD / m742Quad / m742Agg / renderM742）
-   可从备份 index.html.bak_before_autorefresh_*.html 取回。
-   保留：7.35 题材聚类（thmGroups）、7.43 主线识别（MLI）。
+   7.42 题材热度（2026-09-27）、7.35 题材聚类卡、7.43 主线识别（MLI，2026-10-09）
+   均已按用户要求整卡删除。
+   保留：thmGroups / thmTop / thmCell 与 THM 通道（m5 题材列 / 个股题材标注 / ⑪ 计数消费）。
    ================================================================== */
 /* ==== M742-REMOVED ==== */
 /* ==================================================================
@@ -9972,8 +10089,10 @@ function jdCtx() {
     })[0] || null;
   }
   var tLd = pickLeader(D.zt), pLd = pickLeader(D.prev);
+  /* ★ 2026-10-09：zc 键已是主题组名 —— 最高板所属板块的涨停家数查表加 themeKey 兜底，
+     否则 hybk=电池 的龙头查不到 zc[锂电池]。 */
   var maxLbcSecName = tLd ? (ind2C(tLd.hybk) || tLd.hybk || null) : null;
-  var maxLbcSecZt = tLd ? (zc[maxLbcSecName] || zc[tLd.hybk] || 0) : null;
+  var maxLbcSecZt = tLd ? (zc[maxLbcSecName] || zc[tLd.hybk] || zc[themeKey(tLd.hybk)] || 0) : null;
   var prevLeaderN = pLd ? (pLd.lbc || 1) : null;
   var prevLeaderPct = (pLd && D.prevQ && D.prevQ[pLd.c]) ? num(D.prevQ[pLd.c].pct) : null;
 
@@ -9986,8 +10105,9 @@ function jdCtx() {
   Object.keys(zc).forEach(function (k) { if (zc[k] > maxZt) maxZt = zc[k]; });
   var secList = Object.keys(zc).map(function (nm) {
     var sec = secByName(nm);
-    var arr = (D.zt || []).filter(function (x) { return hybkEq(x.hybk, nm); });
-    var zbN = (D.zb || []).filter(function (x) { return hybkEq(x.hybk, nm); }).length;
+    /* ★ 2026-10-09：nm 为主题组名 —— 涨停/炸板计数放宽到主题家族（同 gradeSectors 链口径）。 */
+    var arr = (D.zt || []).filter(function (x) { return hybkEq(x.hybk, nm) || themeEq(x.hybk, nm); });
+    var zbN = (D.zb || []).filter(function (x) { return hybkEq(x.hybk, nm) || themeEq(x.hybk, nm); }).length;
     var amtSec = null;
     try {
       var hit = (D.secAmt || []).filter(function (s) { return s && (s.f14 === nm || s.name === nm); })[0];
@@ -10334,576 +10454,21 @@ function jdRepaint() {
 
 /* ==== 7.44-UI-END ==== */
 /* ==================================================================
-   7.43 主线识别引擎（MLI · Main Line Identification）
-   ------------------------------------------------------------------
-   为什么需要它（诊断结论 · 已用 2026-09-24 真实涨停池 52 只实证）：
-     参考复盘能写出「海峡西岸/福建国资是主线，出版/机器人/高端装备是支线」，
-     而平台算不出来，原因有三，缺一不可：
-     ① **地域属性被硬过滤**：thmPickRows 首行 `if(t==='板块'||t==='行业') return;`
-        把「福建板块」整批丢弃（实测 6 只涨停股共享该标签）；而语义等价的「长江三角」
-        （BOARD_TYPE=null）却能进榜排第 4 —— 同类标签两种命运。
-     ② **单标签计数口径 → 宽泛标签霸榜**：当日 52 只里「央国企改革」覆盖 24 只（46.2%）
-        稳居榜首，它对"选方向"零信息量；而真主线被拆散在多个窄标签里（7 只福建股
-        分散在 央国企改革/低空经济/跨境电商/碳交易/合成生物… 互不相同），永远浮不上来。
-     ③ **只算静态家数/高度，不算行为**：参考模板真正的论据是「尾盘 12 只集体异动」——
-        那是**时间维度的同步性**（有组织资金进攻），是人造不出来的特征。平台的 fbt 字段
-        此前只用于排序（`a.fbt - b.fbt`），从未用于识别行为模式。
-
-   本引擎的四层结构（全部为纯函数，可单测）：
-     ① 属性抽取 mliAttrsOf  —— 概念标签 → 归入三个维度之一（互斥，不重复计数）
-                                 region（地域/区域 · 炒地图）＞ chain（产业链 · 跨标签共振）
-                                 普通概念不聚合（已由 7.35 / 7.42 回答，不重复造轮子）
-     ② 行为指纹 mliFp        —— 封板时点分布 / 同步性 σ / 炸板率 / 封单强度 / 梯队
-     ③ 角色定性 mliRole      —— 🎯真主线 / ⚡轮动支线 / 💤脉冲 / ⚠️分歧加剧
-     ④ 区分力加权           —— 覆盖率 > broadRatio 的方向降级（宽泛标签不可能是主线）
-
-   数据源：**完全复用** 7.35 的东财 F10 通道（其 columns 本就含 BOARD_TYPE，可判地域）
-           + 涨停池自带的 fbt / zbc / lbc / fund / amount。**零额外请求**。
-
-   ⚠️ 明确不做的部分（宁可留白，不臆造）：
-     · 昨日同方向的「退潮出清」判定需要昨日涨停池的 F10 属性（成本 = 再拉一轮 F10，请求量翻倍）
-       → 本引擎改用方向内「连板家数」间接衡量延续性，并在界面标注该口径边界。
-     · 封单撤单 / 竞价五档 / 消息催化真伪 —— 无稳定免费源，不参与判定（与全站口径一致）。
+   7.43 主线识别引擎（MLI）—— 已于 2026-10-09 按用户要求整卡删除。
+   原实现（MLI_RULE/MLI_CHAIN/mliAttrsOf/mliFp/mliRole/mliZtMap/mliGroups/mliAgg/
+   mliSuffix/mliFbtTxt/mliCardHtml/renderM743）可从备份 index.html.bak_before_del75b35_743_20261009_174805.html 取回。
+   保留：thmCell/thmTop/thmGroups 与 THM 通道（m5 题材列 / 个股题材标注 / ⑪ 已归类计数消费）。
    ================================================================== */
-/* ==== MLI-BEGIN ==== */
-var MLI_RULE = {
-  /* 宽泛标签阈值（两个条件任一命中即判「宽泛 · 无区分力」）：
-     (a) ratio  方向覆盖率（方向内涨停股数 ÷ 涨停池总数）> 30%
-                —— 近 1/3 的涨停股都在这个方向里，它是"市场背景"不是"方向"。
-                实证：2026-09-24「AI应用·软件信创」18/52 = 34.6% 却被排到支线榜首。
-     (b) tags   方向内不同标签数 > 10
-                —— 靠十几个标签凑起来的是"宽泛归类"，不是"共振"。
-     依据：类比信息检索的停用词（IDF≈0），覆盖近半市场的标签对"选方向"没有信息量。 */
-  broadRatio: 0.30, broadTags: 10,
-  minN: 3,              /* 方向最小家数：<3 只不称"方向"（1~2 只只算个股异动）。
-                           实证：门槛 2 时会冒出「金融·非银 2 家」这种假方向 ——
-                           华茂股份（纺织）靠「IPO受益」、康强电子（半导体）靠「移动支付」
-                           被拉到一起，纯属标签共现巧合。 */
-  /* 地域维度最小家数：地域标签是「属性标签」（同省公司天然成群），2~3 只同省纯属巧合；
-     产业链 2 只（如同为「减速器」）才更有指向性。实证：门槛 3 时 四川/山东 各 3 只挤进榜单。 */
-  regionMinN: 4,
-  lateT: 140000,        /* 尾盘边界：fbt ≥ 14:00 */
-  lastT: 143000,        /* 尾盘后段：≥ 14:30 */
-  earlyT: 100000,       /* 早盘边界：fbt ≤ 10:00 */
-  orgRatio: 0.50,       /* 「尾盘集体封板」阈值：尾盘占比 ≥ 50% 判为有组织性 */
-  zbcBad: 0.40,         /* 炸板率 ≥ 40% 且无连板 → 分歧加剧 */
-  topN: 8
-};
 
-/* ---------- ① 产业链映射表 ----------
-   把参考复盘模板背后「人类的产业知识」编码成可计算的关键词表 —— 这是"同等水平"的实质：
-   模板作者能看出「昆船智能 + 洛轴股份 + 襄阳轴承 + 宁波东力」同属机器人零部件，
-   靠的是产业常识；本表把这份常识固化下来，让引擎也能看出来。
-   来源：2026-09-24 涨停池 175 个真实东财标签去重归纳 + A 股常规题材分类。
-   用法：标签名**包含**任一关键词 → 归入该产业链（先命中先归属，表内顺序即优先级）。
-   ⚠️ 只收「产业方向」：地域由 region 维度承载，国资/资本运作由属性维度承载，不在此表内。 */
-var MLI_CHAIN = [
-  ['机器人·具身智能', ['人形机器人', '机器人概念', '机器人执行器', '减速器', '工业母机', '传感器', '伺服', '丝杠', '滚珠', '谐波', '精密制造', '机械基础件', '轴承']],
-  ['AI算力·数据中心', ['算力', '数据中心', 'PCB', '存储芯片', '铜缆高速连接', '光纤概念', '光模块', 'CPO', '液冷', '云计算', '边缘计算', '毫米波概念', '5G概念', '6G概念', 'F5G概念', '通信技术', '服务器', 'IDC']],
-  ['半导体·芯片', ['半导体', '国产芯片', '汽车芯片', '华为海思', '先进封装', '第三代半导体', '光刻', 'IGBT', '芯片概念']],
-  ['AI应用·软件信创', ['人工智能', 'AI应用', 'AI语料', 'AI制药', 'DeepSeek', '多模态AI', '大数据', '信创', '国产软件', '网络安全', '区块链', '数字孪生', '数字经济', '虚拟现实', '混合现实', '脑机接口', '量子科技', '鸿蒙概念', '华为概念', '超清视频']],
-  ['智能汽车·新能源车', ['新能源车', '智能驾驶', '车联网', '汽车热管理', '汽车一体化压铸', '特斯拉概念', '小米汽车', '汽车零部件', '飞行汽车', 'eVTOL', '整车']],
-  ['新能源·电力设备', ['光伏概念', 'HJT电池', 'TOPCon电池', '钙钛矿电池', '储能概念', '风能', '核能核电', '氢能源', '绿色电力', '智能电网', '电网概念', '电池技术', '锂电池概念', '充电桩', '新能源', '节能环保', '风电']],
-  ['军工·航天航空', ['军工', '军民融合', '航天航空', '大飞机', '商业航天', '卫星导航', '卫星互联网', '空间站概念', '无人机', '民爆概念']],
-  ['医药医疗', ['中药概念', '创新医疗服务', 'SPD概念', '体外诊断概念', '精准诊断', '精准医疗', '医疗器械概念', '互联网医疗', '单抗概念', '基因测序', '医美概念', '辅助生殖', '病原体防治', '病毒防治']],
-  ['消费·食品饮料', ['白酒', '预制菜概念', '鸡肉概念', '婴童概念', '新消费', '文娱消费', '食品安全', '体育产业', '彩票概念']],
-  ['传媒·出版·教育', ['影视概念', '数字阅读', '短剧互动游戏', '电子竞技', '知识产权', '网红经济', '谷子经济']],
-  ['基建·地产链', ['工程建设', '装配建筑', '地下管网', '水利建设', '新型城镇化', 'PPP模式', '铁路基建', '工程机械概念']],
-  ['资源·周期材料', ['小金属概念', '稀缺资源', '化工原料', '煤化工概念', '有机硅概念', '碳纤维', '新材料', '合成生物', '锂矿']],
-  ['农业·种业', ['农业种植', '生态农业', '乡村振兴', '农药兽药', '供销社概念', '土地流转']],
-  ['商贸·电商', ['电商概念', '跨境电商', '内贸流通', '新零售', '拼多多概念', '抖音概念', '快手概念', '阿里概念', '小红书概念', '冷链物流']],
-  ['低空经济', ['低空经济', '通用航空']],
-  ['海洋经济·港口航运', ['海洋经济', '航运港口', '海洋工程']],
-  /* 「金融·非银」的关键词刻意收窄：去掉 'IPO受益'（资本运作属性，已由 SKIP_CHAIN 拦）
-     与 '移动支付'（太多非金融公司沾边，实测把半导体股也吸进来）。 */
-  ['金融·非银', ['券商', '银行', '保险', '多元金融']]
-];
-/* 资本运作 + 国资属性（**修饰属性**，不单独成方向，只用来给方向命名与加权） */
-var MLI_SOE_RE = /央国企改革|国企改革|国资|央企|沪企改革/;
-var MLI_CAP_RE = /并购重组|参股|举牌|IPO受益|借壳|资产注入/;
-/* 资本运作类标签**不参与产业链匹配** —— 防「参股银行」「参股券商」「IPO受益」
-   被误归到「金融·非银」。实证踩到过两次：2026-09-24 康强电子（半导体）靠「移动支付」、
-   华茂股份（纺织）靠「IPO受益」被聚成一个名叫「金融·非银」的假方向，两家公司实际
-   与金融毫无关系。 */
-var MLI_SKIP_CHAIN_RE = /^(参股|举牌|持股|重仓|股权|并购重组|借壳|IPO受益)/;
-/* 区域概念：这些是「概念板块」类（BOARD_TYPE 为 null / 非板块），与地域板块同义。
-   实证：它们**能**通过旧过滤（故旧口径下「长江三角」进榜、「福建板块」被扔）；
-   本引擎把两者统一为 region 维度，消除"同类标签两种命运"。 */
-var MLI_AREA_RE = /^(长江三角|长三角|西部大开发|雄安新区|海南自贸|成渝特区|深圳特区|东北振兴|粤港自贸|湖北自贸|一带一路|自由贸易|自贸区|京津冀|粤港澳|中部崛起|黄河三角)$/;
-
-/* ---------- 角色字典 ---------- */
-var MLI_ROLE = {
-  rc: { k: 'rc', name: '真主线', icon: '🎯', col: '#f0453a', tune: 'c-red',
-    act: '多标的同向 + 封板行为有组织性（集中在一头封板）—— 资金合力方向，可作当日主攻参照；仓位仍受 ⑥ 大盘周期闸门约束。' },
-  odo: { k: 'odo', name: '分歧加剧', icon: '⚠️', col: '#a855f7', tune: 'c-pur',
-    act: '家数不少但炸板比例偏高、无连板承接 —— 高位分歧特征，追高风险大，优先兑现而非新开。' },
-  sub: { k: 'sub', name: '轮动支线', icon: '⚡', col: '#f59e0b', tune: 'c-ora',
-    act: '方向成立且有高度，但封板分散 / 无同步性 —— 属轮动补涨，只做龙头不做跟风。' },
-  pl: { k: 'pl', name: '脉冲', icon: '💤', col: '#64748b', tune: 'c-grn',
-    act: '标的零星、无梯队高度 —— 一日游概率高，不参与；除非次日出现连板梯队再回看。' }
-};
-var MLI_ROLE_ORD = { rc: 0, odo: 1, sub: 2, pl: 3 };
-
-/* ---------- ② 基础工具（纯函数） ---------- */
-/* 「福建板块」→「福建」；已是纯地名则原样返回 */
-function mliRegionName(nm) {
-  return String(nm == null ? '' : nm).replace(/(板块|地域)$/, '');
-}
-/* fbt（HHMMSS 数字）→ 距 9:00 的分钟数（用于算同步性方差；只做相对比较，不做绝对时间解释） */
-function mliFbtMin(v) {
-  if (v == null || isNaN(v)) return null;
-  var s = String(Math.round(Number(v)));
-  while (s.length < 6) s = '0' + s;
-  var h = parseInt(s.slice(0, 2), 10), m = parseInt(s.slice(2, 4), 10);
-  if (isNaN(h) || isNaN(m)) return null;
-  return (h - 9) * 60 + m;
-}
-/* 封板时间标准差（分钟）：越小 = 封板越集中 = 组织性越强。
-   实证对照：2026-09-24 福建系 7 只集中在 14:23~14:50（σ 约 10 分钟）；
-   而随机分布的一批票 σ 通常在 60 分钟以上。 */
-function mliFbtSd(ts) {
-  var a = [];
-  (ts || []).forEach(function (v) { var x = mliFbtMin(v); if (x != null) a.push(x); });
-  if (a.length < 2) return null;
-  var mu = 0, i;
-  for (i = 0; i < a.length; i++) mu += a[i];
-  mu = mu / a.length;
-  var v2 = 0;
-  for (i = 0; i < a.length; i++) v2 += (a[i] - mu) * (a[i] - mu);
-  return Math.sqrt(v2 / a.length);
-}
-
-/* ---------- ③ 属性抽取（纯函数） ----------
-   输入：某股的 F10 标签数组（THM.map[code]）
-   输出：统一属性数组 [{dim, key, tag}]，dim ∈ {region, chain}
-   互斥归属 —— 同一标签只落一个维度，避免同一批股票被重复计入两个方向。 */
-function mliAttrsOf(ts) {
-  var out = [];
-  (ts || []).forEach(function (t) {
-    var nm = t && t.name;
-    if (!nm) return;
-    var dim = null, key = null, i, j, ks;
-    if (t.region) {                       /* F10 地域板块（"福建板块"）*/
-      dim = 'region'; key = mliRegionName(nm);
-    } else if (MLI_AREA_RE.test(nm)) {    /* 概念类区域（"长江三角"）—— 与地域板块同义 */
-      dim = 'region'; key = nm;
-    } else if (MLI_SKIP_CHAIN_RE.test(nm)) {
-      /* 资本运作类标签 → 不归产业链（由 capN 属性统计），防「参股银行」误配「金融·非银」 */
-    } else {                              /* 产业链关键词匹配 */
-      for (i = 0; i < MLI_CHAIN.length; i++) {
-        ks = MLI_CHAIN[i][1];
-        for (j = 0; j < ks.length; j++) {
-          if (nm.indexOf(ks[j]) >= 0) { dim = 'chain'; key = MLI_CHAIN[i][0]; break; }
-        }
-        if (dim) break;
-      }
-    }
-    if (dim) out.push({ dim: dim, key: key, tag: nm });
-  });
-  return out;
-}
-
-/* ---------- ④ 行为指纹（纯函数） ---------- */
-function mliFp(s) {
-  var f = { n: s.length, early: 0, mid: 0, late: 0, last: 0, zbc: 0, zbcN: 0,
-    maxLbc: 1, lian: 0, amt: 0, fund: 0, ts: [], lead: null };
-  s.forEach(function (x) {
-    var lb = x.lbc || 1;
-    if (lb > f.maxLbc) { f.maxLbc = lb; f.lead = x; }
-    if (lb >= 2) f.lian++;
-    if (f.lead == null) f.lead = x;
-    var t = x.fbt;
-    if (t != null && !isNaN(t)) {
-      f.ts.push(t);
-      if (Number(t) <= MLI_RULE.earlyT) f.early++;
-      else if (Number(t) >= MLI_RULE.lateT) f.late++;
-      else f.mid++;
-      if (Number(t) >= MLI_RULE.lastT) f.last++;
-    }
-    f.zbc += (x.zbc || 0);
-    if ((x.zbc || 0) >= 1) f.zbcN++;
-    f.amt += (num(x.amount) || 0);
-    f.fund += (num(x.fund) || 0);
-  });
-  f.lateRatio = f.n ? f.late / f.n : 0;
-  f.earlyRatio = f.n ? f.early / f.n : 0;
-  f.sd = mliFbtSd(f.ts);
-  f.zbcRatio = f.n ? f.zbcN / f.n : 0;
-  f.fundRatio = f.amt > 0 ? (f.fund / f.amt) : null;   /* 封单额 / 成交额 —— 封板质量 */
-  return f;
-}
-
-/* 组织性判定：只看「尾盘集中封板」。
-   ⚠️ 为什么去掉「早盘集中」（这是实测教训，不是想当然）：
-     2026-09-24 机器人·具身智能 8 家，早盘 5 / 盘中 2 / 尾盘 1。若把"早盘 ≥50%"也算组织性，
-     它会被判成 🎯 真主线；但它的封板时间标准差 σ=107 分钟（极分散），且参考复盘把它归为
-     「轮动支线 · 防御性进攻」。而福建系尾盘占比 73%、集中在 14:23~14:50，才是真正的"集体异动"。
-   结论：早盘封板是常态（隔夜利好 / 惯性），不具区分力；**尾盘集体封板**才代表
-   "资金在收盘前主动抢筹"的组织性。故组织性 = 尾盘占比 ≥ 50%（单判据）。 */
-function mliIsOrganized(fp, n) {
-  if (n < 3) return false;
-  return fp.lateRatio >= MLI_RULE.orgRatio;
-}
-
-/* ---------- ⑤ 角色定性（纯函数） ---------- */
-/* 优先级：分歧加剧 > 真主线 > 轮动支线 > 脉冲
-   ① ⚠️ 分歧加剧：家数够 + 炸板普遍（≥40%）+ 无连板承接 → 高位派发
-   ② 🎯 真主线  ：家数 ≥3 + 尾盘集体封板（组织性）+ 有梯队（连板 或 高度 ≥3）
-   ③ ⚡ 轮动支线：要有"梯队感" —— 高度 ≥3 板，或（家数 ≥4 且 有连板）
-   ④ 💤 脉冲    ：其余（零星 / 无连板 / 无高度）
-   ⚠️ 支线门槛是实测调过的：不加"连板"条件时会冒出 20+ 个"支线"，其中大半是
-      2~3 只、最高 1 板 —— 那是噪音不是方向。（比例类分母 <3 一律不给方向性结论，通则。） */
-function mliRole(o) {
-  var fp = o.fp, n = o.cnt;
-  if (n < MLI_RULE.minN) return MLI_ROLE.pl;
-  if (n >= 3 && fp.zbcRatio >= MLI_RULE.zbcBad && fp.lian === 0) return MLI_ROLE.odo;
-  if (n >= 3 && mliIsOrganized(fp, n) && (fp.lian >= 1 || fp.maxLbc >= 3)) return MLI_ROLE.rc;
-  if (fp.maxLbc >= 3 || (n >= 4 && fp.lian >= 1)) return MLI_ROLE.sub;
-  return MLI_ROLE.pl;
-}
-/* ==== MLI-END ==== */
-var MLI = { wait: false };
-var MLI_G = { src: null, n: -1, map: null, ztSrc: null, ztMap: null };
-/* 涨停池 code → stock 索引（按数组引用缓存：同一轮刷新内只建一次） */
-function mliZtMap() {
-  if (MLI_G.ztSrc === D.zt && MLI_G.ztMap) return MLI_G.ztMap;
-  var m = {};
-  (D.zt || []).forEach(function (x) { m[x.c] = x; });
-  MLI_G.ztSrc = D.zt; MLI_G.ztMap = m;
-  return m;
-}
-/* ---------- ⑥ 反演：方向 → 涨停股（纯函数主体；按 D.zt 引用 + THM 条数缓存） ---------- */
-function mliGroups() {
-  var n = Object.keys(THM.map).length;
-  if (MLI_G.src === D.zt && MLI_G.n === n && MLI_G.map) return MLI_G.map;
-  var zm = mliZtMap();
-  var g = {}, covered = {};
-  Object.keys(THM.map).forEach(function (c) {
-    var st = zm[c]; if (!st) return;
-    var attrs = mliAttrsOf(THM.map[c]);
-    var seen = {};
-    attrs.forEach(function (a) {
-      var k = a.dim + '|' + a.key;
-      if (seen[k]) return; seen[k] = 1;          /* 同一方向内去重（一股命中同方向多标签只算一次） */
-      if (!g[k]) g[k] = { dim: a.dim, key: a.key, tags: {}, stocks: [] };
-      g[k].tags[a.tag] = (g[k].tags[a.tag] || 0) + 1;
-      g[k].stocks.push(st);
-      covered[c] = 1;
-    });
-  });
-  var tot = (D.zt || []).length, thmN = Object.keys(THM.map).length;
-  var gKeys = Object.keys(g);
-  gKeys.forEach(function (k) {
-    var o = g[k], s = o.stocks;
-    o.cnt = s.length;
-    o.ratio = tot ? (s.length / tot) : 0;
-    o.tagList = Object.keys(o.tags).sort(function (a, b) { return (o.tags[b] - o.tags[a]) || (a < b ? -1 : 1); });
-    /* 宽泛判定（两条件任一命中，见 MLI_RULE.broadRatio 注释） */
-    o.broad = (o.ratio > MLI_RULE.broadRatio) || (o.tagList.length > MLI_RULE.broadTags);
-    o.fp = mliFp(s);
-    o.maxLbc = o.fp.maxLbc;
-    o.lian = o.fp.lian;
-    o.first = o.cnt - o.lian;
-    o.lead = o.fp.lead ? (o.fp.lead.n + '（' + (o.fp.lead.lbc || 1) + '板）') : '—';
-    /* 修饰属性渗透率：国资 / 资本运作 —— 用于生成复合方向名（如「福建系（国资 5/7）」，
-       这正是参考模板「海峡西岸/福建国资」那个名称的可计算来源） */
-    o.soeN = 0; o.capN = 0;
-    s.forEach(function (x) {
-      var ts = THM.map[x.c] || [], hasSoe = false, hasCap = false;
-      ts.forEach(function (t) {
-        if (!t.region && MLI_SOE_RE.test(t.name)) hasSoe = true;
-        if (MLI_CAP_RE.test(t.name)) hasCap = true;
-      });
-      if (hasSoe) o.soeN++;
-      if (hasCap) o.capN++;
-    });
-    o.soeRatio = o.cnt ? o.soeN / o.cnt : 0;
-    o.capRatio = o.cnt ? o.capN / o.cnt : 0;
-    o.role = mliRole(o);
-    /* 宽泛降级：覆盖近半池子的标签不可能是"主线"（它是属性叠加，不是方向） */
-    o.broadDemoted = false;
-    if (o.broad && o.role.k === 'rc') { o.role = MLI_ROLE.sub; o.broadDemoted = true; }
-    /* 行业构成（供人复核 —— 参考模板「轴承/水泥」那一层判断靠的就是它） */
-    var hy = {};
-    s.forEach(function (x) { var k = ind2C(x.hybk) || '其他'; hy[k] = (hy[k] || 0) + 1; });
-    o.hyTxt = Object.keys(hy).sort(function (a, b) { return hy[b] - hy[a]; })
-      .slice(0, 4).map(function (k) { return k + '×' + hy[k]; }).join(' · ');
-    o.ord = MLI_ROLE_ORD[o.role.k];
-  });
-  MLI_G.src = D.zt; MLI_G.n = n; MLI_G.map = g;
-  return g;
-}
-/* ---------- ⑦ 汇总（过滤 + 排序 + 分档；纯函数） ---------- */
-function mliAgg() {
-  var g = mliGroups();
-  var rows = Object.keys(g).map(function (k) { return g[k]; });
-  /* 地域维度最小家数门槛（见 MLI_RULE.regionMinN 注释）
-     + 全局最小家数门槛（<minN 只不成"方向"，只算个股异动） */
-  rows = rows.filter(function (o) {
-    if (o.cnt < MLI_RULE.minN) return false;
-    return o.dim !== 'region' || o.cnt >= MLI_RULE.regionMinN;
-  });
-  /* 排序（六级）：角色优先级 → 非宽泛优先 → 连板家数 → 高度 → 家数 → 尾盘占比 → 名称。
-     二级"非宽泛优先"很关键：实证不加它时「AI应用 18 家」会凭家数挤到支线榜首，
-     而它其实是靠 8+ 个宽泛标签凑出来的归类；加上之后「出版 5 板」这类真方向浮上来。
-     三级用"连板家数"而非"最高板"：方向自身有梯队（多只连续上涨）比"被某只高位股带高"更有意义。 */
-  rows.sort(function (a, b) {
-    return (a.ord - b.ord) ||
-      ((a.broad ? 1 : 0) - (b.broad ? 1 : 0)) ||
-      (b.lian - a.lian) || (b.maxLbc - a.maxLbc) || (b.cnt - a.cnt) ||
-      (b.fp.lateRatio - a.fp.lateRatio) || (a.key < b.key ? -1 : 1);
-  });
-  var cov = {};
-  rows.forEach(function (o) { o.stocks.forEach(function (x) { cov[x.c] = 1; }); });
-  var tot = (D.zt || []).length, thmN = Object.keys(THM.map).length;
-  var covN = Object.keys(cov).length;
-  var out = { rows: rows, ztN: tot, thmN: thmN, covered: covN,
-    miss: Math.max(0, thmN - covN), noF10: Math.max(0, tot - thmN),
-    mains: [], odos: [], subs: [], pls: [] };
-  rows.forEach(function (o) {
-    if (o.role.k === 'rc') out.mains.push(o);
-    else if (o.role.k === 'odo') out.odos.push(o);
-    else if (o.role.k === 'sub') out.subs.push(o);
-    else out.pls.push(o);
-  });
-  return out;
-}
-/* 方向名的属性后缀：「福建系（国资 5/7）」 */
-function mliSuffix(o) {
-  var p = [];
-  if (o.soeRatio >= 0.5) p.push('国资 ' + o.soeN + '/' + o.cnt);
-  else if (o.soeRatio >= 0.3) p.push('含国资 ' + o.soeN + '/' + o.cnt);
-  if (o.capRatio >= 0.5) p.push('资本运作 ' + o.capN + '/' + o.cnt);
-  return p.length ? '（' + p.join(' · ') + '）' : '';
-}
-/* 时点分布文字 */
-function mliFbtTxt(fp) {
-  return '早盘 ' + fp.early + ' · 盘中 ' + fp.mid + ' · 尾盘 ' + fp.late +
-    (fp.last ? '（其中 14:30 后 ' + fp.last + '）' : '');
-}
-/* ---------- ⑧ 渲染 ---------- */
-function mliCardHtml(o) {
-  var r = o.role, fp = o.fp, col = r.col;
-  var h = '<div class="note" style="border-left:3px solid ' + col + ';margin:9px 0;padding:9px 12px">';
-  h += '<div style="font-weight:800;color:' + col + ';font-size:14px">' + r.icon + ' ' +
-    esc(o.key) + esc(mliSuffix(o)) + ' · ' + r.name +
-    '<span class="flat" style="font-weight:400;font-size:11px">　' +
-    (o.dim === 'region' ? '地域属性（炒地图）' : '产业链属性（跨标签共振）') + '</span>' +
-    (o.broad ? '<span style="color:#94a3b8;font-weight:400">　（宽泛标签 · 覆盖率 ' +
-      (o.ratio * 100).toFixed(1) + '% · 无区分力' + (o.broadDemoted ? ' · 已降级' : '') + '）</span>' : '') + '</div>';
-  h += '<div style="margin-top:4px">涨停 <b>' + o.cnt + '</b> 家 · 首板 ' + o.first +
-    ' · 连板 <b>' + o.lian + '</b> · 最高 <b>' + o.maxLbc + '</b> 板　｜ 龙头 ' + esc(o.lead) +
-    '　｜ 覆盖率 ' + (o.ratio * 100).toFixed(1) + '%</div>';
-  h += '<div style="margin-top:3px">行为指纹：封板时点 ' + mliFbtTxt(fp) +
-    '　｜ 尾盘占比 <b' + (fp.lateRatio >= MLI_RULE.orgRatio ? ' style="color:' + col + '"' : '') + '>' +
-    (fp.lateRatio * 100).toFixed(0) + '%</b>' +
-    (fp.sd == null ? '' : '　｜ 同步性 σ=' + fp.sd.toFixed(0) + ' 分钟') +
-    '　｜ 炸板 <b>' + fp.zbcN + '</b>/' + o.cnt + ' 只（共 ' + fp.zbc + ' 次）' +
-    (fp.fundRatio == null ? '' : '　｜ 封单/成交 ' + (fp.fundRatio * 100).toFixed(1) + '%') + '</div>';
-  h += '<div style="margin-top:3px">行业构成：<span class="flat">' + esc(o.hyTxt || '—') + '</span>' +
-    '　｜ 属性标签：<span class="flat">' + esc(o.tagList.slice(0, 6).join(' / ')) +
-    (o.tagList.length > 6 ? ' 等 ' + o.tagList.length + ' 个' : '') + '</span></div>';
-  h += '<div style="margin-top:3px;white-space:normal">涨停股：' +
-    o.stocks.slice().sort(function (a, b) { return (b.lbc || 1) - (a.lbc || 1) || (a.fbt || 999999) - (b.fbt || 999999); })
-      .map(function (x) {
-        var lb = (x.lbc || 1);
-        return '<span class="' + (lb >= 2 ? 'up' : 'flat') + '">' + esc(x.n) +
-          (lb >= 2 ? lb + '板' : '') + '<span style="opacity:.6;font-size:10px">' + fmtFbt(x.fbt) + '</span></span>';
-      }).join('<span class="flat">·</span>') + '</div>';
-  h += '<div style="margin-top:3px;color:#94a3b8">判定：' + esc(r.act) + '</div>';
-  h += '</div>';
-  return h;
-}
-function renderM743() {
-  var box = $('m7_43'); if (!box) return;
-  if (typeof THM === 'undefined' || typeof thmEnsure !== 'function') {
-    setHtml(box, '<div class="loading">题材聚类基建（7.35）未就绪 —— 本卡不另起一套取数，等它加载。</div>');
-    return;
-  }
-  var ztN = (typeof D !== 'undefined' && D.zt) ? D.zt.length : 0;
-  if (!THM.done) {
-    setHtml(box, '<div class="loading">属性归属取数中（复用 7.35 通道 · 东财概念 F10，含地域板块）…' +
-      (ztN ? '' : '；当前涨停池为空（多为非交易时段或接口未达）') + '</div>');
-    /* 同 7.42：回调入队（thmEnsure 已支持排队，不再因 running 丢弃） */
-    if (!MLI.wait && ztN) {
-      MLI.wait = true;
-      try { thmEnsure(function () { MLI.wait = false; renderM743(); }); }
-      catch (e) { MLI.wait = false; }
-    }
-    return;
-  }
-  var a = mliAgg();
-  if (!a.rows.length) {
-    setHtml(box, '<div class="concl c-grn"><b>主线识别：</b>本轮没有可聚合的方向（涨停池为空，或属性归属未取到）' +
-      '—— 非交易时段 / 接口受限时属正常空态，不是"今天没有主线"。</div>');
-    return;
-  }
-  var h = '';
-  /* ---- 顶部结论条（结论前置）---- */
-  function nm(arr, n) {
-    return arr.slice(0, n).map(function (o) {
-      return '<b>' + esc(o.key) + '</b>' + esc(mliSuffix(o)) + '（' + o.cnt + ' 家' +
-        (o.maxLbc >= 2 ? ' · 高 ' + o.maxLbc + ' 板' : '') + '）';
-    }).join('、') + (arr.length > n ? ' 等 ' + arr.length + ' 个' : '');
-  }
-  if (a.mains.length) {
-    h += '<div class="concl c-red">🎯 <b>真主线</b>：' + nm(a.mains, 3) +
-      ' —— 多标的同向 + 封板行为有组织性（集中在一头）。</div>';
-  } else {
-    h += '<div class="concl c-grn">🎯 <b>本轮无「真主线」</b>（无任何方向同时满足「家数 ≥3 + 封板有组织性 + 有梯队」）' +
-      (a.subs.length ? '；有高度但封板分散的是：' + nm(a.subs, 3) : '') + ' —— 按轮动 / 存量博弈对待，不按主线执行。</div>';
-  }
-  if (a.odos.length) h += '<div class="concl c-pur">⚠️ <b>分歧加剧</b>：' + nm(a.odos, 3) + ' —— 家数够但炸板比例高、无连板承接，优先兑现。</div>';
-  if (a.subs.length) h += '<div class="concl c-ora">⚡ <b>轮动支线</b>：' + nm(a.subs, 5) + ' —— 有高度无组织性 / 容量有限，只做龙头。</div>';
-  if (a.pls.length) h += '<div class="concl c-grn">💤 <b>脉冲</b>：' + nm(a.pls, 6) + ' —— 零星标的，一日游风险。</div>';
-  /* ---- 速览条 ---- */
-  h += '<div class="note"><b>聚合速览</b>：方向 <b>' + a.rows.length + '</b> 个 · 已归类涨停股 <b>' + a.covered + '</b>/' + a.ztN +
-    ' 只' + (a.miss ? '（已取 F10 但无地域/产业链属性 ' + a.miss + ' 只）' : '') +
-    (a.noF10 ? '（F10 未取到 ' + a.noF10 + ' 只）' : '') +
-    '　｜ 🎯 真主线 ' + a.mains.length + ' · ⚠️ 分歧 ' + a.odos.length + ' · ⚡ 支线 ' + a.subs.length + ' · 💤 脉冲 ' + a.pls.length + '</div>';
-  /* ---- 方向卡片：按角色分组、各组限额（真主线全列；支线取前 6；脉冲只列名单）。
-     分组限额的理由：实证 2026-09-24 有 22+ 个"方向"，一次全铺会淹没重点 ——
-     参考复盘也只讲 3~4 个。分组的顺序本身就是结论（先看主线，再看支线）。 ---- */
-  function groupHtml(title, arr, limit, col) {
-    if (!arr.length) return '';
-    var x = '<div class="note" style="margin:12px 0 2px;font-weight:800;color:' + col + '">' + title +
-      '　<span class="flat" style="font-weight:400">共 ' + arr.length + ' 个方向</span></div>';
-    arr.slice(0, limit).forEach(function (o) { x += mliCardHtml(o); });
-    if (arr.length > limit) x += '<div class="note">…另有 ' + (arr.length - limit) + ' 个更弱的同组方向未列（排序规则见下方口径自证）</div>';
-    return x;
-  }
-  h += groupHtml('🎯 真主线', a.mains, 4, MLI_ROLE.rc.col);
-  h += groupHtml('⚠️ 分歧加剧', a.odos, 3, MLI_ROLE.odo.col);
-  /* 支线限额 10（不是 6）：实测 2026-09-24 支线有 22 个，而参考复盘看重的
-     「机器人·具身智能」按引擎排序排到第 8 位 —— 限额 6 会把它截掉，用户就看不到重点。 */
-  h += groupHtml('⚡ 轮动支线', a.subs, 10, MLI_ROLE.sub.col);
-  if (a.pls.length) {
-    h += '<div class="note" style="margin:12px 0 2px;font-weight:800;color:' + MLI_ROLE.pl.col + '">💤 脉冲' +
-      '　<span class="flat" style="font-weight:400">共 ' + a.pls.length + ' 个方向 · 不下结论，仅登记</span></div>';
-    h += '<div class="note">' + a.pls.slice(0, 20).map(function (o) {
-      return esc(o.key) + '（' + o.cnt + ' 家）';
-    }).join('、') + (a.pls.length > 20 ? ' 等' : '') + '</div>';
-  }
-  /* ---- 口径自证 ---- */
-  h += '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:#9fb4ff">📖 口径自证（诊断结论 / 属性聚合规则 / 行为指纹 / 未做的部分，点开看）</summary><div style="margin-top:6px"><div class="note">' +
-    '① <b>本卡为什么存在（诊断）</b>：参考复盘能写出「海峡西岸/福建国资是主线」，平台此前算不出，三个原因——' +
-    '(a) 地域属性被硬过滤（<code>thmPickRows</code> 首行把 BOARD_TYPE=板块 的「福建板块」整批丢弃，' +
-    '而语义等价的「长江三角」却能进榜）；(b) 单标签计数口径下宽泛标签霸榜（实证 2026-09-24「央国企改革」覆盖 24/52 = 46.2% 排第一）；' +
-    '(c) 只看静态家数/高度，不算封板行为（参考模板的核心论据其实是「尾盘集体异动」这个时间维度的同步性）。<br>' +
-    '② <b>属性聚合规则</b>：把每只涨停股的 F10 标签归入两个维度之一（<b>互斥，不重复计数</b>）——' +
-    '<b>region</b>（地域/区域 · 炒地图：F10「福建板块」+ 概念类区域「长江三角/雄安新区/海南自贸」等）；' +
-    '<b>chain</b>（产业链 · 跨标签共振：按内置 <code>' + MLI_CHAIN.length + '</code> 条产业链关键词表匹配）。' +
-    '普通概念标签（如「人工智能」「央国企改革」）<b>不在此聚合</b> —— 它们已由 7.35 回答，不重复造轮子。<br>' +
-    '③ <b>行为指纹</b>：全部来自涨停池自带字段，零额外请求 —— 封板时点 <code>fbt</code>（早盘 ≤10:00 / 盘中 / 尾盘 ≥14:00 / 尾盘后段 ≥14:30）、' +
-    '同步性 σ（封板时间的标准差，越小越集中 = 组织性越强）、炸板率 <code>zbc</code>、封单强度 <code>fund/amount</code>、梯队 <code>lbc</code>。<br>' +
-    '④ <b>角色判定（优先级自上而下）</b>：⚠️ 分歧加剧（家数 ≥3 且 炸板率 ≥40% 且 无连板）→ 🎯 真主线（家数 ≥3 且 ' +
-    '<b>尾盘占比 ≥50%</b> 且 有连板或高度 ≥3）→ ⚡ 轮动支线（高度 ≥3 板，或 家数 ≥4 且有连板）→ 💤 脉冲（其余）。' +
-    '<b>组织性只认「尾盘集体封板」</b>：早盘封板是常态（隔夜利好 / 惯性），不具区分力 —— 实测教训是 ' +
-    '机器人·具身智能 8 家（早盘 5 / 盘中 2 / 尾盘 1、σ=107 分钟），若把"早盘集中"也算组织性会误判为真主线，' +
-    '而参考复盘归它是轮动支线。比例类指标分母 &lt;3 一律不给方向性结论（通则）。<br>' +
-    '⑤ <b>区分力加权</b>：两条件任一命中即判「宽泛 · 无区分力」并把「真主线」降级为「轮动支线」——' +
-    '(a) 方向覆盖率 &gt; ' + (MLI_RULE.broadRatio * 100) + '%（实证：「AI应用·软件信创」18/52 = 34.6% 曾凭家数挤到支线榜首）；' +
-    '(b) 方向内标签数 &gt; ' + MLI_RULE.broadTags + '（靠十几个标签凑起来的是"归类"，不是"共振"）。' +
-    '另：<b>地域维度要求家数 ≥' + MLI_RULE.regionMinN + '</b>（同省公司天然成群，2~3 只同省纯属巧合）。<br>' +
-    '⑥ <b>与 7.35 的关系</b>：两层递进、互不替代 —— 7.35 回答「哪些题材有涨停」（单标签家数榜）；' +
-    '本卡回答「<b>谁是主线、谁是支线</b>」（多属性聚合 × 行为指纹）。' +
-    '两卡共用同一份 F10 数据（<code>wb_theme_v2</code>），不会出现两套口径打架。<br>' +
-    '⑦ <b>明确未做的部分（不臆造）</b>：昨日同方向的「<b>退潮出清</b>」判定需要昨日涨停池的 F10 属性（额外一轮 F10，请求量翻倍）' +
-    '→ 本卡改用方向内「<b>连板家数</b>」间接衡量延续性（连板家数为 0 说明该方向今日全是首板，持续性未经验证）；' +
-    '封单撤单 / 竞价五档 / 消息催化真伪 —— 无稳定免费源，不参与判定（与全站口径一致）。<br>' +
-    '⑧ <b>已知数据瑕疵</b>：东财 F10 的地域板块偶有错标（实证：路桥信息被标为「广东板块」，实为福建企业），' +
-    '故地域维度的股票清单**以标签为准、不做事后修正**；行业构成一列可供人工复核。' +
-    '</div></div></details>';
-  setHtml(box, h);
-}
-/* 单元格：某股主题材（未加载 / 未归类 均如实标注，不留空） */
 function thmCell(code){
   if(!THM.done && !Object.keys(THM.map).length) return '<span class="flat">加载中…</span>';
   var tp = thmTop(code);
   if(!tp) return '<span class="flat">未归类</span>';
   return esc(tp.name) + '<span class="flat" style="font-size:10px"> ×' + tp.cnt + '</span>';
 }
-function thmHeadHtml(){
-  var n = Object.keys(THM.map).length, miss = THM.miss.length;
-  var h = '<div class="note"><b>「题材」＝ 东财概念板块（<u>多标签</u>），与上面的「行业」（<u>单标签分区</u>）是两套口径。</b>' +
-    '短线复盘 / 找主线看题材更贴近盘面（如「人形机器人 / 固态电池 / 光模块 / 创新药」），行业只回答"这家公司干什么"。' +
-    '本卡是<b>新增维度</b>，不改动行业列与既有分组。判定口径见下方折叠区。</div>';
-  h += '<div class="stgbar">' +
-    '<div class="sg"><div class="l">已归类涨停股</div><div class="v up" style="font-size:15px">' + n + ' / ' + D.zt.length + '</div><div class="d">题材来源：东财 F10 所属板块</div></div>' +
-    '<div class="sg"><div class="l">命中题材数</div><div class="v" style="font-size:15px">' + Object.keys(thmGroups()).length + '</div><div class="d">已过滤统计 / 属性 / 指数类板块</div></div>' +
-    '<div class="sg"><div class="l">概念板块库</div><div class="v" style="font-size:15px">' + (THM.list.length || '—') + '</div><div class="d">东财 m:90+t:3（含题材涨幅 / 成交额）</div></div>' +
-    '<div class="sg"><div class="l">数据状态</div><div class="v ' + (THM.done ? 'up' : 'yel') + '" style="font-size:15px">' + (THM.done ? '就绪' : '加载中') + '</div><div class="d">' + esc(THM.src) + (miss ? (' · 未归类 ' + miss + ' 只') : '') + '</div></div>' +
-  '</div>';
-  return h;
-}
-function thmTableHtml(){
-  var g = thmGroups();
-  var arr = Object.keys(g).map(function(k){ return g[k]; });
-  if(!arr.length) return '<div class="concl c-grn">题材聚类：尚未取到个股题材（接口受限 / 非交易时段 / 当日无涨停）…</div>';
-  arr.sort(function(a, b){ return b.cnt - a.cnt || b.maxLbc - a.maxLbc || (b.ztAmt - a.ztAmt); });
-  var top = Math.min(THM_RULE.topN, arr.length);
-  var h = '<div class="concl c-blu"><b>题材热度榜（按「今日涨停家数」排序）：</b>' +
-    arr.slice(0, 8).map(function(o){ return '<span class="sc-tag sc-ferment">' + esc(o.name) + ' ' + o.cnt + '</span>'; }).join(' ') +
-    ' <span class="flat">共 ' + arr.length + ' 个题材</span></div>';
-  h += '<div class="twrap"><table><thead><tr><th>题材</th><th>涨停家数</th><th>最高连板</th><th>首板/连板</th><th>题材涨幅</th><th>题材成交额</th><th>领涨股</th><th>涨停股（按连板降序）</th></tr></thead><tbody>';
-  h += arr.slice(0, top).map(function(o, idx){
-    var stocks = o.stocks.map(function(x){
-      return '<span class="' + ((x.lbc || 1) >= 2 ? 'up' : 'flat') + '">' + esc(x.n) + (x.lbc || 1) + '板</span>';
-    }).join('<span class="flat">·</span>');
-    return '<tr' + (idx < 3 ? ' style="background:rgba(240,69,58,.07)"' : '') + '>' +
-      '<td><b class="yel">' + esc(o.name) + '</b></td>' +
-      '<td class="up mono"><b>' + o.cnt + '</b></td>' +
-      '<td class="mono">' + o.maxLbc + '板</td>' +
-      '<td class="mono">' + o.first + ' / ' + o.lian + '</td>' +
-      '<td class="' + pctCls(o.pct) + ' mono">' + (o.pct == null ? '—' : fpct(o.pct)) + '</td>' +
-      '<td class="mono">' + (o.amt == null ? '—' : famt(o.amt / 1e8)) + '</td>' +
-      '<td class="blu">' + esc(o.leadName || '—') + '</td>' +
-      '<td style="white-space:normal">' + stocks + '</td></tr>';
-  }).join('');
-  h += '</tbody></table></div>';
-  h += '<details class="m730-det" style="margin-top:10px"><summary>逐只涨停股的题材归属（主题材 / 全部题材）<span style="color:#64748b;font-weight:400">（点击展开）</span></summary><div class="dbody">' +
-    '<div class="twrap"><table class="mini-tbl"><thead><tr><th>代码</th><th>名称</th><th>行业（东财·单标签）</th><th>主题材（多标签择一）</th><th>全部题材（* = 东财「精准相关」）</th></tr></thead><tbody>' +
-    D.zt.slice().sort(function(a, b){ return (b.lbc || 1) - (a.lbc || 1); }).map(function(x){
-      var tp = thmTop(x.c, g), ts = THM.map[x.c] || [];
-      return '<tr><td class="mono">' + esc(x.c) + '</td><td><b>' + esc(x.n) + '</b></td><td class="flat">' + esc(ind2C(x.hybk) || '—') + '</td>' +
-        '<td class="yel">' + (tp ? (esc(tp.name) + '<span class="flat"> ×' + tp.cnt + '</span>') : '<span class="flat">未归类</span>') + '</td>' +
-        '<td style="white-space:normal" class="flat">' + (ts.length ? ts.map(function(t){ return esc(t.name) + (t.precise ? '<span class="up">*</span>' : ''); }).join('、') : '—') + '</td></tr>';
-    }).join('') +
-    '</tbody></table></div><div class="note">主题材 = 该股所属题材中当日<b>涨停家数最多</b>者（并列取题材涨幅高者）。带 <b class="up">*</b> = 东财标记「精准相关」（IS_PRECISE=1）。</div></div></details>';
-  h += thmRulesHtml();
-  return h;
-}
-function thmRulesHtml(){
-  return '<details class="m730-det" style="margin-top:10px"><summary>口径自证 · 为什么不是开盘啦<span style="color:#64748b;font-weight:400">（点击展开）</span></summary><div class="dbody note">' +
-    '<b>① 为什么不用开盘啦（实测结论）：</b>开盘啦只有 App 接口 —— 需 <code>Token + DeviceID + VerSion/apiv</code>，且服务端<b>校验 Dalvik UA</b>（非 Dalvik UA 返回空数据），Token 由抓包获取并会过期；单一 HTML 客户端无法做代理，浏览器端必被 CORS/UA/Token 拦下，抓包本身也违反其用户协议。<b>故不采用。</b><br>' +
-    '<b>② 本卡数据源（与平台既有接口同源 · 浏览器可直连 · 零 Token）：</b>' +
-    '<table class="mini-tbl" style="margin-top:6px"><thead><tr><th>读数</th><th>取数口径</th></tr></thead><tbody>' +
-    '<tr><td class="up">题材名称 / 题材涨幅 / 题材成交额 / 领涨股</td><td style="white-space:normal">东财概念板块列表 <code>clist fs=m:90+t:3+f:!50</code>（分页拉全，约 500 个）——与既有行业板块 <code>m:90+t:2</code> 同源，只是 t:2→t:3。</td></tr>' +
-    '<tr><td class="up">个股所属题材</td><td style="white-space:normal">东财 F10 核心题材 <code>RPT_F10_CORETHEME_BOARDTYPE</code>（datacenter · JSONP，1 只票 1 次请求）。剔除 <b>地域(板块) / 行业</b> 两类，再按关键词剔除<b>统计/属性/指数</b>类（昨日连板、微盘股、融资融券、QFII重仓、MSCI中国…），并按 <b>IS_PRECISE=1</b>（东财「精准相关」）优先排序。</td></tr>' +
-    '<tr><td class="up">题材涨停家数 / 最高连板 / 首板数</td><td style="white-space:normal">把「个股→题材」<b>反演</b>成「题材→涨停股」，直接聚合当日涨停池 —— 这就是「短线主线」的直接度量（谁涨停家数多、谁有高度）。</td></tr>' +
-    '<tr><td class="up">缓存</td><td style="white-space:normal">概念板块列表 30 分钟；个股题材按交易日<b>落盘</b> <code>wb_theme_v1</code>（保留 3 日）——开盘后每只涨停股只拉 1 次，其余轮次读缓存（若接口受限则当轮标「未归类」）。</td></tr>' +
-    '</tbody></table>' +
-    '<b>③ 与「行业」的关系（重要）：</b>东财<b>行业</b>是<b>单标签分区</b>（一股只属一个行业，如「橡胶」），平台 52 处分组都依赖这个"分区"性质；东财<b>概念题材</b>是<b>多标签</b>（一股可属十几条概念）。所以本卡<b>新增维度而不替换行业</b> —— 否则「涨停家数 / 占比 / 梯队」这类按分区统计的口径会全部失真。<br>' +
-    '<b>④ 已知局限（不臆造）：</b>题材归属来自东财概念库，<b>不是开盘啦的人工「涨停原因」</b>；同一只票常挂多个题材（本卡取"涨停家数最多的题材"作主题材，其余为副题材）；东财概念库偏"产业/概念"口径，事件级催化（政策、订单、业绩）请看平台的新闻关键词模块。<br>' +
-    '<span class="flat">仅为交易体系梳理与数据可视化，<b>不构成任何投资建议</b>。</span></div></details>';
-}
-function renderM735(){
-  var box = $('m7_35'); if(!box) return;
-  if(!D.zt.length){
-    setHtml(box, '<div class="loading">题材聚类：等待涨停池数据…</div>');
-    return;
-  }
-  if(!THM.done){
-    if(AUTO_REFRESH){
-      setHtml(box, thmHeadHtml() + scanPausedHtml('7.35 题材聚类') + thmRulesHtml());
-      return;
-    }
-    setHtml(box, thmHeadHtml() + '<div class="concl c-blu"><b>题材聚类：加载中…</b>正在拉取概念板块列表（约 500 个）+ 逐只涨停股的题材归属；当日只拉一次，之后读本地缓存。</div>' + thmRulesHtml());
-    thmEnsure(function(){ if($('m7_35')) renderM735(); });
-    return;
-  }
-  setHtml(box, thmHeadHtml() + thmTableHtml());
-}
+/* 7.35 题材聚类卡的专属渲染（thmHeadHtml/thmTableHtml/thmRulesHtml/renderM735）
+   已于 2026-10-09 按用户要求整卡删除；题材数据通道（THM/thmGroups/thmTop/thmCell）保留。 */
+
 /* ==== M5F-BEGIN ==== */
 /* ⑤ 涨停复盘 · 涨停股特征标注（2026-09-30 新增）
    来源：外部《A股大盘分析报告》第 10 章「涨跌停复盘：四看」（看原因/看质量/看板块归属/看封单）、
@@ -12036,7 +11601,7 @@ function renderM5(){
      ⚠ 2026-09-20：原来这里是 `if(!AUTO_REFRESH) lifeEnsure(zt...)`（本表 + ⑧五池明细共 2 处），
         而 auto=!manual → 启动/定时刷新时 AUTO_REFRESH 恒为 true → 这两处永不执行 → 全站这一列恒「—」。
         现改为按需登记 + 自动补扫，本行不再需要任何补扫调用。 */
-  setHtml($('m5ladder'), '<div class="note">' + diag + ' ｜ <b>「行业」＝东财行业（单标签分区）；「题材」＝东财概念板块（多标签，见 7.35 题材聚类卡）</b> ｜ <b>KDJ状态</b>＝KDJ(9,3,3) 四态评价（金叉/死叉质量 100 分制 · 高位/低位状态 · 硬性黑名单判无效；与生命周期工作台 10:23 定稿策略同一引擎，盘中实时、收盘复核）</div>' + lifeLegend() + '<div class="twrap"><table><thead><tr><th>代码</th><th>名称</th><th>涨跌幅</th><th>板别</th><th>封板时间</th><th>封单资金(亿)</th><th>行业(东财)</th><th>题材(东财概念)</th><th>涨停统计</th><th>特征标注</th><th>KDJ状态</th><th>生命周期阶段</th></tr></thead><tbody>' + (h || '<tr><td colspan="12" class="loading">暂无连板股</td></tr>') + '</tbody></table></div>' + m5FeatLegendHtml(zt, m5ctx, m5lhb));
+  setHtml($('m5ladder'), '<div class="note">' + diag + ' ｜ <b>「行业」＝东财行业（单标签分区）；「题材」＝东财概念板块（多标签，数据来自东财 F10 通道；原 7.35 题材聚类卡已删除）</b> ｜ <b>KDJ状态</b>＝KDJ(9,3,3) 四态评价（金叉/死叉质量 100 分制 · 高位/低位状态 · 硬性黑名单判无效；与生命周期工作台 10:23 定稿策略同一引擎，盘中实时、收盘复核）</div>' + lifeLegend() + '<div class="twrap"><table><thead><tr><th>代码</th><th>名称</th><th>涨跌幅</th><th>板别</th><th>封板时间</th><th>封单资金(亿)</th><th>行业(东财)</th><th>题材(东财概念)</th><th>涨停统计</th><th>特征标注</th><th>KDJ状态</th><th>生命周期阶段</th></tr></thead><tbody>' + (h || '<tr><td colspan="12" class="loading">暂无连板股</td></tr>') + '</tbody></table></div>' + m5FeatLegendHtml(zt, m5ctx, m5lhb));
   /* ★ 2026-09-30：KDJ状态列异步补扫（klineBarsL 管线复用；cache 10 分钟 TTL，随刷新周期自然重评） */
   try { kdjfEnsure(zt.map(function(x){ return x.c; })); } catch (eKd5) { }
   /* 板块分组 */
@@ -15405,12 +14970,16 @@ function m74SetOpen(open){
 
 var DBG_RULE = {
   /* ── 闸门① 周期闸门：各阶段可否新开仓 ──
-     依据（全网多源一致）：加速期＝高潮段「整体仓位只减不加，停止所有高位标的
-     新开仓」；分歧期「不新增高位仓位」；退潮期「禁止一切高位接力、以防守为先」。 */
+     依据（全网多源一致）：退潮期「禁止一切高位接力、以防守为先」＝唯一周期硬否决（→ cut）。
+     ★ 2026-10-09 第67轮放宽（用户要求：避免过严始终无法开仓，风控改提示）：
+       加速(高潮)期「只止盈不进场」→ ok=null（hold，观察·不加仓，不再红标否决）；
+       分歧期「首次分歧＝核心买点」→ 可开仓 + 小仓提示；反包期 → 可小仓试错提示；
+       发酵期超 3 日 → 仓位打折提示。原 stageNoAdd=['accel','diverge'] / stageHoldOnly=['rebound']
+       两常量随之废止（保留注释防误恢复）。 */
   stageCut: ['ebb'],
-  stageNoAdd: ['accel', 'diverge'],
-  stageHoldOnly: ['rebound'],
-  fermentStaleDays: 3,          /* 发酵期已持续 ≥N 日 → 由「可开仓」降为「仅持有」 */
+  /* stageNoAdd: ['accel', 'diverge'],   ← 第67轮废止：accel→hold、diverge→open+小仓提示 */
+  /* stageHoldOnly: ['rebound'],         ← 第67轮废止：rebound→open+小仓试错提示 */
+  fermentStaleDays: 3,          /* 发酵期已持续 ≥N 日 → 仓位打折提示（不再降为仅持有） */
   /* ── 闸门② 梯队闸门：必须有"小弟"接棒；孤龙次日溢价低 ── */
   ladderMidNeed: 1,
   ladderFirstNeed: 3,
@@ -15419,9 +14988,13 @@ var DBG_RULE = {
   /* ── 闸门③ 量价闸门：上涨却净流出 / 缩量冲高 = 一票否决 ── */
   vrGood: 1.25,                 /* 板块量比 ≥1.25 = 放量 */
   f62RatioStrong: 0.05, f62RatioOk: 0.02,   /* 主力净流入 ÷ 板块成交额 */
-  /* ── 闸门④ 时点闸门：买点后置（三窗口口径与 7.15 一致） ── */
-  winPre: '09:30', winFirst: '10:00', winFirstEnd: '10:30',
-  winPM: '13:00', winPMEnd: '13:30', winTail: '14:30', winLate: '14:45',
+  /* ── 闸门④ 时点闸门（2026-10-09 第67轮按用户要求放宽：全交易时段均可开仓）──
+     风险改由分时段提示承担，不再用「窗口」拦放行 —— 多源回测交叉核验（SKILL §67）：
+     9:35 前封板首板次日均值溢价约 +4%；14:30 后尾盘板次日均值为负 → 时段差异只改「怎么买」的提示与仓位，
+     不改「能不能买」。休市时段（盘前 / 午休 / 收盘后）无法成交 → 仍 ok=null（hold，如实标注）。 */
+  tradeStart: '09:30', tradeAMEnd: '11:30', tradePMStart: '13:00', tradeEnd: '15:00',
+  earlyWarnEnd: '10:00',      /* 9:30-10:00 诱多高发段 → 试错提示 */
+  tailWarnStart: '14:30',     /* 14:30 后尾盘偷袭板高发 → 仓位减半提示 */
   /* ── 闸门⑤ 大盘闸门（总闸门，优先于板块） ── */
   mktBlock: ['退潮', '冰点'],
   /* ── 持续性评分：五维权重（合计必须 = 100，单测断言） ── */
@@ -15452,9 +15025,9 @@ function dbgGradeRank(g){ return DBG_GRADE_ORDER[g] == null ? 9 : DBG_GRADE_ORDE
 
 /* 四档结论 */
 var DBG_VERDICT = {
-  open:  { label: '✅ 可新开仓',      cls: 'dbg-v-open',  act: '条件齐备：按 7.5 参考仓位介入，回踩不破再执行' },
+  open:  { label: '✅ 可新开仓',      cls: 'dbg-v-open',  act: '条件满足：按 7.5 参考仓位介入；逐条核对风控提示（仓位打折项），试仓-加仓、破位即走' },
   hold:  { label: '⚠️ 观察·不加仓',   cls: 'dbg-v-hold',  act: '条件未齐或时点未到：不新开仓；已有底仓可持，等下一个确认窗口' },
-  noadd: { label: '⛔ 禁止新开仓',    cls: 'dbg-v-noadd', act: '不满足介入条件：只观察，等结构修复' },
+  noadd: { label: '⛔ 禁止新开仓',    cls: 'dbg-v-noadd', act: '结构性风险：只观察，等结构修复' },
   cut:   { label: '🔴 主动减仓',      cls: 'dbg-v-cut',   act: '结构转弱：分批降仓防守，勿用个股形态对抗板块周期' }
 };
 /* 闸门标记样式 */
@@ -15612,17 +15185,27 @@ function dbgGates(g, r, ctx){
   } else if(R.stageCut.indexOf(stage) >= 0){
     g1.ok = false; g1.bad = true;
     g1.txt = SECC_STAGES[stage].label + '期：题材瓦解 → 禁止新开仓，持仓主动分批降仓';
-  } else if(R.stageNoAdd.indexOf(stage) >= 0){
-    g1.ok = false; g1.bad = true;
-    g1.txt = SECC_STAGES[stage].label + '期' + (stage === 'accel'
-      ? '＝高潮段：整体只减不加，停止高位新开仓（哪怕盘面依旧很强，次日大概率分歧）'
-      : '：不新增高位仓位（多空激烈交战，只做减仓与低位补涨）');
-  } else if(R.stageHoldOnly.indexOf(stage) >= 0){
+  } else if(stage === 'accel'){
+    /* ★ 2026-10-09 第67轮放宽：加速(高潮)期从「⛔ 禁止新开仓」降为「⚠️ 观察·不加仓」——
+       三轮检索多源强共识「高潮只止盈不进场」仍不开新仓，但不再硬红标否决（已有底仓者可持有分批兑现）。 */
     g1.ok = null;
-    g1.txt = '反包期：默认按「假反包真逃命」处理，仅放量反包可小仓试错，不重仓博弈';
+    g1.warn = '加速(高潮)期：多源共识「只止盈不进场」→ 本轮不新开仓，已有底仓分批兑现';
+    g1.txt = SECC_STAGES[stage].label + '期＝高潮段：整体只减不加（哪怕盘面依旧很强，次日大概率分歧）';
+  } else if(stage === 'diverge'){
+    /* ★ 2026-10-09 第67轮放宽：分歧期从「⛔ 不新增高位仓位」改为「可开仓 + 风控提示」——
+       三轮检索多源一致（头条·情绪周期龙头战法闭环 / 淘股吧·龙头战法 / 约投顾×2 / 雪球·分歧买入指南）：
+       「首次分歧＝核心买点」（小仓 1–2 成低吸龙头、等分歧转一致确认）；多次分歧 / 放量分歧＝陷阱。 */
+    g1.ok = true;
+    g1.warn = '分歧期＝首次分歧是核心买点：小仓 1–2 成、只做板块龙头，等分歧转一致确认再加；多次分歧 / 放量分歧是陷阱';
+    g1.txt = SECC_STAGES[stage].label + '期：多空激烈交战（龙一断板 / 家族炸板）——按「首次分歧」口径小仓介入';
+  } else if(stage === 'rebound'){
+    g1.ok = true;
+    g1.warn = '反包期默认按「假反包真逃命」处理：仅放量反包可小仓试错，不重仓博弈';
+    g1.txt = '反包期：放量反包可小仓试错';
   } else if(stage === 'ferment' && r.streak > R.fermentStaleDays){
-    g1.ok = null;
-    g1.txt = '发酵期已持续 ' + r.streak + ' 日 → 由「可开仓」降为「仅持有」（阶段越靠后盈亏比越低）';
+    g1.ok = true;
+    g1.warn = '发酵期已持续 ' + r.streak + ' 日：阶段越靠后盈亏比越低 → 仓位打折、快进快出';
+    g1.txt = '发酵期已持续 ' + r.streak + ' 日（超过 ' + R.fermentStaleDays + ' 日阈值）';
   } else {
     /* ★ 2026-09-24（用户要求）：可介入阶段也要过「跨日趋势」——
        单日标签可能只是"从更高档掉下来的第一根"（如 发酵→分歧 的第一天，还挂在确认/发酵上）。
@@ -15662,8 +15245,11 @@ function dbgGates(g, r, ctx){
     g2.ok = false; g2.bad = true;
     g2.txt = '高标独苗：' + L.tMax + ' 板却是全场唯一连板（连板仅 ' + L.multi + ' 家、无中位层）→ 独苗次日溢价低，高危形态 ｜ ' + lTxt + ' ｜ ' + brTxt;
   } else if(L.st === 'thin'){
-    g2.ok = null;
-    g2.txt = '梯队偏单薄：有 ' + L.tMax + ' 板高度但接棒层不足（中位 ' + L.mid + ' 家 / 首板 ' + L.first + ' 家 / 连板 ' + L.multi + ' 家）→ 接力打折 ｜ ' + brTxt;
+    /* ★ 2026-10-09 第67轮放宽：thin 从「仅持有」改为「可开仓 + 仓位减半提示」——
+       多源口径：接力打折的正确应对是降仓位，不是不参与（风控由提示承担）。 */
+    g2.ok = true;
+    g2.warn = '梯队偏单薄：接棒层不足（中位 ' + L.mid + ' 家 / 首板 ' + L.first + ' 家 / 连板 ' + L.multi + ' 家）→ 接力打折，仓位减半';
+    g2.txt = '梯队偏单薄：有 ' + L.tMax + ' 板高度但接棒层不足 → 可参与但仓位减半 ｜ ' + brTxt;
   } else {
     g2.ok = false; g2.bad = true;
     g2.txt = '只有首板 ' + L.zt + ' 家、无连板高度 → 无梯队，典型日内脉冲（资金在"找方向"不是"做方向"）';
@@ -15679,13 +15265,17 @@ function dbgGates(g, r, ctx){
     g3.ok = false; g3.bad = true;
     g3.txt = '板块上涨却主力净流出 ' + (f62 / 1e8).toFixed(2) + '亿 → 拉高出货形态（一票否决）';
   } else if(f3 != null && f3 > 0 && vr != null && vr < 1){
-    g3.ok = false; g3.bad = true;
-    g3.txt = '缩量冲高：板块量比 ' + vr.toFixed(2) + ' < 1 → 无增量资金，虚涨';
+    /* ★ 2026-10-09 第67轮放宽：缩量冲高从「一票否决」降为「仓位打折提示」——
+       多源口径「缩量分歧可低吸、放量分歧要回避」，量比单独不构成否决；拉高出货（上涨净流出）仍保留硬否决。 */
+    g3.ok = true;
+    g3.warn = '缩量冲高：板块量比 ' + vr.toFixed(2) + ' < 1，无增量资金 → 仓位打折、防虚涨回落';
+    g3.txt = '板块上涨但缩量（量比 ' + vr.toFixed(2) + ' < 1）';
   } else if(f62 != null && f62 > 0){
     g3.ok = true;
     g3.txt = '主力净流入 +' + (f62 / 1e8).toFixed(2) + '亿' + (vr == null ? '' : '｜板块量比 ' + vr.toFixed(2) + (vr >= R.vrGood ? '（放量）' : (vr < 1 ? '（缩量）' : '（温和）')));
   } else {
     g3.ok = null;
+    g3.warn = '无板块资金读数：介入前人工核对资金面';
     g3.txt = '无板块资金读数 → 需人工核对';
   }
   out.push(g3);
@@ -15694,17 +15284,34 @@ function dbgGates(g, r, ctx){
   var hm = ctx.hm;
   var g4 = { k: 'time', name: '④时点', ok: null, bad: false, det: '' };
   var bt = dbgBoardTime(g.name);
-  if(hm < R.winPre){ g4.ok = null; g4.txt = '盘前：等 9:25 竞价定型 + 开盘 5-30 分钟承接验证，勿抢跑'; }
-  else if(hm < R.winFirst){ g4.ok = false; g4.bad = true; g4.txt = '09:30-10:00 早盘博弈段：情绪诱多高发、真假强弱未分 → 不建议此刻开新仓（先看再动）'; }
-  else if(hm < R.winFirstEnd){ g4.ok = true; g4.txt = '窗口一 10:00-10:30 日内定性：确认守住早盘涨幅、龙头与中军仍强，方可介入'; }
-  else if(hm < R.winPM){ g4.ok = null; g4.txt = '窗口一已收：等 13:00-13:30 午后资金回流验证再动手（宁可慢一步）'; }
-  else if(hm < R.winPMEnd){ g4.ok = true; g4.txt = '窗口二 13:00-13:30 午后验证：真主线会资金回流，此处是性价比最高的确认买点'; }
-  else if(hm < R.winTail){ g4.ok = null; g4.txt = '午后确认后段：只做主线龙头，后排跟风最后一拉最容易站岗'; }
-  else if(hm < R.winLate){ g4.ok = null; g4.txt = '午后已验证：两窗口均收，按窗口一定性 + 窗口二方向执行，不再新开仓'; }
-  else { g4.ok = false; g4.bad = true; g4.txt = '14:45 后直线拉板默认按偷袭板处理 → 不参与'; }
-  if(bt && bt.n >= 3 && bt.late >= R.lateShareBad && !g4.bad){
-    g4.ok = false; g4.bad = true;
-    g4.txt = '板块涨停股中 ' + (bt.late * 100).toFixed(0) + '% 在 14:00 后首封（n=' + bt.n + '）→ 尾盘偷袭为主，次日溢价差';
+  /* ★ 2026-10-09 第67轮按用户要求：全交易时段均可开仓（原 10:00-10:30 / 13:00-13:30 双窗口废止）。
+     时段差异改为「怎么买」的风控提示；休市时段（盘前 / 午休 / 收盘后）无法成交 → ok=null（hold，如实标注）。 */
+  if(hm < R.tradeStart){
+    g4.txt = '盘前：等 9:25 竞价定型后按开盘承接决定，勿抢跑';
+  } else if(hm < R.tradeAMEnd){
+    g4.ok = true;
+    if(hm < R.earlyWarnEnd){
+      g4.warn = '早盘 9:30-10:00 诱多高发：等回踩不破开盘价 + 站稳分时均价线 + 缩量回踩放量上攻再介入，先试错后加仓';
+      g4.txt = '早盘交易时段（9:30-10:00 诱多高发段，介入条件见风控提示）';
+    } else {
+      g4.txt = '上午交易时段：日内定性已渐明，正常执行';
+    }
+  } else if(hm < R.tradePMStart){
+    g4.txt = '午间休市：等 13:00 后按资金回流情况决定';
+  } else if(hm < R.tradeEnd){
+    g4.ok = true;
+    if(hm >= R.tailWarnStart){
+      g4.warn = '14:30 后为尾盘偷袭板高发段（多源回测：尾盘板次日均值溢价为负）→ 仓位减半、次日冲高即兑现';
+      g4.txt = '尾盘交易时段（14:30 后偷袭板高发，仓位减半见风控提示）';
+    } else {
+      g4.txt = '午后交易时段：真主线资金回流验证中，正常执行';
+    }
+  } else {
+    g4.txt = '已收盘：非交易时段无法成交 → 复盘模式下档位最高为「观察·不加仓」';
+  }
+  if(bt && bt.n >= 3 && bt.late >= R.lateShareBad && g4.ok === true){
+    g4.warn = '板块涨停股中 ' + (bt.late * 100).toFixed(0) + '% 在 14:00 后首封（n=' + bt.n + '）→ 尾盘偷袭为主，仓位减半、次日冲高兑现';
+    g4.txt += '｜板块 ' + (bt.late * 100).toFixed(0) + '% 涨停 14:00 后首封';
   }
   out.push(g4);
 
@@ -15723,6 +15330,7 @@ function dbgGates(g, r, ctx){
     g5.txt = '大盘处于「' + cyc + '」期：主线板块持续性本身就差 → 降低整体仓位，原则上不开新仓';
   } else if(cyc === '分歧' || cyc === '高潮'){
     g5.ok = null; g5.txt = '大盘「' + cyc + '」期：容错率下降，只做最强主线、仓位减半；板块周期与大盘取更严者';
+    g5.warn = '大盘「' + cyc + '」期：仓位减半，只做最强主线';
   } else {
     g5.ok = true; g5.txt = '大盘「' + cyc + '」期：环境不构成否决（最终仓位仍取板块与大盘更严者）';
   }
@@ -15844,19 +15452,22 @@ function dbgPersist(g, r, ctx){
 function dbgVerdictOf(gates, pv, ctx){
   var k = {};
   gates.forEach(function(x){ k[x.k] = x; });
-  /* ⑤ 大盘总闸门：必须同时「数据就绪」才生效（否则「未取到」会被当成「大盘走弱」而全表否决） */
+  /* ★ 2026-10-09 第67轮放宽（策略重制，三轮检索交叉核验）：
+     硬否决收敛为「真结构性风险」五类 —— 大盘退潮/冰点、板块退潮/未判定、拉高出货、
+     独苗/纯首板脉冲、持续性 <46；分歧/反包/梯队单薄/缩量冲高/持续性偏弱等一律
+     改为「可开仓 + 风控提示」（提示见 dbgRows 的 warns，渲染在 7.5B 合并列）。
+     加速(高潮)期按多源强共识「只止盈不进场」保持不开新仓（hold）。 */
   if(dbgMktReady(ctx.e) && DBG_RULE.mktBlock.indexOf(ctx.e.cyc) >= 0) return 'noadd';
-  if(k.stage.bad){                                                        /* ① 板块周期 */
+  if(k.stage.bad){                                                        /* ① 板块周期：退潮 / 未判定 */
     if(ctx.stageKey === 'ebb') return 'cut';
     return 'noadd';
   }
-  if(k.fund.bad) return 'noadd';                                          /* ③ 拉高出货 / 缩量冲高 */
-  if(k.ladder.bad) return 'noadd';                                        /* ② 无梯队 / 孤龙 */
+  if(k.fund.bad) return 'noadd';                                          /* ③ 拉高出货（上涨净流出） */
+  if(k.ladder.bad) return 'noadd';                                        /* ② 独苗 / 仅首板脉冲 */
   if(pv.score < DBG_RULE.bandWeak) return 'noadd';                        /* 持续性过低 */
-  if(k.time.ok !== true) return 'hold';                                   /* ④ 时点不对/未知 → 只持有等待 */
-  if(k.stage.ok === null) return 'hold';                                  /* 阶段本身仅"可持有"（反包 / 发酵过久） */
-  if(k.ladder.ok === null) return 'hold';                                 /* 梯队偏单薄 */
-  if(pv.score < DBG_RULE.bandMid) return 'hold';                          /* 持续性未达"中等" */
+  if(k.time.ok !== true) return 'hold';                                   /* ④ 非交易时段（盘前/午休/收盘后） */
+  if(k.stage.ok === null) return 'hold';                                  /* 加速(高潮)期 / 轨迹降档：只止盈不进场 */
+  if(ctx.stageKey === 'accel') return 'hold';                             /* 双保险：高潮共识不开新仓 */
   return 'open';
 }
 
@@ -15961,7 +15572,15 @@ function dbgRows(gs, ctx){
     var gates = dbgGates(g, r, ctx);
     var pv = dbgPersist(g, r, ctx);
     var vk = dbgVerdictOf(gates, pv, { e: ctx.e, stageKey: r ? r.key : null });
-    return { g: g, r: r, gates: gates, pv: pv, vk: vk, drift: dbgDrift(g, r, ctx) };
+    /* ★ 2026-10-09 第67轮：放行不再等于无条件 —— open 档位必须附带风控提示（warns），
+       由各闸门的 g.warn + 持续性偏弱 + 大盘分歧/高潮 汇总而成，渲染在 7.5B 合并列。 */
+    var warns = [];
+    gates.forEach(function(t){ if(t.warn) warns.push({ k: t.k, name: t.name, txt: t.warn }); });
+    if(vk === 'open' && pv.score < DBG_RULE.bandMid)
+      warns.push({ k: 'pv', name: '持续性', txt: '持续性 ' + pv.score + ' 分（<62 偏弱）：小仓试错、快进快出、破位即走' });
+    if(ctx.e && dbgMktReady(ctx.e) && (ctx.e.cyc === '分歧' || ctx.e.cyc === '高潮'))
+      warns.push({ k: 'mkt', name: '⑤大盘', txt: '大盘「' + ctx.e.cyc + '」期：仓位减半，只做最强主线' });
+    return { g: g, r: r, gates: gates, pv: pv, vk: vk, warns: warns, drift: dbgDrift(g, r, ctx) };
   });
 }
 /* ── 同轮缓存：五闸门 / 持续性 / 档位一行数据（2026-09-24 新增）──
@@ -16003,14 +15622,14 @@ function dbgBannerHtml(rows, ctx){
     '<span class="dbg-iron-t">铁律：板块是动态轮动的，强势只是一个瞬时状态 —— 不要把早盘热度当成持续性。</span>' +
     '<span class="dbg-iron-t2">先定板块生命周期 → 再等午后资金回流确认 → 板块周期优先级高于个股 MA5/dev 指标。</span>' +
     '<div class="dbg-iron-l">' +
-      '① <b>买入前</b>：五闸门逐条过（周期 / 梯队 / 量价 / 时点 / 大盘），任一硬否决即放弃，<u>加速（高潮）期一律禁止新开仓</u>；<br>' +
+      '① <b>买入前</b>：五闸门逐条过（周期 / 梯队 / 量价 / 时点 / 大盘）。★ 2026-10-09 第67轮按用户要求放宽：硬否决收敛为五类结构性风险（大盘退潮/冰点、板块退潮/未判定、拉高出货、独苗/纯首板脉冲、持续性&lt;46），<u>其余一律「可开仓 + 风控提示」</u>；加速（高潮）期按多源共识仍不开新仓（观察·不加仓）；全交易时段均可介入，分时段给风控提示；<br>' +
       '② <b>买入前</b>：看「持续性评分」而不只看当下强度 —— 无梯队、无中军、无量能递增的强势多半是一日游；<br>' +
       '③ <b>买入后</b>：每天（盘中也按半小时）复核板块评级与阶段，<u>一旦转分歧/退潮就主动分批降仓</u>，不管个股 dev 多好看。' +
     '</div>' +
   '</div>' +
   '<div class="stgbar ' + (openCnt > 0 ? 'safe' : (cutCnt > 0 ? '' : 'warn')) + '">' +
     '<div class="sg" style="flex:1.1"><div class="l">当前时段（' + ctx.hm + '）</div><div class="v" style="font-size:15px">' + ph.name + '</div><div class="d">' + ph.txt + '</div></div>' +
-    '<div class="sg"><div class="l">可新开仓板块</div><div class="v ' + (openCnt ? 'up' : 'flat') + '">' + openCnt + ' 个</div><div class="d">仅持有等待 ' + holdCnt + ' 个 · 禁止新开仓 ' + blockCnt + ' 个' + (cutCnt ? ' · 需减仓 ' + cutCnt + ' 个' : '') + '</div></div>' +
+    '<div class="sg"><div class="l">可新开仓板块</div><div class="v ' + (openCnt ? 'up' : 'flat') + '">' + openCnt + ' 个</div><div class="d">仅持有等待 ' + holdCnt + ' 个 · 禁止新开仓 ' + blockCnt + ' 个' + (cutCnt ? ' · 需减仓 ' + cutCnt + ' 个' : '') + '（★ 第67轮起放行均附风控提示，逐条核对后再动手）</div></div>' +
     '<div class="sg"><div class="l">我的进场锚点</div><div class="v ora" style="font-size:17px">' + anchor + '</div><div class="d">' + (anchorRows.length ? '已对比锚点后 ' + anchorRows.length + ' 个板块走势：' + btnTxt : '锚点后暂无落点数据（每半小时自动记录一次）') + '</div></div>' +
     '<div class="sg"><div class="l">大盘情绪周期</div><div class="v ' + (dbgMktReady(ctx.e) && ctx.e.cyc === '主升' ? 'up' : (dbgMktReady(ctx.e) && (ctx.e.cyc === '退潮' || ctx.e.cyc === '冰点') ? 'dn' : 'yel')) + '" style="font-size:17px">' + (ctx.e ? ctx.e.cyc : '—') + '</div><div class="d">' + (ctx.e ? ('仓位上限 ' + ctx.e.pos + (dbgMktReady(ctx.e) ? (DBG_RULE.mktBlock.indexOf(ctx.e.cyc) >= 0 ? ' · 总闸门：不开新仓' : ' · 总闸门：不否决') : ' · ⚠ 关键数据未就绪，总闸门本次不生效')) : '未取到') + '</div></div>' +
   '</div>';
@@ -16291,7 +15910,10 @@ function secLadder(name, g){
 }
 /* 面板：7.5B 板块总表（2026-09-24 按用户要求：把原来的两张表合并成一张，那两处工作区已删除）
    —— 列＝等级｜板块｜情绪周期(板块自身)｜梯队结构｜形态·强度｜
-          档位·仓位｜结论·操作｜关键风险（共 8 列）
+          结论·仓位/操作｜关键风险（共 7 列）
+   —— ★ 2026-10-09（用户要求）：原「档位·仓位」与「结论·操作」两列**合并为一列**——仓位单源＝档位
+      （五闸门复核），梯队形态档仓位未放行时降为「梯队档参考（未放行）」小字，操作文案与最终仓位一致；
+      引擎未动：secLadder / dbgRowsCached / DBG_VERDICT 照常计算，只是渲染层不再两列并行表述。
    —— ★ 2026-09-26（用户要求）：原「五闸门｜持续性｜板块宽度分」三列**已删除**（表过宽，且三列都是
       "过程指标"，结论已由「档位·仓位」列承载）。**引擎与数据源未动**：dbgRowsCached / dbgGates /
       dbgPersist / wtBreadthScore 照常计算，仍被 7.10B 清单与「等级」列（宽度分一档微调）消费；
@@ -16368,20 +15990,38 @@ function ladderPanelHtml(gs){
        引擎与数据源未动：dbgRowsCached / dbgGates / dbgPersist / wtBreadthScore 仍照常计算，
        并被 7.10B 清单与「等级」列（宽度分一档微调）消费；逐条明细仍在表底判定依据折叠区。
        需要恢复时，完整实现见备份 index.html.bak_before_删7.5B三列_*.html。 */
-    /* ⑩ 档位 / 仓位 —— 两套口径冲突取更严者：
-       档位「禁止新开仓 / 主动减仓」→ 实际 0 成；档位「观察·不加仓」（含跨日趋势降档）→ 新开仓 0 成、只可持底仓。 */
-    var c10 = '<td style="white-space:normal;min-width:124px">'
+    /* ⑩⑪ 结论 · 仓位 / 操作（2026-10-09 第65轮 · 用户要求：原「档位/仓位」与「结论/操作」两列合并为一列）
+       ★ 仓位单源（2026-10-09 全网三轮检索交叉核对，详见 SKILL §65）：「仓位跟着档位走，仓位即结论」——
+       最终仓位只由档位（五闸门复核 DBG_VERDICT）决定，梯队形态档的 x.pos 只是「未放行时的参考上限」：
+         档位否决(noadd/cut) → 实际 0 成；观察·不加仓(hold) → 新开仓 0 成仅持有；放行(open) → 可开梯队档仓位。
+       操作文案与最终仓位严格一致 —— 未放行时梯队形态的「小仓 X 成」类操作**不得**作为主文案
+       （否则出现「新开仓 0 成」与「支线：小仓 2 成」并排的自相矛盾，2026-10-09 用户截图指出的医药医疗案例），
+       降为「梯队档参考（未放行）」小字；放行（open）时梯队形态操作为主文案、档位动作为补充小字。 */
+    var c10pos, c10cls;
+    if (blocked) { c10pos = '实际 0 成（档位否决）'; c10cls = 'dn'; }
+    else if (holdOnly) { c10pos = '新开仓 0 成（仅持有）'; c10cls = 'flat'; }
+    else if (VK) { c10pos = (x.pos === '0 成') ? '0 成（梯队档不给仓位）' : '可开 ' + esc(x.pos); c10cls = 'up'; }
+    else { c10pos = (x.pos === '0 成') ? '0 成' : '梯队档 ' + esc(x.pos); c10cls = (x.pos === '0 成') ? 'flat' : 'up'; }
+    var c10act, c10subs = [];
+    if (!VK) { c10act = x.act || ''; }
+    else if (!blocked && !holdOnly) { c10act = x.act || VK.act; if (VK.act && x.act) c10subs.push(VK.act); }
+    else {
+      c10act = VK.act;
+      if (blocked) c10subs.push('梯队档 ' + esc(x.pos) + ' → 被档位压为 0');
+      if (x.act && x.act !== '不参与') c10subs.push('梯队档参考（未放行）：' + x.act);
+    }
+    var c10 = '<td style="white-space:normal;min-width:210px">'
       + (VK ? '<span class="dbg-v ' + VK.cls + '" style="font-size:10.5px">' + VK.label + '</span>'
             : '<span class="flat" style="font-size:10.5px">未复核</span>')
-      + '<div class="' + (blocked ? 'dn' : ((x.pos === '0 成' || holdOnly) ? 'flat' : 'up')) + '" style="font-size:11.5px;font-weight:800">'
-      + (blocked ? '实际 0 成（档位否决）'
-        : (holdOnly ? '新开仓 0 成（仅持有）'
-        : (x.pos === '0 成' ? '0 成（梯队档不给仓位）' : ('可参考 ' + esc(x.pos))))) + '</div>'
-      + (blocked ? '<div class="flat" style="font-size:10px">梯队档 ' + esc(x.pos) + ' → 被档位压为 0</div>'
-        : (holdOnly ? '<div class="flat" style="font-size:10px">梯队档 ' + esc(x.pos) + ' → 档位为「观察·不加仓」：只能持已有底仓</div>' : '')) + '</td>';
-    /* ⑪ 结论 / 操作（梯队形态对应操作 + 档位动作） */
-    var c11 = '<td style="white-space:normal;min-width:180px">' + esc(x.act || '')
-      + (VK ? '<div class="flat" style="font-size:10.5px;margin-top:2px">' + esc(VK.act) + '</div>' : '') + '</td>';
+      + '<div class="' + c10cls + '" style="font-size:11.5px;font-weight:800">' + c10pos + '</div>'
+      + '<div style="font-size:10.5px;margin-top:1px">' + esc(c10act || '') + '</div>'
+      /* ★ 2026-10-09 第67轮：放行(open)行的风控提示逐条列出（仓位打折项）——
+         「避免过严始终无法开仓」的代价是风控前移到提示层，提示不得省略。 */
+      + ((VK && !blocked && d && d.warns && d.warns.length)
+          ? d.warns.map(function(wW){ return '<div class="yel" style="font-size:10px;margin-top:1px">⚠ ' + esc(wW.txt) + '</div>'; }).join('')
+          : '')
+      + c10subs.map(function(tS){ return '<div class="flat" style="font-size:10px;margin-top:1px">' + esc(tS) + '</div>'; }).join('')
+      + '</td>';
     /* ⑫ 关键风险 */
     var c12 = '<td class="note" style="white-space:normal;min-width:150px">' + esc(x.risk || '—')
       + ((x.gate && x.gate.length) ? '<div class="yel" style="font-size:10.5px">［闸门：' + esc(x.gate.join('；')) + '］</div>' : '') + '</td>';
@@ -16401,18 +16041,23 @@ function ladderPanelHtml(gs){
        只是从"每行一列"改为"表底低频复核区"。 */
     allWhys.push({ name: g.name, tag: (esc(g.grade || '—') + ' · ' + esc(x.act || '—')), why: why });
     return '<tr' + ((d && d.vk === 'open') ? ' style="background:rgba(240,69,58,.06)"' : '') + '>'
-      + c1 + c2 + c3 + c4 + c6 + c10 + c11 + c12 + '</tr>';
+      + c1 + c2 + c3 + c4 + c6 + c10 + c12 + '</tr>';
   }).join('');
-  var h = '<h2 style="font-size:14px;margin-top:16px;border-color:#26c281;color:#26c281">7.5B 板块总表（梯队形态分级 + 情绪周期 + 档位·仓位 → 一张表回答「能不能买 / 买多少 / 怎么买」）'
+  var h = '<h2 style="font-size:14px;margin-top:16px;border-color:#26c281;color:#26c281">7.5B 板块总表（梯队形态分级 + 情绪周期 + 结论·仓位/操作 → 一张表回答「能不能买 / 买多少 / 怎么买」）'
     + '<small><b>2026-09-24 按用户要求合并</b>：原「板块动态复核（买入前五闸门 / 持续性评分）」表与原「板块五级分级」主表已<b>删除</b>，两表全部列并入本表｜'
     + '<b>2026-09-26 按用户要求删列</b>：原「五闸门 / 持续性 / 板块宽度分」三列<b>已删除</b>（引擎照旧计算，逐条明细见表底「📖 判定依据」）｜'
+    + '<b>2026-10-09 按用户要求并列</b>：原「档位/仓位」与「结论/操作」两列<b>合并为一列</b>「结论 · 仓位 / 操作」——'
+    + '<b>仓位单源＝档位</b>（五闸门复核），梯队形态档仓位未放行时仅作参考小字，操作文案与最终仓位严格一致'
+    + '（杜绝「新开仓 0 成」与「支线：小仓 2 成」并排的自相矛盾）｜'
+    + '<b>2026-10-09 第67轮策略重制</b>：全交易时段均可开仓；硬否决收敛为五类结构性风险，'
+    + '<b>放行（✅）行均附「⚠ 风控提示」</b>（仓位打折项，逐条核对后再动手）｜'
     + '排序＝按<b>可操作性</b>（可新开仓 ' + openN + ' 个 → 观察·不加仓 → 禁止新开仓 → 主动减仓 → 未达复核门槛），同级按持续性降序｜'
     + '<b>冲突取更严者</b>：档位为禁止/减仓时实际仓位压为 0；梯队形态档与等级不一致时取更严（等级列下方小字给出梯队档）｜数据源与既有引擎同源，零额外请求</small></h2>';
   h += '<div class="twrap"><table class="mini-tbl"><thead><tr>'
     + '<th>等级</th><th>板块</th><th>情绪周期<small style="font-weight:400;color:#94a3b8">板块自身</small></th>'
     + '<th>梯队结构<small style="font-weight:400;color:#94a3b8">高标/中位/首板</small></th>'
     + '<th>形态 / 强度</th>'
-    + '<th>档位 / 仓位</th><th>结论 / 操作</th><th>关键风险</th>'
+    + '<th>结论 · 仓位 / 操作</th><th>关键风险</th>'
     + '</tr></thead><tbody>' + body + '</tbody></table></div>';
   /* ★ 2026-09-24（用户要求）：判定依据（逐条）从表格列移到表底折叠 —— 默认收起，点开按板块逐条复核。 */
   h += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:#9fb4ff">📖 判定依据（逐条 · 共 ' + allWhys.length + ' 个板块 · 点击展开复核）</summary><div style="padding:4px 2px">';
@@ -16429,6 +16074,7 @@ function ladderPanelHtml(gs){
     + '标记读法：<b>✓</b> 通过 / <b>〜</b> 条件不足（本次不按可开仓处理；多数是等 10:00-10:30 / 13:00-13:30 确认窗，到点自动转 ✓）/ <b>—</b> 不适用 / <b>✕</b> 硬否决（一票否决）。'
     + '<b>持续性</b>＝梯队结构 / 量能递增 / 资金·广度 / 封板质量 / 阶段健康 各 20 分，衡量「当前结构支持它继续强的程度」，<u>不是胜率预测</u>。'
     + '<b>档位</b>＝买入前五闸门的最终放行结果（可新开仓 / 观察·不加仓 / 禁止新开仓 / 主动减仓）。'
+    + '<b>2026-10-09 起「档位/仓位」与「结论/操作」并为一列</b>：仓位单源＝档位，梯队形态档仓位未放行时仅作参考小字（操作文案与最终仓位一致）。'
     + '<b>口径</b>：本表判的是<b>板块能不能开仓</b>，大盘周期只作「⑤大盘」总闸门 —— <b>大盘主升 ≠ 任一板块可开仓</b>，两处冲突时<b>取更严者</b>执行。</div>';
   h += '<div class="note" style="margin-top:6px">' +
     '<b>修正说明（梯队形态部分 · 相对《板块梯队分级判断策略（AI可执行版）》原文，2026-09-24 全网核验）</b>：' +
@@ -24593,23 +24239,9 @@ function wtFetch(base, pbase) {
     var next = [];
     /* 昨日涨停股今日表现 */
     next.push(prev.length ? loadTxQuotes(prev.map(function (x) { return wtSym(x.c); })).catch(function () { return {}; }) : Promise.resolve({}));
-    /* 中军候选：主行业成分股（或降级为同行业涨停池成员） */
-    var secMap = {}, sectors = [];
-    zt.forEach(function (z) {
-      var k = ind2C(String(z.hybk || '—').trim()) || '—';
-      var s = secMap[k] || (secMap[k] = { name: k, cnt: 0, zb: 0, amount: 0, maxLbc: 0, rows: [], late: 0, lateRows: [] });
-      s.cnt++; s.amount += (+z.amount || 0); s.maxLbc = Math.max(s.maxLbc, +z.lbc || 1); s.rows.push(z);
-      /* ★ 2026-09-24（用户要求）：统计「13:00 之后首次封板」的涨停股（午后接力 / 尾盘偷袭）。
-         缺 fbt 的**不计入**（宁可少标，也不拿 0 当"早盘板"）。 */
-      if ((+z.fbt || 0) >= WT_LATE_FBT) { s.late++; s.lateRows.push(z); }
-    });
-    /* 炸板家数（2026-09-23 新增）：炸板池成员按**与涨停家数完全相同的行业口径**归到各板块上，
-       于是「涨停 N 家 / 炸板 M 家」同源同尺，可直接对比封板质量（M 大 = 这个方向封不住）。 */
-    zb.forEach(function (z) {
-      var k = ind2C(String(z.hybk || '—').trim()) || '—';
-      if (secMap[k]) secMap[k].zb++;
-    });
-    sectors = Object.keys(secMap).map(function (k) { return secMap[k]; }).sort(function (a, b) { return b.cnt - a.cnt || b.amount - a.amount; });
+    /* ★ 2026-10-09：板块聚合抽成 wtAggSectors（键 = secIndOf：F10 行业优先 / hybk 兜底，见其总注释）——
+       三类卡与 7.5 / ⑤ 分组同一把行业尺；F10 到货后由 ztIndEnsure 重算本聚合并重画。 */
+    var sectors = wtAggSectors(zt, zb);
     next.push(Promise.resolve(sectors));
     return Promise.all(next).then(function (r2) { return { idxTx: idxTx, zt: zt, dt: dt, zb: zb, prev: prev, prevTx: r2[0] || {}, sectors: (r2[1] || []), base: base, pbase: pbase }; });
   });
@@ -24787,7 +24419,8 @@ function wtdEval(snap) {
     var chg = (q.auctionChg != null) ? q.auctionChg : q.chgPct;
     if (chg == null) return;
     n++; if (chg > 0) red++;
-    list.push({ c: String(p.c), n: p.n || String(p.c), lbc: (+p.lbc || 1), chg: chg, isAuc: q.auctionChg != null });
+    list.push({ c: String(p.c), n: p.n || String(p.c), lbc: (+p.lbc || 1), chg: chg, isAuc: q.auctionChg != null,
+      ind: (p.hybk != null && String(p.hybk).trim()) ? ind2C(String(p.hybk).trim()) : '' });
   });
   var redRate = n ? red / n * 100 : null;
   var top = null;
@@ -25622,18 +25255,25 @@ function wtFundHtml(){
       '（东财 clist 在本机不可达，本区改用新浪两条通道，每 3 分钟自动刷新一次）</div>';
     return h;
   }
+  /* ★ 2026-10-09：资金榜股票不在涨停池时行业四路可能全空 → 一次性 F10 批量反查补齐（去重防风暴） */
+  try {
+    var indCodes = [];
+    M.topAmt.forEach(function (r) { indCodes.push(r.code); });
+    M.inRows.forEach(function (r) { indCodes.push(r.code); });
+    wtxIndKick(indCodes);
+  } catch (eWIK) { }
   /* 结论行 */
   var vv = [];
   if(M.resonance.length){
     vv.push('<b class="wt-up">双榜共振 ' + M.resonance.length + ' 只</b>：' +
-      M.resonance.slice(0, 4).map(function(r){ return '<b>' + esc(r.name) + '</b>（' + wtYi(r.amount) + '·净' + wtYi(r.net) + '）'; }).join('、') +
+      M.resonance.slice(0, 4).map(function(r){ return '<b>' + esc(r.name) + '</b>' + wtIndTag(r.code) + '（' + wtYi(r.amount) + '·净' + wtYi(r.net) + '）'; }).join('、') +
       ' —— 既是成交额主战场、又有真金白银净流入 ＝ <b>当日最强方向</b>');
   } else if(M.hasAmt && M.hasFlow){
     vv.push('<b class="wt-warn">双榜无交集</b>：成交额 TOP10 与净流入 TOP10 未重合 → 资金分散，无单点主战场（不宜重仓押单一方向）');
   }
   if(M.outflow.length){
     vv.push('<b class="wt-dn">成交额 TOP10 里净流出 ' + M.outflow.length + ' 只</b>：' +
-      M.outflow.slice(0, 5).map(function(r){ return esc(r.name) + '（' + wtYi(r.net) + '）'; }).join('、') + ' —— 高成交＋净流出 ＝ <b>出货区</b>，不接');
+      M.outflow.slice(0, 5).map(function(r){ return esc(r.name) + wtIndTag(r.code) + '（' + wtYi(r.net) + '）'; }).join('、') + ' —— 高成交＋净流出 ＝ <b>出货区</b>，不接');
   }
   if(M.inRows.length) vv.push('净流入 TOP10 合计 <b>' + wtYi(M.sumNet) + '</b>（主力大单口径估算，仅作强度参考）');
   if(vv.length) h += '<div class="wt-msg up">' + vv.map(function(x){ return '· ' + x; }).join('<br>') + '</div>';
@@ -25644,7 +25284,7 @@ function wtFundHtml(){
       M.topAmt.map(function(r, i){
         var st = wtxFundState(r);
         var sc = st.cls === 'up' ? 'up' : st.cls === 'down' ? 'dn' : st.cls === 'warn' ? 'warn' : 'chg';
-        return '<div class="wt-line">' + (i + 1) + '. <b>' + esc(r.name) + '</b> <span class="wt-flat">' + esc(r.code) + '</span>' +
+        return '<div class="wt-line">' + (i + 1) + '. <b>' + esc(r.name) + '</b>' + wtIndTag(r.code) + ' <span class="wt-flat">' + esc(r.code) + '</span>' +
           '　成交 <span class="mono">' + wtYi(r.amount) + '</span> · ' +
           '<span class="' + (r.chg > 0 ? 'wt-up' : (r.chg < 0 ? 'wt-dn' : 'wt-flat')) + '">' + wtPct(r.chg) + '</span>' +
           (r.turnover == null ? '' : ' · 换手 ' + r.turnover.toFixed(1) + '%') +
@@ -25660,7 +25300,7 @@ function wtFundHtml(){
       M.inRows.map(function(r, i){
         var st = wtxFundState(r);
         var sc = st.cls === 'up' ? 'up' : st.cls === 'down' ? 'dn' : st.cls === 'warn' ? 'warn' : 'chg';
-        return '<div class="wt-line">' + (i + 1) + '. <b>' + esc(r.name) + '</b> <span class="wt-flat">' + esc(r.code) + '</span>' +
+        return '<div class="wt-line">' + (i + 1) + '. <b>' + esc(r.name) + '</b>' + wtIndTag(r.code) + ' <span class="wt-flat">' + esc(r.code) + '</span>' +
           '　净流入 <span class="wt-up mono">' + wtYi(r.net) + '</span> · ' +
           '<span class="' + (r.chg > 0 ? 'wt-up' : (r.chg < 0 ? 'wt-dn' : 'wt-flat')) + '">' + wtPct(r.chg) + '</span>' +
           (r.ratio == null ? '' : ' · 占成交 ' + (r.ratio * 100).toFixed(1) + '%') +
@@ -25970,6 +25610,50 @@ function wtRiskHtml() {
    （不在 D.* 里、也进不了 wtModFp 指纹），因此各套一个独立容器：数据到达后 wtxPaint() 只重画
    这两个容器，不触发其它区块重算。 */
 /* ---------- 今日操作决策：渲染（结论直出 + 逻辑折叠） ---------- */
+/* ★ 2026-10-09（用户要求）：实时盯盘工作区内所有股票名后标注「所属行业」。
+   口径（零常规请求）：① 池行自带 hybk（东财池，ind2C 归一为东财二级行业全称）
+   ② 成分股/榜单行 f100 ③ D.indMap（code→行业：今日涨停池 hybk + 涨幅/成交额榜 f100）
+   ④ wb_gt5_indmap（十三 的 F10 反查 7 天缓存，含涨幅>5% 名单的行业）；
+   四路都取不到 → 留白（缺失 ≠ 猜，不硬造行业名）——资金榜股票若 gt5 名单也没覆盖过，
+   由 wtxIndKick() 一次性批量反查补齐（见 wtFundHtml）。仅展示层，不改任何判定。 */
+function wtIndTag(code, row, f100) {
+  var v = '';
+  try {
+    if (row && row.hybk != null && String(row.hybk).trim()) v = ind2C(String(row.hybk).trim());
+    else if (f100 != null && String(f100).trim()) v = String(f100).trim();
+    else if (code) {
+      var k = String(code).replace(/^(sh|sz|bj)/i, '');
+      if (D.indMap && D.indMap[k]) v = D.indMap[k];
+      else {
+        var g = gt5IndMap()[k];
+        if (g && g.ind) v = g.ind;
+      }
+    }
+  } catch (e) { return ''; }
+  v = String(v || '').trim();
+  return (v && v !== '—') ? ' <span style="color:#94a3b8;font-size:11px">[' + esc(v) + ']</span>' : '';
+}
+/* 资金榜个股行业补齐：对 wtIndTag 四路都查不到的票，复用十三的 F10 批量反查通道
+   （gt5LoadIndustries：20 码/批、写回 wb_gt5_indmap 7 天缓存、dc 没有的也记负缓存防反复拉）。
+   会话内 WTX_IND_REQ 去重 —— 每只票整个页面生命周期只反查一次，绝不风暴；完成后重画本区。 */
+var WTX_IND_REQ = {};
+function wtxIndKick(codes) {
+  try {
+    var map = gt5IndMap(), now = Date.now(), need = [];
+    (codes || []).forEach(function (c) {
+      var k = String(c || '').replace(/^(sh|sz|bj)/i, '');
+      if (!k || WTX_IND_REQ[k]) return;
+      var e = map[k];
+      if (e && e.ind && (now - (e.ts || 0)) < GT5_RULE.indTtl) return;   /* 缓存命中，无需反查 */
+      WTX_IND_REQ[k] = 1; need.push(k);
+    });
+    if (!need.length) return;
+    gt5LoadIndustries(need, map).then(function (r) {
+      lsSet('wb_gt5_indmap', r.map);
+      wtxPaint();
+    }).catch(function () { });
+  } catch (eIK) { }
+}
 function wtdRisk(r) {
   if (r.caseKey === 'E') return '核按钮已现 —— 今天不参与任何买入，持仓优先处理';
   if (r.lateDt.length) return '下午核按钮 ' + r.lateDt.length + ' 只（尾盘砸跌停）→ 今天明天都空仓';
@@ -26019,6 +25703,7 @@ function wtdHtml() {
   L.push('1. 竞价红盘率：<b>' + (r.redRate == null ? '—' : r.redRate.toFixed(1) + '%') + '</b>（' + r.red + ' 只红盘 / 共 ' + r.n + ' 只昨涨停）');
   L.push('2. 最高板竞价：<b class="' + (r.hi == null ? '' : (r.hi >= 0 ? 'wt-up' : 'wt-dn')) + '">' +
     (r.hi == null ? '—' : (r.hi >= 0 ? '+' : '') + r.hi.toFixed(1) + '%') + '</b>（' + esc(r.top ? r.top.n : '—') +
+    (r.top ? wtIndTag(r.top.c, null, r.top.ind) : '') +
     ' · 昨日 ' + (r.top ? r.top.lbc : '—') + ' 板）');
   L.push('3. 对应情况：<b>' + r.caseKey + '</b>');
   L.push('4. 今日情绪阶段：<b style="color:' + cCol + '">' + esc(r.emo) + '</b>');
@@ -26035,9 +25720,9 @@ function wtdHtml() {
   if (r.sneak.length || r.lateDt.length) {
     h += '<div class="wt-msg ' + (r.lateDt.length ? 'dn' : 'warn') + '" style="font-size:12px">' +
       (r.sneak.length ? '偷袭板（14:30 后首封）<b>' + r.sneak.length + '</b> 只：' +
-        r.sneak.slice(0, 6).map(function (x) { return esc(x.n) + '(' + fmtFbt(x.fbt) + ')'; }).join('、') + ' → 明天大概率分歧，持仓止盈' : '') +
+        r.sneak.slice(0, 6).map(function (x) { return esc(x.n) + wtIndTag(x.c, x) + '(' + fmtFbt(x.fbt) + ')'; }).join('、') + ' → 明天大概率分歧，持仓止盈' : '') +
       (r.lateDt.length ? (r.sneak.length ? '<br>' : '') + '下午核按钮（尾盘砸跌停）<b>' + r.lateDt.length + '</b> 只：' +
-        r.lateDt.slice(0, 6).map(function (x) { return esc(x.n); }).join('、') + ' → 今天明天都空仓' : '') + '</div>';
+        r.lateDt.slice(0, 6).map(function (x) { return esc(x.n) + wtIndTag(x.c, x); }).join('、') + ' → 今天明天都空仓' : '') + '</div>';
   } else {
     h += '<div class="wt-line" style="color:#8d99b8;font-size:12px">当前无偷袭板 / 无下午核按钮。</div>';
   }
@@ -26049,7 +25734,7 @@ function wtdHtml() {
     h += '<div class="wt-line" style="font-size:12px;line-height:2">';
     holds.slice(0, 12).forEach(function (hd) {
       var m = WTD.holdMa[hd.code];
-      var nm = '<b>' + esc(hd.name || hd.code) + '</b>';
+      var nm = '<b>' + esc(hd.name || hd.code) + '</b>' + wtIndTag(hd.code);
       if (!m) { h += '· ' + nm + '：分时未取到（' + (WTD.holdLoading ? '取数中…' : '等下一轮自动重试') + '）<br>'; return; }
       var over = (m.breakMin != null && m.breakMin >= WTD_RULE.maBreakMin);
       h += '· ' + nm + '：现价 <span class="wt-mono">' + (m.price == null ? '—' : m.price.toFixed(2)) + '</span>' +
@@ -26124,8 +25809,8 @@ function wtPaintMods(force) {
 function wtVerdictText(s) {
   var m = s.mainSector;
   var mainTxt = m ? ((m.grade === 'S' ? '主线 ' + m.name + '（S 级 ' + m.cnt + ' 家）' : '无 S 级主线（最高 ' + m.grade + ' 级 · ' + m.name + ' ' + m.cnt + ' 家）')) : '无涨停板块';
-  var leadTxt = s.leader ? ('龙头 ' + s.leader.n + '（' + s.leader.lbc + ' 板 · ' + fmtFbt(s.leader.fbt) + ' 封板）') : '龙头未取到';
-  var midTxt = (s.mids && s.mids.list && s.mids.list.length) ? ('中军 ' + s.mids.list.map(function (x) { return x.f14 + '（' + wtPct(x.__chg) + '）'; }).join('、')) : '中军暂无';
+  var leadTxt = s.leader ? ('龙头 ' + s.leader.n + wtIndTag(s.leader.c, s.leader) + '（' + s.leader.lbc + ' 板 · ' + fmtFbt(s.leader.fbt) + ' 封板）') : '龙头未取到';
+  var midTxt = (s.mids && s.mids.list && s.mids.list.length) ? ('中军 ' + s.mids.list.map(function (x) { return x.f14 + wtIndTag(x.f12, null, x.f100) + '（' + wtPct(x.__chg) + '）'; }).join('、')) : '中军暂无';
   /* 把三个权威模块的一句话也顶到最上面那行（⑥ 周期 / ⑦ 主线等级 / 7.5 板块最高等级） */
   var six = wtSix();
   var sixTxt = six ? ('⑥周期 <b style="color:' + (WT_CYCOL[six.cyc] || '#94a3b8') + '">' + esc(six.cyc) + '</b>（' +
@@ -26417,7 +26102,7 @@ function gt5Agg() {
   var byInd = {}, uncls = 0, ztAll = 0, band = { mid: 0, big: 0 }, amtAll = 0;
   rows.forEach(function (x) {
     var e = map[x.code], zt = ztm[x.code];
-    var ind = (e && e.ind) || (zt && zt.ind) || '';
+    var ind = themeOf((e && e.ind) || (zt && zt.ind) || '');   /* ★ 2026-10-09：热点主题层（与 7.5/⑤/三类卡同一把尺） */
     x.zt = !!zt;
     if (x.pct >= 9.9) band.big++; else band.mid++;
     if (zt) ztAll++;
@@ -26679,7 +26364,7 @@ function wtRender() {
   h += '<h3>四、龙头 / 最高板梯队</h3>';
   if (s.leader) {
     h += '<div class="wt-line">龙头：<b class="wt-up">' + esc(s.leader.n) + '</b>（' + s.leader.lbc + ' 板 · ' + fmtFbt(s.leader.fbt) + ' 封板 · ' + esc(s.leader.hybk ? ind2C(s.leader.hybk) : '—') + ' · 成交 ' + wtYi(s.leader.amount) + ' · 流通市值 ' + wtYi(s.leader.ltsz) + '）</div>';
-    var others = (s.tops || []).slice(1).map(function (x) { return esc(x.n) + '(' + x.lbc + '板)'; });
+    var others = (s.tops || []).slice(1).map(function (x) { return esc(x.n) + wtIndTag(x.c, x) + '(' + x.lbc + '板)'; });
     if (others.length) h += '<div class="wt-line" style="color:var(--muted)">同板梯队：' + others.join('、') + '</div>';
   } else h += '<div class="wt-line">未取到</div>';
   /* 五、中军 */
@@ -26687,7 +26372,7 @@ function wtRender() {
   var mid = s.mids || { list: [], note: '' };
   if (mid.list && mid.list.length) {
     mid.list.forEach(function (x, i) {
-      h += '<div class="wt-line">' + (i + 1) + '. <b>' + esc(x.f14) + '</b>（' + wtPct(x.__chg) + '　成交 ' + wtYi(num(x.f6)) + '　流通市值 ' + wtYi(num(x.f21)) + '）</div>';
+      h += '<div class="wt-line">' + (i + 1) + '. <b>' + esc(x.f14) + '</b>' + wtIndTag(x.f12, null, x.f100) + '（' + wtPct(x.__chg) + '　成交 ' + wtYi(num(x.f6)) + '　流通市值 ' + wtYi(num(x.f21)) + '）</div>';
     });
   } else h += '<div class="wt-line">暂无符合条件的标的</div>';
   if (mid.note) h += '<div class="wt-note">中军口径：' + esc(mid.note) + '</div>';
@@ -26799,6 +26484,7 @@ function wtLoad(base, pbase, mode) {
         wtStatus('收盘口径 · 已实取当日收盘数据 ' + new Date().toTimeString().slice(0, 8), false);
       } else wtStatus('', false);
       wtRender();
+      ztIndEnsure(snap.zt);   /* ★ 2026-10-09：盯盘卡独立取数链同样触发 F10 行业补查（会话级去重，与 refreshAll 链合流） */
       /* 14:00 之后：顺带取回「持仓中军」的分时均线（第三个决策节点要用）。
          只对 7.16 的持仓逐只取（通常个位数）、60 秒缓存、失败不阻断主流程；
          取完由 wtdLoadHoldMa 自己重画一次决策卡。 */
@@ -27030,10 +26716,11 @@ function anomPoolCodes() {
   D.top100.concat(D.bot100 || [], D.up5 || []).forEach(function (x) { if (x) add(x.f12); });
   return out.slice(0, ANOM_RULE.maxPool);
 }
-/* 板块 / 名称映射（复用页面既有归一尺 ind2C，与 7.5 / 涨停池同键） */
+/* 板块 / 名称映射（★ 2026-10-09：键升级为 secIndOf = 热点主题层（F10 优先 / hybk 兜底再聚主题），
+   与 7.5 / ⑤ / 三类卡同一把尺 —— 电池/锂电池/电池化学品在异动卡里也是同一个板块） */
 function anomSecMap() {
   var m = {};
-  function put(c, s) { c = String(c || ''); s = ind2C(s || ''); if (c && s && s !== '—') m[c] = s; }
+  function put(c, s) { c = String(c || ''); if (!c) return; var v = secIndOf(c, s || ''); if (v && v !== '—') m[c] = v; }
   D.zt.concat(D.zb || [], D.dt || []).forEach(function (x) { put(x.c, x.hybk); });
   D.top100.concat(D.bot100 || [], D.amtTop || [], D.up5 || []).forEach(function (x) { if (x && x.f12) put(x.f12, x.f100); });
   return m;
@@ -27124,18 +26811,45 @@ var ANOM_K = {
   secup: ['🔥 板块同步拉升', '#f0453a'], secdn: ['🧊 板块同步跳水', '#10b981']
 };
 function anomHm(t) { var d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2); }
-function anomPct(v, cls) {
-  if (v == null || !isFinite(v)) return '<span style="color:#64748b">—</span>';
-  var c = v > 0 ? '#f0453a' : (v < 0 ? '#10b981' : '#94a3b8');
-  return '<b style="color:' + c + '">' + (v > 0 ? '+' : '') + v.toFixed(2) + '%</b>';
+/* ★ 2026-10-09：anomPct 退役（时间线 chips 用 anomChipHtml / anomPctCol） */
+/* ★ 2026-10-09：anomTbl/anomPct 退役 —— 异动卡改「大盘异动」时间线形式（anomSecLine/anomStkLine/anomChipHtml） */
+/* ★ 2026-10-09（用户要求）：盘中异动改「东财大盘异动」时间线形式 —— HH:MM + 板块事件标题 + 个股涨跌幅 chips（涨红跌绿）。
+   涨停判定：实时快照现价 ≥ 涨停价（腾讯 a[47]，与 anomPickTypes 封板判定同一字段）。
+   chip 涨跌幅口径：优先实时快照的「今日涨跌幅」（图内同款）；快照缺 → 退回事件时刻 60 秒 Δ 并加 Δ 前缀（不冒充当日涨幅）。 */
+function anomZtNow(c) {
+  var s = ANOM.snap && ANOM.snap[c];
+  return !!(s && s.ztp > 0 && s.p > 0 && s.p >= s.ztp - 0.001);
 }
-function anomTbl(head, rowsHtml, emptyTxt, cnt) {
-  var h = '<div style="margin-top:10px"><b style="font-size:13px;color:#e2e8f0">' + head + '</b>　<span style="font-size:11.5px;color:#94a3b8">' + cnt + '</span></div>';
-  if (!rowsHtml) { h += '<div class="note" style="margin-top:6px">' + emptyTxt + '</div>'; return h; }
-  h += '<div style="overflow-x:auto;margin-top:6px"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
-    '<thead><tr>' + head.split('|').map(function (x) { return '<th style="text-align:left;padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.25);color:#94a3b8;white-space:nowrap">' + x + '</th>'; }).join('') + '</tr></thead>' +
-    '<tbody>' + rowsHtml + '</tbody></table></div>';
-  return h;
+function anomChipHtml(c, n, evD) {
+  var v = (ANOM.snap && ANOM.snap[c] && isFinite(ANOM.snap[c].pct)) ? ANOM.snap[c].pct : null, d = false;
+  if (v == null && isFinite(evD)) { v = evD; d = true; }
+  var col = v == null ? '#64748b' : (v > 0 ? '#f0453a' : (v < 0 ? '#10b981' : '#94a3b8'));
+  var txt = v == null ? '—' : ((d ? 'Δ' : (v > 0 ? '+' : '')) + v.toFixed(2) + '%');
+  return '<span style="display:inline-block;margin:3px 6px 3px 0;padding:3px 9px;border-radius:7px;background:rgba(148,163,184,.12);font-size:12.5px;white-space:nowrap">' +
+    '<b style="color:#e2e8f0">' + esc(n) + '</b> <b style="color:' + col + '">' + txt + '</b>' +
+    (anomZtNow(c) ? ' <span style="color:#fbbf24;font-size:11px">涨停</span>' : '') + '</span>';
+}
+function anomPctCol(v) { return v == null || !isFinite(v) ? '#94a3b8' : (v > 0 ? '#f0453a' : (v < 0 ? '#10b981' : '#94a3b8')); }
+function anomSecLine(e) {
+  var lab = ANOM_K[e.k], up = e.k === 'secup', ms = e.m || [], lead = ms[0] || null;
+  var lp = (lead && ANOM.snap && ANOM.snap[lead.c] && isFinite(ANOM.snap[lead.c].pct)) ? ANOM.snap[lead.c].pct : null;
+  var head = '<b style="color:' + lab[1] + '">' + esc(e.s) + '</b>板块' + (up ? '同步拉升' : '同步跳水') + '（' + e.n + ' 只齐动）' +
+    (lead ? '，<b style="color:#e2e8f0">' + esc(lead.n) + '</b>' +
+      (lp != null ? ' <b style="color:' + anomPctCol(lp) + '">' + (lp > 0 ? '+' : '') + lp.toFixed(2) + '%</b>' : '') +
+      (anomZtNow(lead.c) ? '<span style="color:#fbbf24">涨停</span>' : '') +
+      ' 领' + (up ? '涨' : '跌') : '');
+  var chips = ms.slice(0, 6).map(function (x) { return anomChipHtml(x.c, x.n, x.d); }).join('');
+  return '<div style="padding:7px 0;border-bottom:1px dashed rgba(148,163,184,.15)">' +
+    '<span class="mono" style="color:#94a3b8;font-size:12.5px;margin-right:10px">' + anomHm(e.t).slice(0, 5) + '</span>' + head +
+    '<div style="padding-left:52px">' + chips + '</div></div>';
+}
+function anomStkLine(f) {
+  var lab = ANOM_K[f.k];
+  var head = (f.s ? '<b style="color:#94a3b8">' + esc(f.s) + '</b>｜' : '') +
+    '<b style="color:#e2e8f0">' + esc(f.n) + '</b> <b style="color:' + lab[1] + '">' + lab[0] + '</b>';
+  return '<div style="padding:7px 0;border-bottom:1px dashed rgba(148,163,184,.15)">' +
+    '<span class="mono" style="color:#94a3b8;font-size:12.5px;margin-right:10px">' + anomHm(f.t).slice(0, 5) + '</span>' + head +
+    '<div style="padding-left:52px">' + anomChipHtml(f.c, f.n, f.pct) + '</div></div>';
 }
 function anomRender() {
   var host = $('manomBody');
@@ -27149,36 +26863,18 @@ function anomRender() {
           : '<span style="color:#fbbf24">⏸ 非交易时段</span>　监控只在交易日 9:30-11:30 / 13:00-15:00 采样 · 下列为当日已记录事件') +
     '　事件 <b style="color:#e2e8f0">' + ANOM.evs.length + '</b> 条' +
     (ANOM.err ? '<span style="color:#fb923c">⚠ ' + esc(ANOM.err) + '</span>' : '') + '</div>';
-  var sh = '';
-  for (i = 0; i < secEvs.length; i++) {
-    var e = secEvs[i], lab = ANOM_K[e.k];
-    sh += '<tr><td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12);white-space:nowrap;color:#94a3b8">' + anomHm(e.t) + '</td>' +
-      '<td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12)"><b style="color:' + lab[1] + '">' + lab[0] + '</b></td>' +
-      '<td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12)"><b style="color:#e2e8f0">' + esc(e.s) + '</b></td>' +
-      '<td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12)"><span style="font-size:11.5px;color:#94a3b8">同步 ' + e.n + ' 只：</span> ' +
-      (e.m || []).map(function (x) { return '<span style="white-space:nowrap;margin-right:8px">' + esc(x.n) + ' ' + anomPct(x.d) + '</span>'; }).join('') + '</td></tr>';
-  }
-  var fh = '';
-  for (i = 0; i < stockEvs.length; i++) {
-    var f = stockEvs[i], lab2 = ANOM_K[f.k];
-    fh += '<tr><td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12);white-space:nowrap;color:#94a3b8">' + anomHm(f.t) + '</td>' +
-      '<td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12)" class="mono">' + esc(f.c) + '</td>' +
-      '<td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12)"><b style="color:#e2e8f0">' + esc(f.n) + '</b></td>' +
-      '<td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12)">' + esc(f.s || '—') + '</td>' +
-      '<td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12);white-space:nowrap"><b style="color:' + lab2[1] + '">' + lab2[0] + '</b></td>' +
-      '<td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12)" class="mono">' + (f.p != null ? f.p.toFixed(2) : '—') + '</td>' +
-      '<td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12)">' + anomPct(f.pct) + '</td>' +
-      '<td style="padding:5px 8px;border-bottom:1px solid rgba(148,163,184,.12)">' + anomPct(f.d) + '</td></tr>';
+  /* ★ 时间线流（模仿东财「大盘异动」）：全部事件按时间倒序混排，最新在上 */
+  var feed = ANOM.evs.slice().sort(function (a, b) { return b.t - a.t; }).slice(0, 100), fh = '';
+  for (i = 0; i < feed.length; i++) {
+    fh += (feed[i].k === 'secup' || feed[i].k === 'secdn') ? anomSecLine(feed[i]) : anomStkLine(feed[i]);
   }
   var h = st +
-    anomTbl('时间|方向|板块|同步个股明细', sh,
-      live ? '今日暂无板块同步异动（同板块 ≥' + ANOM_RULE.secN + ' 只个股 60 秒内同步 ≥±' + ANOM_RULE.secMove + '% 才记录；启动后约 1 分钟才有基线）'
-           : '当日无板块同步异动记录',
-      secEvs.length + ' 条') +
-    anomTbl('时间|代码|名称|板块|类型|现价|涨跌幅|60秒Δ', fh,
-      live ? '今日暂无个股异动（监控池内 60 秒涨跌 ≥±' + ANOM_RULE.bigMove + '% 才记录；封涨停 / 打开涨停按涨停价跨越判定）'
-           : '当日无个股异动记录',
-      stockEvs.length + ' 条');
+    '<div style="margin-top:10px"><b style="font-size:13px;color:#e2e8f0">时间线</b>　<span style="font-size:11.5px;color:#94a3b8">板块异动 ' +
+    secEvs.length + ' 条 · 个股异动 ' + stockEvs.length + ' 条' + (ANOM.evs.length > 100 ? ' · 只展示最近 100 条' : '') + '</span></div>' +
+    '<div style="margin-top:4px">' + (fh ||
+      '<div class="note" style="margin-top:6px">' + (live
+        ? '今日暂无异动记录（个股 60 秒涨跌 ≥±' + ANOM_RULE.bigMove + '% / 同板块 ≥' + ANOM_RULE.secN + ' 只同步 ≥±' + ANOM_RULE.secMove + '% 才记录；启动后约 1 分钟才有基线）'
+        : '当日无异动记录') + '</div>') + '</div>';
   h += '<details style="margin-top:10px;border:1px solid rgba(148,163,184,.25);border-radius:9px;background:rgba(148,163,184,.05)">' +
     '<summary style="cursor:pointer;list-style:none;font-size:12.5px;font-weight:700;color:#9fb4ff;padding:8px 14px">📖 判定口径与数据边界（点开看）</summary>' +
     '<div style="font-size:12px;color:#8d99b8;line-height:1.9;padding:0 14px 10px">' +
@@ -27186,6 +26882,9 @@ function anomRender() {
     '快速封涨停 = 现价从「非涨停」跨越到「涨停价」（腾讯行情 a[47] 涨停价字段，缺该字段的次新股不判封板）；打开涨停 = 反向跨越。<br>' +
     '<b>板块异动（近似口径）：</b>同板块 ≥ ' + ANOM_RULE.secN + ' 只个股 60 秒内同步 ≥±' + ANOM_RULE.secMove + '%。' +
     '同花顺原规则是「板块指数 2 分钟 ≥1.5% + ≥3 只同步 + L2 大单净额确认」，本台无板块分时指数与逐笔资金，<b>用价格同步性近似，比原版更保守</b>。<br>' +
+    '<b>展示形式（2026-10-09 · 模仿东财「大盘异动」）：</b>时间线按事件时间倒序混排，个股 chip 的百分数优先取实时快照的<b>今日涨跌幅</b>（与图内同款）；' +
+    '实时快照缺该股时退回事件时刻的 60 秒变动并加 <b>Δ</b> 前缀（不冒充当日涨幅）。「涨停」角标 = 现价 ≥ 涨停价（腾讯 a[47]）。' +
+    '板块键与 7.5 / ⑤ / 三类卡同一把尺：<b>热点主题层</b>（细分行业聚合成热点主题，如 电池/锂电池/电池化学品 → 锂电池；表外行业原样透传）。<br>' +
     '<b style="color:#fb923c">判不了的两类：</b>① 大笔买入 / 大笔卖出（需 Level2 逐笔成交，免费行情无此数据）；② 监控池外个股的异动。' +
     '监控池 = 今日涨停池 ∪ 炸板池 ∪ 跌停池 ∪ 涨幅榜前100 ∪ 跌幅榜前100 ∪ 涨幅&gt;5%清单（去重 ≤' + ANOM_RULE.maxPool + ' 只），聚焦当日活跃标的。<br>' +
     '<b>防刷屏：</b>同一 (个股, 类型) 5 分钟冷却、同一 (板块, 方向) 10 分钟冷却；<b style="color:#9fb4ff">事件只保留最近 30 分钟</b>（滚动清理，每轮渲染自动清掉半小时前的记录，落盘同步裁剪），当日落盘（' + ANOM_RULE.lsKey + '），跨日自动作废。</div></details>';
@@ -27321,6 +27020,14 @@ function jjSnapGet(date){
   if(!(s && s.date === date && s.snap)) return null;
   /* 坏快照 → 作废，让当日重取（今开全天不变，重取仍是对的竞价） */
   if(jjSnapBad(s.snap, jjZeroAccepted(date))){ jjSnapDrop(date); return null; }
+  /* ★ 2026-10-09 第64轮：旧行业口径的当日快照（缺 themeV）→ 作废重取。
+     否则行业分类切主题层后，当日 9:29 已定格的快照会永远保留旧分组键（电池/出版…）。
+     ① 只动**当日**快照（历史快照保留供复盘查询）；② 只在**交易日**作废（非交易日 jjTick 不取数，
+     作废后无重取路径 → 集合竞价全区空转）。重取依据「今开全天不变」，竞价数字忠实 9:25 时点。 */
+  if(date === D.date && s.snap.themeV !== 1 &&
+     (typeof wtIsTradeDay !== 'function' || wtIsTradeDay(D.date))){
+    jjSnapDrop(date); return null;
+  }
   return s;
 }
 function jjSnapLatest(){
@@ -28182,7 +27889,9 @@ function jjaAdviceGroups(prev, prevQ, live){
 
 function jjBuild(prev, zb, iq, pq, up, dn){
   var ph = jjPhase();
-  var s = { ph: ph, allMap: {} };
+  /* ★ 2026-10-09 第64轮：快照口径版本号 —— 行业分组键切主题层（themeKey）后，
+     jjSnapGet 靠它识别「旧口径定格快照」并作废当日重取。 */
+  var s = { ph: ph, allMap: {}, themeV: 1 };
   /* 2026-09-29：留存原始池数组（昨日涨停池 / 昨日炸板池）—— 7.37 竞价定选按池粒度判定，
      需要 fbt / hybk / c / n 等原始字段；此前只挂统计对象 s.prev（rows 是加工行、无 fbt），
      j37Compute 误把 s.prev 当数组读 .length/.forEach → 永远 nodata（界面卡在"快照未就绪"）。 */
@@ -28192,7 +27901,9 @@ function jjBuild(prev, zb, iq, pq, up, dn){
   var prevMap = {}, prevDaySec = {};
   (prev || []).forEach(function(x){
     prevMap[x.c] = x;
-    var k = ind2C(x.hybk) || '—';
+    /* ★ 2026-10-09：键过主题层（与 D.ztGroup 同尺）—— isNew 判定（prevDaySec[o.name]）才不会
+       把「昨日电池、今日锂电池」误判成新方向。 */
+    var k = themeKey(x.hybk) || '—';
     prevDaySec[k] = (prevDaySec[k] || 0) + 1;
   });
   /* ★ 2026-09-29 本地行业表（新浪榜没有 f100 行业字段时的兜底来源）：
@@ -28207,9 +27918,9 @@ function jjBuild(prev, zb, iq, pq, up, dn){
   try{ (D.zt || []).forEach(function(r){ if(r.c && r.hybk && locInd[r.c] == null) locInd[r.c] = r.hybk; }); }catch(eL1){}
   try{ (D.dt || []).forEach(function(r){ if(r.c && r.hybk && locInd[r.c] == null) locInd[r.c] = r.hybk; }); }catch(eL2){}
   function locSec(code, f100){
-    if(f100) return f100;
+    if(f100) return themeKey(f100);   /* ★ 2026-10-09：f100 行业同样过主题层（与分组键同尺） */
     var v = locInd[code] || (D.indMap && D.indMap[code]) || null;
-    return v ? (ind2C(v) || v) : '—';
+    return v ? (themeKey(v) || v) : '—';
   }
   var maxLb = prev.length ? maxLbcOf(prev) : 0;
   /* ① 大盘指数竞价方向 */
@@ -28326,7 +28037,7 @@ function jjBuild(prev, zb, iq, pq, up, dn){
     var need = jjLimitGap(x.c, x.n);
     var c6 = jjClass6(prem, need);
     C[c6.k]++;
-    var row = { code: x.c, name: x.n, sec: ind2C(x.hybk) || '—', lbc: x.lbc || 1, zbc: x.zbc || 0,
+    var row = { code: x.c, name: x.n, sec: themeKey(x.hybk) || '—', lbc: x.lbc || 1, zbc: x.zbc || 0,
       hs: num(x.hs), prem: prem, need: need, c6: c6, amt: a ? a.amt : null };
     rows.push(row); all[x.c] = row;
     if(prem != null){
@@ -28349,7 +28060,7 @@ function jjBuild(prev, zb, iq, pq, up, dn){
   /* 昨日炸板股（§4.4 第四层） */
   var zbRows = (zb || []).map(function(x){
     var a = pq[x.c], prem = a ? a.gap : null;
-    return { code: x.c, name: x.n, sec: ind2C(x.hybk) || '—', prem: prem, c6: jjClass6(prem, jjLimitGap(x.c, x.n)),
+    return { code: x.c, name: x.n, sec: themeKey(x.hybk) || '—', prem: prem, c6: jjClass6(prem, jjLimitGap(x.c, x.n)),
       amt: a ? a.amt : null, zbc: x.zbc || 0 };
   });
   var zbSum = 0, zbN = 0, zbHi = 0;

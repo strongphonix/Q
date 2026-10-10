@@ -10826,7 +10826,7 @@ function yfPanelHtml(){
     });
     if(!rows.length) return '';
     var order = { burst: 0, cont: 1, sw: 2, renew: 3, weak: 4, pulse: 5, fake: 6, ebb: 7, purge: 8 };
-    rows.sort(function(a, b){ return (order[a.d.form.k] || 9) - (order[b.d.form.k] || 9) || b.st.ratio - a.st.ratio; });
+    rows.sort(function(a, b){ return (order[a.d.form.k] || 9) - (order[b.d.form.k] || 9) || (b.d.st.ratio || 0) - (a.d.st.ratio || 0); });
     var h = '<div class="note" style="margin:6px 0"><b>🔥 昨日热点的今日形态</b>（分级：≥80% 强延续加速 / 50~79% 良性分歧 / 30~49% 弱分歧 / &lt;30% 退潮；晋级·溢价·大面三重校验，批量大面或晋级断层一票否决「延续」）<br>';
     h += rows.slice(0, 14).map(function(r){
       var fm = YF_FORMS[r.d.form.k];

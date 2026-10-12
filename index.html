@@ -30043,7 +30043,7 @@ function jjaAnomBriefHtml(s){
   ['qc', 'rzq', 'yz', 'qrz', 'hbj', 'yd', 'yk'].forEach(function(k){
     if(A.shapes[k]) sh.push(JJA_SHAPE_NAME[k] + ' ' + A.shapes[k] + ' 只');
   });
-  if(sh.length) L.push('<div>🎭 形态命中：' + esc(sh.join(' · ')) + '</div>');
+  if(sh.length) L.push('<div>🎭 形态命中：' + esc(sh.join(' · ')) + '<span class="flat">（各组股票名单 + 所属行业 → 展开下方工作区 B2）</span></div>');
   if(!A.amtOk) L.push('<div>⚠️ <span style="color:#fbbf24">量能校验不可用</span><span class="flat">：本快照不在 9:25-9:30 定格窗口，竞价额取不到 → 不套 5% / 10% 阈值（详见下方工作区）</span></div>');
   return '<div class="jja"><span class="ttl">⚡ 竞价异动分析（' + esc(A.when) + ' · 预期差视角 · 只给结论）</span>' + L.join('') + '</div>';
 }
@@ -30090,6 +30090,41 @@ function jjaAnomHtml(s){
     '本台用涨停池自带的封板时间 fbt 与炸板次数 zbc 反推昨日板型，<b>零额外请求</b>。' +
     '⚠️ 与 ③ 昨日涨停工资单的「六分类」是两把尺：③ 用统一阈值（>7 超预期 / ≥3 符合）看整体分布，' +
     '本区块用分层阈值看单只偏差 —— 同一只票两处结论可能不同，不是算错。</div>';
+  /* B2 形态命中名单（2026-10-11 用户定稿：竞价形态 × 预期差四档的成员名单 + 所属行业，直接列在工作区；
+     之前只有计数行，符合 / 不及两档与形态成员从来没有名单，要靠人工提取） */
+  (function(){
+    var groups = [];
+    /* 形态组：同一只票可命中多个形态（跨组重复列出是有意的，与结论条计数口径一致） */
+    ['qc', 'rzq', 'yz', 'qrz', 'hbj', 'yd', 'yk'].forEach(function(k){
+      var rows = A.list.filter(function(r){ return (r.shapes || []).some(function(x){ return x.k === k; }); });
+      if(rows.length) groups.push({ name: JJA_SHAPE_NAME[k] || k, tone: '', rows: rows, kind: 'sh' });
+    });
+    /* 预期差四档：按 dv 互斥分组，统一从 A.list 筛（⚠️ A.bad 是「不及+严重不及」合并名单、供 D 段用，
+       直接拿来当严重不及会跨档重复 —— 口径以 dv.k 为准） */
+    [['over', '超预期（该弱不弱）', '#f0453a'], ['ok', '符合预期', ''], ['weak', '不及预期（该强不强）', '#fbbf24'],
+     ['bad', '严重不及预期（竞价即卖点）', '#10b981'], ['na', '板型未知 / 不可判定', '']].forEach(function(x){
+      var rows = A.list.filter(function(r){ return r.dv.k === x[0]; });
+      if(rows.length) groups.push({ name: x[1], tone: x[2], rows: rows, kind: 'tier' });
+    });
+    h += '<h3 style="font-size:12.5px;margin:10px 0 4px;color:#c084fc">🎭 B2 · 形态命中名单（竞价形态 × 预期差四档 · 股票 + 所属行业）</h3>';
+    if(!groups.length){
+      h += '<div class="note">昨日涨停在册 ' + A.n + ' 只，本日无形态命中、也无四档分组 → 名单不产出，不硬凑。</div>';
+    } else {
+      groups.forEach(function(g){
+        var chips = g.rows.map(function(r){
+          var tip = g.kind === 'sh'
+            ? ('实际竞价 ' + (r.prem == null ? '—' : fpct(r.prem)) + '；命中：' + r.shapes.map(function(x){ return x.name; }).join('、'))
+            : (esc(r.exp.type) + ' → 预期 ' + jjaExpTxt(r.exp) + '，实际 ' + (r.prem == null ? '—' : fpct(r.prem)) + '，差 ' + jjaDevTxt(r));
+          return '<span title="' + tip + '"><b>' + esc(r.name) + '</b>' +
+            (r.sec && r.sec !== '—' ? '<span class="flat" style="font-size:10.5px">[' + esc(r.sec) + ']</span>' : '') + '</span>';
+        }).join('<span class="flat"> · </span>');
+        h += '<div style="margin-top:6px;line-height:1.9"><b style="font-size:12px;' + (g.tone ? 'color:' + g.tone : '') + '">' + esc(g.name) + '</b>' +
+          '<span class="flat" style="font-size:11px">（' + g.rows.length + ' 只）</span>　' + chips + '</div>';
+      });
+      h += '<div class="note">形态组允许同一只票跨组重复（一只票可同时「一字涨停 + 弱转强」）；四档按该票自己的预期差互斥分组。' +
+        '悬停股票名可看「昨日板型 → 预期基准 / 实际竞价 / 预期差」。</div>';
+    }
+  })();
   /* C 两张名单 */
   function nameTbl(title, arr, cls, note){
     if(!arr.length) return '<div class="note" style="margin:8px 0 0">' + title + '：无</div>';

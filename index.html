@@ -2689,7 +2689,11 @@ function idxAmtYest(txcode){
       var d = j && j.data && j.data[txcode];
       var rows = d && (d.qfqday || d.day);
       if(!rows) return null;
-      for(var i = 0; i < rows.length; i++){
+      /* ★ 2026-10-15 §132 取日方向修复：腾讯 newfqkline 日K返回**升序**（旧→新），原实现正序
+         遍历取「第一根 ≠ 今日」恒取到 5 根里**最旧的一天**（当日实测取到 10-09 = 19005 亿，
+         而真昨日 10-14 = 14144 亿）→ ⑥ 模块「较昨日同期」把放量 +15.5% 算成缩量 -14.1%。
+         改**倒序**遍历：升序时倒数第二根 = 昨日；若接口改降序 / 末根非今日，也取「最近一日 ≠ 今日」，两种行序都正确。 */
+      for(var i = rows.length - 1; i >= 0; i--){
         var dt = String(rows[i][0]).replace(/-/g, '');
         var amt = parseFloat(rows[i][8]);
         if(dt !== D.date && !isNaN(amt) && amt > 0) return amt / 1e4; /* 万元 → 亿元 */
@@ -2701,7 +2705,8 @@ function idxAmtYest(txcode){
       return jsonp('https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=' + secid + '&klt=101&fqt=1&lmt=3&end=20500101&fields1=f1,f2,f3&fields2=f51,f53,f57', 'cb', 12000).then(function(r){
         var kl = (r && r.data && r.data.klines) || [];
         var rs = kl.map(function(s){ var p = s.split(','); return { d: p[0], a: parseFloat(p[2]) }; }).filter(function(x){ return !isNaN(x.a); });
-        for(var i = 0; i < rs.length; i++){
+        /* ★ §132 同款修复：东财 klines 也是升序（旧→新），正序恒取最旧 → 倒序取「最近一日 ≠ 今日」 */
+        for(var i = rs.length - 1; i >= 0; i--){
           if(rs[i].d.replace(/-/g, '') !== D.date) return rs[i].a / 1e8; /* 元 → 亿元 */
         }
         return null;
@@ -12887,6 +12892,278 @@ function emoRevDirsCore(dt, prev, prevPct, ztCodes, indOf, limit){
   return rows.slice(0, limit);
 }
 /* ==== REV-END ==== */
+
+/* ==== DINGCMD-BEGIN ==== */
+/* ============ 📡 钉钉指令通道 · 涨停台执行端（2026-10-14 §118） ============
+   链路：群里 @指令机器人 发「情绪周期 / 主线板块」
+     → 工作台 ding_cmd_bot.py（Stream 模式）写 ding_cmd.json（push = {type:'emo'|'sectors', ts}）
+     → 本页每 30s 经本地代理 GET /dingcfg 轮询（与工作台页面共用同一 proxy:8899、同一指令文件）
+     → push.ts 去重 → **页面现算**（emotion() / emoRevDimsCore / 三类卡分组，与页面所见同一把尺）
+     → POST 代理 /send 推钉钉。
+   为什么由页面执行：情绪温度 ≡ emotion() 现算，Node 复现会有 localStorage 日内峰值 / RENDER_SEQ
+   缓存等浏览器态口径漂移；页面本来就是常驻刷新的，零新增取数、零重复计算。
+   配置零填：webhook/secret/keyword 直读工作台保存的 localStorage['bwork_ding']（file:// 同源共享）；
+   读不到时回落 wb_dingcmd_cfg（console 执行 wbDingSet(webhook, secret, keyword) 写入）。
+   ⚠ 去重键必须独立（wb_dingcmd_seen_rev / wb_dingcmd_seen_ts）：工作台页面用 bwork_ding_cmd_rev /
+   bwork_ding_push_ts —— file:// 同源共享 localStorage，共用键会互相顶掉去重标记。 */
+var WB_DING = { timer: null, lastErr: '', lastOk: '', base: '' };
+
+function wbDingCfg() {
+  var c = null;
+  try { c = JSON.parse(localStorage.getItem('bwork_ding') || 'null'); } catch (e0) {}
+  if (!c || !c.url) { try { c = JSON.parse(localStorage.getItem('wb_dingcmd_cfg') || 'null'); } catch (e1) {} }
+  if (!c || !c.url) return null;
+  var base = 'http://localhost:8899';
+  var pm = String(c.proxy || '').match(/^(https?:\/\/[^\/]+)/);
+  if (pm) base = pm[1];
+  WB_DING.base = base;
+  return { webhook: c.url, secret: c.secret || '', keyword: c.keyword || '', base: base };
+}
+
+/* console 快捷配置（工作台 bwork_ding 不可用时的兜底通道） */
+function wbDingSet(webhook, secret, keyword) {
+  localStorage.setItem('wb_dingcmd_cfg', JSON.stringify(
+    { url: webhook, secret: secret || '', keyword: keyword || '', proxy: 'http://localhost:8899/send' }));
+  return 'wb_dingcmd_cfg 已写入（webhook=' + String(webhook).slice(0, 42) + '…）';
+}
+
+/* ---------- 纯文本 ①：🌡 定量化情绪温度（全模块） ---------- */
+function emoDingText() {
+  var e = emotion(), st = emoRevGet().st;
+  if (!e || e.noData) return '';                                /* 数据未就绪 → ''，轮询侧重试，不消耗去重标记 */
+  var fg = emoFgBand(e.score);
+  var L = [];
+  L.push('🌡 定量化情绪温度 · ' + e.score.toFixed(1) + '°（' + (fg ? fg.name : '—') + '）');
+  L.push('周期档：' + e.cyc + ' ｜ 仓位闸门：' + (e.pos || '—') +
+    (e.reasonTxt ? '\n判定：' + e.reasonTxt : ''));
+  /* ★ 2026-10-15 §81 指数×情绪同步性（v2 · 用户定稿：直抓「市场风格」模块实时结论，不自造口径）：
+     style2Input() → style2Judge() 与页面 #style2Box 是同一引擎同一读数（零新增取数），四态恒有结论；
+     共振空头 → 行首 ❗（红色感叹号）+ 判断文案「指数与情绪同步走弱 → 禁新开仓，只做减仓与防守」；
+     其余三态照推 state+sub+判断（无 ❗）。verdict 内 **加粗标记** 是页面 tmMd 渲染用的，钉钉纯文本剥掉。
+     引擎异常 → 整行不出现，不炸情绪周期推送。 */
+  try {
+    var _s2 = style2Judge(style2Input());
+    if (_s2 && _s2.state) {
+      L.push((_s2.state === '共振空头' ? '❗ ' : '') + '市场风格：' + _s2.state + '　' + _s2.sub +
+        (_s2.biasTxt ? ' · ' + _s2.biasTxt : ''));
+      if (_s2.verdict) L.push('判断：' + String(_s2.verdict).replace(/\*\*/g, ''));
+    }
+  } catch (eS2) {}
+  L.push('—— 构成维度（逐项可复算）——');
+  var dims = emoRevDimsCore(e, st);
+  var roman = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭'];
+  for (var i = 0; i < dims.length; i++) {
+    var d = dims[i];
+    L.push(roman[i] + ' ' + d.label + '：' + d.val + '｜' + d.lv +
+      (d.w == null ? '｜补充' : '｜权重 ' + Math.round(d.w * 100) + '%'));
+  }
+  if (e.rules && e.rules.length) {
+    L.push('—— 判定规则（前 ' + Math.min(5, e.rules.length) + '/' + e.rules.length + ' 条）——');
+    for (var j = 0; j < e.rules.length && j < 5; j++) L.push('· ' + e.rules[j].t);
+  }
+  L.push('口径：温度 ≡ ⑥ 情绪指数（八维加权 0-100，不另算一套）｜恐贪 5 档（25/45/65/80）｜亏钱效应强信号封顶 44°/64°｜数据基准 ' +
+    (D.date ? D.date.slice(4, 6) + '-' + D.date.slice(6, 8) : '—') + ' ' + nowHMS());
+  return L.join('\n');
+}
+
+/* ---------- 纯文本 ②：三、主线板块（三类卡摘要） ---------- */
+function wtMainDingText() {
+  var s = (typeof WT !== 'undefined' && WT && WT.snap) ? WT.snap : null;   /* ⚠ WT 可能是 null（typeof null === 'object'，必须再判真值） */
+  if (!s || !s.sectors || !s.sectors.length) return '';         /* 快照未就绪 → ''，轮询侧重试 */
+  var groups = { real: [], mid: [], trap: [] };
+  var GSM = {};
+  try { (typeof wtGrades === 'function' ? (wtGrades() || []) : []).forEach(function (x) { if (x && x.name) GSM[x.name] = x; }); } catch (eGS) {}
+  s.sectors.forEach(function (sg) {
+    var G = GSM[sg.name] || {};
+    var g = {}, kk;
+    for (kk in sg) g[kk] = sg[kk];
+    g.zt = (sg.cnt != null) ? sg.cnt : (sg.zt || 0);
+    if (G.grade) g.grade = G.grade;
+    g.secc = G.secc || sg.secc || null;
+    g.veto = (G.veto != null) ? G.veto : !!sg.veto;
+    g.vetoWhy = G.vetoWhy || sg.vetoWhy || '';
+    g.ladder = G.ladder || sg.ladder || '';
+    if (G.dt != null) g.dt = G.dt; else if (g.dt == null) g.dt = 0;
+    var c = wtClassifySector(g);
+    groups[c.cls].push({ g: g, c: c });
+  });
+  function cardTxt(o, i) {
+    var g = o.g, meta = [];
+    meta.push('涨停 ' + (g.zt || 0) + ' 家');
+    meta.push('最高 ' + (g.maxLbc || 0) + ' 板');
+    try { var pz = prevZtCntOf(g.name); if (pz != null) meta.push('昨涨停 ' + pz + ' 家'); } catch (eP) {}
+    if (g.zb) meta.push('炸板 ' + g.zb);
+    if (g.dt) meta.push('跌停 ' + g.dt);
+    return '▪ ' + g.name + '（' + (g.grade || '—') + '级）：' + meta.join(' · ') +
+      '\n   ' + o.c.why;
+  }
+  var L = ['【主线板块 · 三类卡】'];
+  var secs = [['real', '━━ 真主线 ━━'], ['mid', '━━ 轮动支线 ━━'], ['trap', '━━ 退潮预警 ━━']];
+  for (var k = 0; k < secs.length; k++) {
+    var arr = groups[secs[k][0]];
+    L.push(secs[k][1] + (arr.length ? '' : '（无）'));
+    for (var m = 0; m < arr.length; m++) L.push(cardTxt(arr[m], m));
+  }
+  L.push('口径：分类 = wtClassifySector（7.5 gradeSectors 同源，蒸馏自复盘 skill）｜数据基准 ' +
+    (s.base || '—') + ' ' + nowHMS());
+  return L.join('\n');
+}
+
+/* ---------- 纯文本 ③：风险提示（炸板池 / 跌停池行业归类明细 · §119 2026-10-14） ---------- */
+function poolRiskDingText() {
+  var zb = poolData('zb'), dt = poolData('dt');
+  if (!zb.length && !dt.length) {
+    if (!(D.zt || []).length) return '';                       /* 池子未就绪 → ''，轮询侧重试；两池真空（池子已取到）是有效结论，照推 */
+  }
+  var L = ['【风险提示 · 炸板池 / 跌停池行业归类】'];
+  function sec(title, arr, fmtRow) {
+    L.push('—— ' + title + '（' + arr.length + ' 家）——');
+    if (!arr.length) { L.push('（空）'); return; }
+    var g = {};
+    arr.forEach(function (x) { var k = x.ind || '—'; (g[k] = g[k] || []).push(x); });
+    var ks = Object.keys(g).sort(function (a, b) { return g[b].length - g[a].length; });
+    for (var i = 0; i < ks.length; i++) {
+      var rows = g[ks[i]].slice().sort(function (a, b) {
+        return (b.zbc || 0) - (a.zbc || 0) || (b.lbc || 1) - (a.lbc || 1);   /* zb 按炸板次数、dt 退化为连跌停天数 */
+      });
+      var heads = [];
+      for (var j = 0; j < rows.length; j++) heads.push(fmtRow(rows[j]));
+      L.push('▪ ' + ks[i] + '（' + g[ks[i]].length + ' 家）：' + heads.join('、'));
+    }
+  }
+  sec('炸板池', zb, function (x) {
+    return x.name + '(' + ((x.lbc || 1) >= 2 ? x.lbc + '板' : '首板') + (x.zbc ? '·炸' + x.zbc + '次' : '') + '·' + fpct(x.zdp) + ')';
+  });
+  sec('跌停池', dt, function (x) {
+    return x.name + '(' + ((x.lbc || 1) >= 2 ? x.lbc + '连跌停' : '首跌停') + '·' + fpct(x.zdp) + ')';
+  });
+  L.push('口径：行业 = ind2C(hybk)（东财二级行业归一，与 ⑧ 五池明细同一把尺）；组内排序 = 炸板次数 / 连跌停天数降序；数据基准 ' +
+    (D.date ? D.date.slice(4, 6) + '-' + D.date.slice(6, 8) : '—') + ' ' + nowHMS());
+  return L.join('\n');
+}
+
+/* ---------- 纯文本 ④：集合竞价（预期差四档 × 行业归类 + 推荐/回避板块合并 · §122 2026-10-14） ---------- */
+function jjaDingText() {
+  var s = JJ.snap;
+  if (!s) return '';                                           /* 快照未就绪 → ''，轮询侧重试 */
+  var A = null;
+  try { A = jjaAnomOf(s); } catch (eA) { return ''; }
+  if (!A || !A.ok) return '';                                  /* 无昨日涨停池 → 无预期基准，重试 */
+  var L = ['【集合竞价 · 预期差四档 × 行业归类（B2 名单）】'];
+  /* 四档互斥分组（口径同工作区 B2：按该票自己的预期差 dv.k），组内按行业聚类，行业按家数降序，
+     组内个股按预期差降序；全展开不截断（§121 同纪律）。板型未知（na）有命中才补列。 */
+  var tiers = [['over', '🎯 超预期（该弱不弱 · 买入候选）'], ['ok', '👀 符合预期'],
+    ['weak', '⚠️ 不及预期（该强不强 · 减仓观察）'], ['bad', '🚨 严重不及预期（竞价即卖点）'],
+    ['na', '❔ 板型未知 / 不可判定']];
+  tiers.forEach(function (tw) {
+    var rows = (A.list || []).filter(function (r) { return r.dv && r.dv.k === tw[0]; });
+    if (!rows.length) return;                                  /* 空档位不占行，不硬凑 */
+    L.push('—— ' + tw[1] + '（' + rows.length + ' 家）——');
+    var g = {};
+    rows.forEach(function (r) { var k = r.sec || '—'; (g[k] = g[k] || []).push(r); });
+    Object.keys(g).sort(function (a, b) { return g[b].length - g[a].length; }).forEach(function (k) {
+      var its = g[k].slice().sort(function (a, b) { return (b.dev == null ? -999 : b.dev) - (a.dev == null ? -999 : a.dev); })
+        .map(function (r) {
+          var shp = (r.shapes || []).map(function (x) { return x.name; }).join('/');
+          return r.name + '(' + r.exp.type + '·竞' + fpct(r.prem) + '·' + jjaDevTxt(r) + (shp ? '·' + shp : '') + ')';
+        });
+      L.push('▪ ' + k + '（' + g[k].length + ' 家）：' + its.join('、'));
+    });
+  });
+  /* 推荐 / 回避板块（集合竞价工作区同源 jjPickCalc：竞价涨停行业聚类 S/A 级 + 大面/竞价跌停回避） */
+  L.push('—— 推荐板块 / 回避板块 ——');
+  var pickOk = false;
+  try {
+    if (s.auc && s.auc.ok) {
+      var PK = jjPickCalc(s);
+      L.push('✅ 推荐：' + (PK.rec.length ? PK.rec.map(function (o) { return o.name + '（' + o.cnt + ' 只 · ' + o.grade.k + ' 级 · 最高 ' + o.maxLb + ' 板）'; }).join('、') : '无 S/A 级板块（竞价未成规模 → 无明确主线）'));
+      L.push('🚫 回避：' + (PK.avo.length ? PK.avo.map(function (o) { return o.name + '（' + (o.face ? '大面 ' + o.face + ' 只' : '') + (o.face && o.dt ? ' / ' : '') + (o.dt ? '跌停 ' + o.dt + ' 只' : '') + '）'; }).join('、') : '无集中大面行业'));
+      if (PK.conflict.length) L.push('⚔ 分歧（既涨停又大面 → 已移入回避）：' + PK.conflict.map(function (o) { return o.name; }).join('、'));
+      pickOk = true;
+    }
+  } catch (eP) {}
+  if (!pickOk) L.push('推荐 / 回避板块：不产出（严格口径：非当日 9:25 竞价数据，结论无意义）');
+  L.push('口径：预期差 = 实际竞价 − 该票昨日板型分层基准（一字+5 / 10点前+4 / 11:30前+3 / 午后0 / 烂板-1pp，与 7.33 异动分析同引擎）；四档按 dv 互斥分组、行业 = 竞价快照本地行业表（hybk 归一，与工作区 B2 同一把尺）；推荐/回避 = jjPickCalc（⑧ 同源）；数据基准 ' +
+    (D.date ? D.date.slice(4, 6) + '-' + D.date.slice(6, 8) : '—') + ' ' + nowHMS());
+  return L.join('\n');
+}
+
+/* ---------- 发送 + 轮询 ---------- */
+async function wbDingSend(text) {
+  var cfg = wbDingCfg();
+  if (!cfg) return { errcode: -1, errmsg: '未配置 webhook：工作台 bwork_ding 未找到，console 执行 wbDingSet(webhook, secret, keyword)' };
+  try {
+    var res = await fetch(cfg.base + '/send', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ webhook: cfg.webhook, secret: cfg.secret, keyword: cfg.keyword, text: text })
+    });
+    return await res.json();
+  } catch (e) { return { errcode: -1, errmsg: '代理不可达：' + e.message }; }
+}
+
+async function wbDingCmdPoll() {
+  var cfg = wbDingCfg();
+  if (!cfg) return;
+  var data = null;
+  try {
+    var res = await fetch(cfg.base + '/dingcfg', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    data = await res.json();
+    WB_DING.lastErr = '';
+  } catch (e) {
+    WB_DING.lastErr = (e && e.message) || String(e);
+    return;
+  }
+  if (!data || !data.cmd || typeof data.cmd !== 'object') return;
+  var ptk = data.cmd.push;
+  if (!ptk || !ptk.type || !ptk.ts) return;                    /* 只认涨停台四态载荷；sec/stock 归工作台 */
+  var seenTs = 0;
+  try { seenTs = Number(localStorage.getItem('wb_dingcmd_seen_ts') || 0); } catch (eL) {}
+  if (Number(ptk.ts) <= seenTs) return;                        /* 已处理过（同 ts 只推一次） */
+  var txt = '';
+  var genErr = null;
+  try {
+    txt = (ptk.type === 'emo') ? emoDingText()
+        : (ptk.type === 'sectors') ? wtMainDingText()
+        : (ptk.type === 'risk') ? poolRiskDingText()
+        : (ptk.type === 'jja') ? jjaDingText()
+        : '';
+  } catch (eT) {
+    genErr = (eT && eT.message) || String(eT);
+  }
+  /* 数据未就绪（txt 空）→ 不记 ts，30s 后自动重试；同一任务最多重试 5 次，超过才推「未就绪」放弃，
+     防止页面长时间无数据时无限重试。重试计数挂在 localStorage（wb_dingcmd_retry）。 */
+  if (!txt) {
+    var rty = { ts: 0, n: 0 };
+    try { rty = JSON.parse(localStorage.getItem('wb_dingcmd_retry') || '{"ts":0,"n":0}'); } catch (eR) {}
+    if (Number(rty.ts) !== Number(ptk.ts)) rty = { ts: Number(ptk.ts), n: 0 };
+    rty.n++;
+    try { localStorage.setItem('wb_dingcmd_retry', JSON.stringify(rty)); } catch (eR2) {}
+    console.log('[dingcmd] push type=' + ptk.type + ' 数据未就绪，第 ' + rty.n + '/5 次等待重试' + (genErr ? '（异常：' + genErr + '）' : ''));
+    if (rty.n >= 5) {
+      var msg = '【涨停台】指令已收到，但数据未就绪（重试 5 次失败' + (genErr ? '：' + genErr : '') + '），请确认涨停台页面已完成行情加载后重发。';
+      await wbDingSend(msg);
+      try { localStorage.setItem('wb_dingcmd_seen_ts', String(ptk.ts)); } catch (eS1) {}
+      try { localStorage.setItem('wb_dingcmd_retry', '{"ts":0,"n":0}'); } catch (eR3) {}
+    }
+    return;
+  }
+  try { localStorage.setItem('wb_dingcmd_retry', '{"ts":0,"n":0}'); } catch (eR4) {}
+  var r = await wbDingSend(txt);
+  try { localStorage.setItem('wb_dingcmd_seen_ts', String(ptk.ts)); } catch (eS) {}
+  WB_DING.lastOk = nowHMS() + ' type=' + ptk.type + ' errcode=' + (r && r.errcode);
+  console.log('[dingcmd] 已处理 push type=' + ptk.type + ' → errcode=' + (r && r.errcode) + (r && r.errcode !== 0 ? ' errmsg=' + r.errmsg : ''));
+}
+
+function nowHMS() { var d = new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2); }
+
+function wbDingCmdStart() {
+  if (WB_DING.timer) return;
+  WB_DING.timer = setInterval(wbDingCmdPoll, 30000);          /* 与工作台同款 30s 轮询 */
+  setTimeout(wbDingCmdPoll, 8000);                            /* 启动后 8s 先试一轮（避开加载抢带宽） */
+}
+wbDingCmdStart();
+/* ==== DINGCMD-END ==== */
 
 /* ==== FC-BEGIN ==== */
 /* ============ 💧 资金延续分（2026-10-09 新增 · 挂在「定量化情绪温度」卡内） ============

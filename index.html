@@ -648,6 +648,26 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
   #wtop .wt-kpi .l { font-size:11.5px; color:var(--muted); }
   #wtop .wt-kpi .v { font-size:19px; font-weight:800; font-family:ui-monospace,Consolas,monospace; margin-top:2px; }
   #wtop .wt-kpi .d { font-size:11px; color:var(--muted); margin-top:3px; line-height:1.5; }
+  /* ★ 2026-10-21 行情分级条（用户《单日行情分级策略表》）：
+     版面只出「等级 · 定性 · 一句应对」；区间阈值 / 红盘率 / 炸板率 / 量比一律进 title 悬浮提示
+     —— 用户明确要求「标注对应的结论即可，不要把判断依据写入工作区，保持页面整洁」。 */
+  #wtop .wt-grade { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:2px 0 10px; }
+  #wtop .wt-grade .gh { font-size:11.5px; color:#94a3b8; letter-spacing:.2px; }
+  #wtop .wt-grade .gc { font-size:11.5px; line-height:1.5; padding:3px 9px; border-radius:999px;
+    border:1px solid #334155; background:#0b1222; color:#cbd5e1; white-space:nowrap; cursor:help; }
+  #wtop .wt-grade .gc b { font-weight:800; }
+  #wtop .wt-grade .gc i { font-style:normal; color:#94a3b8; margin-left:8px; padding-left:8px; border-left:1px solid rgba(148,163,184,.32); }
+  #wtop .wt-grade .gc.up { border-color:rgba(240,69,58,.55); background:rgba(240,69,58,.10); }
+  #wtop .wt-grade .gc.up b { color:#ff9f97; }
+  #wtop .wt-grade .gc.dn { border-color:rgba(16,185,129,.55); background:rgba(16,185,129,.10); }
+  #wtop .wt-grade .gc.dn b { color:#6ee7b7; }
+  #wtop .wt-grade .gc.flat { border-color:rgba(251,191,36,.5); background:rgba(251,191,36,.09); }
+  #wtop .wt-grade .gc.flat b { color:#fbbf24; }
+  #wtop .wt-grade .gc.warn { border-color:rgba(251,191,36,.72); background:rgba(251,191,36,.16); color:#fbbf24; }
+  #wtop .wt-grade .gc.warn b { color:#fbbf24; }
+  #wtop .wt-grade .gc.ok { border-color:rgba(34,211,238,.6); background:rgba(34,211,238,.11); color:#a5f3fc; }
+  #wtop .wt-grade .gc.ok b { color:#67e8f9; }
+  #wtop .wt-grade .gc.na { opacity:.55; }
   #wtop h3 { font-size:13.5px; margin:14px 0 8px; padding:7px 12px; border-radius:8px;
     background:linear-gradient(90deg,rgba(34,211,238,.13),rgba(34,211,238,.02) 62%,transparent);
     border:1px solid rgba(34,211,238,.22); border-left:3px solid #22d3ee; }
@@ -1071,7 +1091,7 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
        保留原有 onclick="jumpTo(...)"（它处理了 content-visibility 导致的落点偏移，别删）。 -->
   <div class="hlinks" id="hlinks">
     <a href="#wtop" data-sec="wtop">🎯 实时盯盘</a>
-    <a href="#m6" data-sec="m6" title="⑥ 大盘情绪周期（八维加权 + 情绪仪表盘）">⑥ 情绪周期</a>
+    <a href="#m6" data-sec="m6" title="⑥ 大盘情绪周期（九维加权 + 情绪仪表盘）">⑥ 情绪周期</a>
     <a href="#jjtop" data-sec="jjtop">🔥 集合竞价</a>
     <a href="#m7_37" data-sec="m7_37" onclick="return jumpTo('m7_37')" style="color:#f0453a;font-weight:700" title="直达「7.37 竞价定选」绿名单（9:25 后自动出结果）">⏰ 7.37 竞价定选</a>
     <span class="hl-gap" aria-hidden="true"></span>
@@ -1134,7 +1154,7 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
 <b>情绪：</b>涨停≥40 + 跌停&lt;5 + 晋级率≥30% = 偏强（3 成）｜涨停 20-39 + 跌停 5-15 + 晋级率 15-29% = 中性（2 成）｜涨停&lt;20 + 跌停&gt;15 + 晋级率&lt;15% = 偏弱（0-1 成）。<br>
 <span style="color:#fbbf24">⚠️ 策略的三档是「三指标同时命中」；凑不齐时本卡按<b>涨停家数单指标</b>兜底判定，并在结论里写明依据，不硬套。</span><br>
 <b>🔗 与页面三大模块联动（2026-10-20 起只做「读取」，不再在盯盘卡内重列结论）：</b>直接读页面既有<b>权威判定</b>，不另算一套 ——
-⑥ 大盘情绪周期 <code>emotion()</code>（八维加权 0-100 + 文档判定条件 + 陷阱自检）、
+⑥ 大盘情绪周期 <code>emotion()</code>（九维加权 0-100 + 文档判定条件 + 陷阱自检）、
 ⑦ 全市场资金与主线 <code>D.ml</code>（主线三维 0-9 + 结构加验 0-6 + 环境联动降档）与 <code>rotStageInfo()</code>（7.7 板块高低切 / 资金轮动，与 7.7 卡共用）、
 7.5 板块分级 <code>gradeSectors()</code>（S/A/B/C + ⛔ 风险否决 + 板块自身情绪周期 + 近 5 日阶段轨迹）。
 <b>与各卡结论同源</b>，主刷新后自动更新；<b>仓位取更严者</b>（⑥ 周期上限 × 本卡策略三档）。数据缺失一律如实标注（缺失维度 / 混沌无主线 / 周期未判定），不把"没取到"写成"0 家"。<br>
@@ -1160,7 +1180,7 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
 
 <!-- 模块6 大盘情绪周期 -->
 <section class="card" id="m6">
-<h2>⑥ 大盘情绪周期<small>八维加权情绪指数（0-100 · 含亏钱效应 · 跌停&gt;10 家周期降一档）</small></h2>
+<h2>⑥ 大盘情绪周期<small>九维加权情绪指数（0-100 · 含亏钱效应 · 指数强弱 8% · 跌停&gt;10 家周期降一档）</small></h2>
 <div id="m6body"><div class="loading">数据加载中…</div></div>
 <div id="emoChart" style="width:100%;height:260px;margin-top:10px"></div>
 </section>
@@ -3228,7 +3248,7 @@ function refreshAll(manual){
   /* —— 各数据源是否取到（2026-09-20 新增）——
      为什么要它：refreshAll 里每个请求失败都 `.catch` 成空数组/null，异常被静默吞掉。
      对「计数型」维度这是灾难：大盘情绪 ⑥ 的「涨停家数」权重 25%，若涨停池接口挂了，
-     D.zt = [] 会被当成「0 家涨停」→ 八维分直接砸到冰点区 → **总仓位闸门被压到 0~5%**，
+     D.zt = [] 会被当成「0 家涨停」→ 九维分直接砸到冰点区 → **总仓位闸门被压到 0~5%**，
      而页面上看起来一切正常（没有任何报错）。正确做法是：取不到的维度按「缺数据 → 中性分」
      计，并在⑥的规则里如实写出「哪几个维度缺数据」。7.33 已有同款 dataOk，这里是总闸门版。 */
   D.poolOk = {};
@@ -4080,7 +4100,7 @@ function secFlowNow(){
   return v;
 }
 /* ---------- 昨涨停池「T+1 承接质量」五档 ----------
-   ⚠️ 这**不是**大盘情绪周期。情绪周期只有一个权威来源 emotion()（八维加权 + 文档判定条件 + 特殊规则）。
+   ⚠️ 这**不是**大盘情绪周期。情绪周期只有一个权威来源 emotion()（九维加权 + 文档判定条件 + 特殊规则）。
    旧版这里直接返回 主升 / 修复 / 分歧 / 退潮 / 冰点，于是 7.3「综合情绪判定」与 7.6/7.11 出现了
    两套互相打架的周期结论（同一页面可能同时显示"当前周期：分歧"和"综合判定：主升"）。
    现改为只描述「昨日涨停股今天接得怎么样」，不再冒充周期，仓位也统一由情绪周期给出。 */
@@ -4094,7 +4114,7 @@ function prevVerdict(a){
 }
 
 /* ==================================================================
-   八维加权情绪指数（v3，2026-09-14 按《大盘情绪周期判断逻辑》完整策略文档重算）
+   九维加权情绪指数（v3，2026-09-14 按《大盘情绪周期判断逻辑》完整策略文档重算）
    ------------------------------------------------------------------
    第二章 八大核心指标 —— 指标 / 权重 / 分档表全部照抄文档：
     ① 涨停家数   25%   ≤15→0-15 / 16-30→15-35 / 31-50→35-55 / 51-70→55-75 / 71-90→75-90 / ≥90→90-100
@@ -4106,6 +4126,14 @@ function prevVerdict(a){
     ⑦ 涨跌家数比 10%   ≥3:1→90-100 / 2-3→75-90 / 1.5-2→60-75 / 1-1.5→40-60 / 0.7-1→20-40 / <0.7→0-20
     ⑧ 成交额趋势  5%   放量方向修正表（涨多跌少/跌多涨少 × 放量幅度，见 amtTrendScore）
    分档表端点严格照抄，中间线性插值（pw），保证与文档区间端值完全一致。
+   ------------------------------------------------------------------
+   ★ 第 9 维「指数强弱」8%（2026-10-21 新增 · 三轮全网交叉验证 + 本台 8745 个交易日无偏实测）
+     背景：原「指数语境」只是补充维度（w=null），不占那 100 分。用户要求把大盘指数强弱
+     纳入定量化判断标准，给权重与赋分。三轮检索 + 实测后的结论是「可以占分，但必须小权重
+     + 背离修正」，理由见下方 v4 段。
+     权重重分配（合计仍为 100，从其余八维等比让出 8 个点）：
+       涨停 25→23 ｜ 跌停 15→14 ｜ 大面 15→14 ｜ 连板 10→9 ｜ 晋级 10→9 ｜
+       封板 10→9 ｜ 涨跌比 10→9 ｜ 成交额 5→5（不动）｜ 指数强弱 新增 8
    ------------------------------------------------------------------
    v2 → v3 修掉的真实缺陷（逐条对应文档）：
      a. 权重回到文档的 25/15/15/10/10/10/10/5（v2 自创的 25/10/12/10/10/13/10/10 与文档不符）；
@@ -4129,6 +4157,31 @@ function prevVerdict(a){
         亏钱效应是最诚实指标（头条/约投顾）。v3.1b：封顶值与新分界 25/45/65/80 对齐。
      l. 恐贪 5 档分界与周期档对齐（25/45/65/80）：旧加密刻度 51-74=贪婪 与本台
         45-65=主升 自相矛盾；A股口径 55° 只是回暖偏中性（雪球：升温区 40-70；ottermind：回暖 35-60）。
+   ------------------------------------------------------------------
+   v3.1 → v4（2026-10-21 · 新增第 9 维「指数强弱」8%）：
+   【轮① 权重参照】三个独立模型对指数单维的给权区间是 0%~10%：
+     · ottermind 四维（情绪极端 30 / 趋势极端 30 / 量能 20 / 宽度 20）—— 指数涨跌幅只是
+       「趋势极端度 30%」里的三分之一 ≈ 10%；
+     · ima 量化五维（涨停跌停比 30 / 上涨家数占比 25 / 成交额 20 / 连板高度 15 / 炸板率 10）—— 0%；
+     · easy-stock 三维（热度 35 / 利润 40 / 结构 25）—— 0%。
+     → 取区间中上沿 8%（不是 15%、更不是 25%）。
+   【轮② 定性】约投顾：判断情绪「单看指数涨跌远远不够」，须形态+量能+结构三者一致；
+     叩富：指数失真时「抛开指数涨跌」，优先涨跌家数/中位数/炸板率；
+     雪球：上证被超大盘权重股绑架，才出现「指数红彤彤、个股绿油油」。
+     → 指数单维必须低配，不能当主维。
+   【轮③ 背离才是高价值信号】约投顾（指数涨但跌多涨少=权重掩护）、财云（300 涨 / 1000 跌
+     = 结构脆弱）、东财（指数牛市、个股熊市）→ 背离应作**修正项**，不另立权重。
+   【本台实测】_probe_idx2.js，1990-12-20 ~ 2026-10-21 指数日K（无成分股挑选，零幸存者偏差）：
+     · 单维 IC（vs 中证1000 前瞻收益）：中证1000 当日 0.076 > 上证当日 0.047（T+1）
+       → 小盘指数比大盘指数更有预测力，故合成时小盘给 0.65、上证 0.35；
+     · 上证−中证1000 差 → T+5 IC **−0.021**（大盘相对强 = 权重护盘 = 负信号）；
+     · 背离分组：假强（上证涨/小盘跌）T+1 **−0.27%**、胜率 54.0%；
+                 假弱（上证跌/小盘涨）T+1 **+0.47%**、胜率 63.4%；
+     · 背离修正后 IC 由 0.047 → **0.062**（T+1 提升 32%）、T+5 0.048 → 0.055 → 修正项有效；
+     · 分档：±0.3% 平盘档 **最差**（T+1 −0.13 / 胜率 50.3%），≥+2% 最好（+0.62 / 69.4%）
+       → 曲线在 0 附近压低到 46、上行段更陡（动量不对称），不能画成直线。
+   ⚠️ 与第 7 维「涨跌家数比」同属广度族、彼此高度相关，故指数只给 8%（合计广度暴露 ≈17%），
+      避免同一信息重复计分把情绪推到极端。指数缺失时代入中性 52（≈曲线中位），不假装有读数。
    ================================================================== */
 /* 分段线性插值：pts 为 [[x0,y0],[x1,y1],...]（x 递增）；低于首点取首值，高于末点取末值 */
 function pw(x, pts){
@@ -4152,11 +4205,38 @@ var EMO_CURVE = {
   seal:  [[0,0],[50,30],[60,50],[70,70],[80,85],[100,100]],
   upr:   [[0,0],[0.7,20],[1,40],[1.5,60],[2,75],[3,90],[5,100]]
 };
-/* 维度顺序 + 权重（严格按文档第二章） */
-var EMO_NAMES = ['涨停家数','跌停家数','大面率(昨涨停)','连板高度','晋级率','封板率','涨跌家数比','成交额趋势'];
-var EMO_W = [0.25, 0.15, 0.15, 0.10, 0.10, 0.10, 0.10, 0.05];
-/* 原始数据缺失时的中性分 —— 避免「接口挂了 → 情绪被当成 0 分」的假冰点 */
-var EMO_NEUTRAL = [55, 60, 75, 35, 50, 70, 40, 60];
+/* 维度顺序 + 权重（v4：前八维按文档第二章等比让出 8 个点，第 9 维「指数强弱」= 8%） */
+var EMO_NAMES = ['涨停家数','跌停家数','大面率(昨涨停)','连板高度','晋级率','封板率','涨跌家数比','成交额趋势','指数强弱'];
+var EMO_W = [0.23, 0.14, 0.14, 0.09, 0.09, 0.09, 0.09, 0.05, 0.08];
+/* 原始数据缺失时的中性分 —— 避免「接口挂了 → 情绪被当成 0 分」的假冰点
+   （指数强弱取 52 = 赋分曲线中位；曲线在 0% 处给 46，故 52 略偏中性，不会因缺数据而虚高） */
+var EMO_NEUTRAL = [55, 60, 75, 35, 50, 70, 40, 60, 52];
+/* ★ 第 9 维「指数强弱」赋分曲线（2026-10-21 · 见段首 v4 段的实测依据）
+   输入：上证涨跌幅（大盘） + 中证1000 涨跌幅（小盘 = 短线情绪主战场）
+   曲线端点来自本台真实分档（_probe_idx2.js，中证1000 T+1 前瞻）：
+     上证 ≤-2%  → T+1 -0.04% / 胜率 57.7%  → 20 分（崩盘但留修复预期，不给 0）
+     上证 ±0.3% → T+1 -0.13% / 胜率 50.3%  → 46 分（**平盘最差**：僵持无赚钱效应）
+     上证 ≥+2%  → T+1 +0.62% / 胜率 69.4%  → 84-96 分（动量向上，斜率更陡）
+   背离修正（实测 IC 0.047 → 0.062，T+1 提升 32%）：
+     假强（上证 ≥+0.3 但中证1000 ≤-0.3，权重护盘/小盘杀跌）→ 封顶 45
+     假弱（上证 ≤-0.3 但中证1000 ≥+0.3，权重拖累/小盘活跃）→ 托底 68 */
+var EMO_IDX_CURVE = [[-3, 10], [-2, 20], [-1, 33], [-0.3, 42], [0, 46], [0.3, 52], [1, 68], [2, 84], [3.5, 96]];
+function emoIdxScore(shPct, smPct){
+  var a = (shPct == null || isNaN(shPct)) ? null : +shPct;
+  var b = (smPct == null || isNaN(smPct)) ? null : +smPct;
+  if(a == null && b == null) return null;
+  var sa = (a == null) ? null : pw(a, EMO_IDX_CURVE);
+  var sb = (b == null) ? null : pw(b, EMO_IDX_CURVE);
+  var v, tag = '';
+  if(sa == null) v = sb;
+  else if(sb == null) v = sa;
+  else v = 0.35 * sa + 0.65 * sb;           /* 小盘 0.65：IC 0.076 vs 上证 0.047 */
+  if(a != null && b != null){
+    if(a >= 0.3 && b <= -0.3){ v = Math.min(v, 45); tag = '假强'; }
+    else if(a <= -0.3 && b >= 0.3){ v = Math.max(v, 68); tag = '假弱'; }
+  }
+  return { v: clamp(v), tag: tag, sh: a, sm: b };
+}
 /* 文档指标8：成交额趋势（含方向修正）
    —— 成交额大 ≠ 情绪好：放量下跌是出货，必须给低分（文档"常见陷阱 3"） */
 function amtTrendScore(amtR, upShare){
@@ -4420,7 +4500,7 @@ function emoCondList(cyc, c){
     it('涨停创新高（未腰斩）', c.zt >= (c.pvZt == null ? c.zt : c.pvZt), c.zt + ' 家' + (c.pvZt != null ? ' / 前日 ' + c.pvZt + ' 家' : ''), '≥前日');
     it('打最高板（连板不降）', c.maxLbc >= (c.pv && c.pv.maxLbc != null ? c.pv.maxLbc : c.maxLbc), c.maxLbc + ' 板' + (c.pv && c.pv.maxLbc != null ? ' / 前日 ' + c.pv.maxLbc + ' 板' : ''), '≥前日最高板');
     it('炸板率低（封板率高）', (c.zb + c.zt) > 0 && c.zb / (c.zb + c.zt) < 0.2, (c.zb + c.zt) > 0 ? (c.zb / (c.zb + c.zt) * 100).toFixed(0) + '%' : '无封板数据', '<20%');
-    it('情绪极热（八维分≥80）', true, '由情绪指数≥80 判定', '≥80 分');
+    it('情绪极热（九维分≥80）', true, '由情绪指数≥80 判定', '≥80 分');
   } else {
     /* ★ 2026-09-23：本表与 emoCondList→emotion() 的 taoF 判据严格同源（改一处必须改另一处）。
        新增「退潮强信号」行 —— 满足 2 条以上但无强信号时，页面落「分歧（退潮预警）」而非退潮。 */
@@ -4441,7 +4521,7 @@ function emoCondList(cyc, c){
 /* ---------- 高潮 / 分歧 四维度判别（用户图片方法） ----------
    周期顺序：冰点 → 修复 → 发酵 → 高潮 → 分歧 → 退潮（高潮在分歧之前，分歧 = 高潮次日）。
    在「分歧」热区内进一步区分：
-     高潮 = 涨停创新高(未腰斩) & 打最高板(连板高度不降) & 炸板率低(封板率>80%) & 情绪极热(八维分≥80)
+     高潮 = 涨停创新高(未腰斩) & 打最高板(连板高度不降) & 炸板率低(封板率>80%) & 情绪极热(九维分≥80)
      分歧 = 上述任一不满足（涨停腰斩 / 断板 / 炸板率高 / 降温分化）
    纯函数，便于单测；无前日样本时保守返回 false（不判高潮）。 */
 function peakOrDiverge(c, score){
@@ -4476,7 +4556,7 @@ var CYC_POS = { '冰点': '0~10%', '修复': '10~30%', '主升': '40~70%', '高�
 function emotion(){
   if(EMO_C.seq === RENDER_SEQ) return EMO_C.v;
   var c = emoCtx();
-  /* ---------- ① 八维得分（文档第二章） ----------
+  /* ---------- ① 九维得分（文档第二章） ----------
      ⚠️ 每一维先看「这个数据源到底取到没有」：取不到 → null → 走下面的 EMO_NEUTRAL
         （中性分 + 在规则里如实写明），绝不把「没取到」当成「0 家」参与打分。
         （2026-09-20 修复：此前涨停池接口失败时 D.zt=[] 会被当成 0 家涨停，
@@ -4492,6 +4572,20 @@ function emotion(){
      （br0 全市场兜底）在时照常打分；两者都缺时 upRatio=null → 仍走中性分 + 如实标注。 */
   var sUpr = (ok.mkt || c.mktSrc) ? pw(c.upRatio, EMO_CURVE.upr) : null;
   var sAmt = ok.idx ? amtTrendScore(c.amtR, c.upShare) : null;
+  /* ★ v4 第 9 维：指数强弱 —— 上证（大盘）0.35 + 中证1000（小盘）0.65，再叠背离修正。
+     取数走 D.idxList 的 code 精确匹配（不用下标：IDX_DEF 顺序可能被调整）。 */
+  var _iSH = null, _iSM = null;
+  try{
+    var _lst = D.idxList || [];
+    for(var _q = 0; _q < _lst.length; _q++){
+      var _e = _lst[_q];
+      if(!_e || _e.pct == null) continue;
+      if(_e.code === 'sh000001') _iSH = num(_e.pct);
+      else if(_e.code === 'sh000852') _iSM = num(_e.pct);
+    }
+  }catch(eI){}
+  var _iR = ok.idx ? emoIdxScore(_iSH, _iSM) : null;
+  var sIdx = _iR ? _iR.v : null;
   var promoTiny = c.lbTotal > 0 && c.lbTotal < 3, promoSmall = c.lbTotal > 0 && c.lbTotal < 5;
   if(sPromo != null){ if(promoTiny) sPromo *= 0.3; else if(promoSmall) sPromo *= 0.5; }  /* 文档：小样本打折 */
   /* ★ 2026-10-08 v3.1 连板高度「梯队折扣」：高度必须与梯队结构联动 ——
@@ -4504,9 +4598,9 @@ function emotion(){
     if(c.maxLbc - (c.subTop || 0) >= 2) sLbc *= 0.5;        /* 断层独苗：高度分砍半 */
     else if((c.lbCnt2 || 0) < 8) sLbc *= 0.7;               /* 高度在但梯队单薄 */
   }
-  var s = [sZt, sDt, sMian, sLbc, sPromo, sSeal, sUpr, sAmt];
+  var s = [sZt, sDt, sMian, sLbc, sPromo, sSeal, sUpr, sAmt, sIdx];
   var missing = [], score = 0, i;
-  for(i = 0; i < 8; i++){
+  for(i = 0; i < EMO_W.length; i++){
     if(s[i] == null || isNaN(s[i])){ s[i] = EMO_NEUTRAL[i]; missing.push(EMO_NAMES[i]); }
     s[i] = clamp(s[i]);
     score += s[i] * EMO_W[i];
@@ -4544,14 +4638,22 @@ function emotion(){
   var rules = [], cyc = base;
   /* v3.1 亏钱效应封顶的披露（可解释性：命中理由进 7.6 规则清单） */
   if(lossF.length) rules.push({ k: 'dn', t: '亏钱效应强信号 ' + lossF.length + ' 条（' + lossF.join('、') + '）→ 温度' + (lossCap != null && score >= lossCap ? '已封顶 ' + lossCap + '°' : '未触及封顶线 ' + (lossCap == null ? 100 : lossCap) + '°') + '（外部共识：强亏钱特征在册时不得落贪婪区）' });
+  /* v4：指数背离的披露（第 9 维的修正命中时必须可解释） */
+  if(_iR && _iR.tag){
+    rules.push({ k: (_iR.tag === '假强' ? 'dn' : 'up'),
+      t: '指数强弱（第9维 8%）：上证 ' + (_iSH == null ? '—' : (_iSH >= 0 ? '+' : '') + _iSH.toFixed(2) + '%') +
+         ' / 中证1000 ' + (_iSM == null ? '—' : (_iSM >= 0 ? '+' : '') + _iSM.toFixed(2) + '%') + ' → 「' + _iR.tag + '」' +
+         (_iR.tag === '假强' ? '（权重护盘、小盘杀跌）→ 维分封顶 45，不按上涨档加分' : '（权重拖累、小盘活跃）→ 维分托底 68，不按下跌档减分') +
+         '。依据：本台 8745 个交易日实测，假强组 T+1 −0.27%/胜率 54.0%、假弱组 T+1 +0.47%/胜率 63.4%' });
+  }
   /* ---------- ⑨ 市场宽度补充维度（涨超5% / 跌超5% 家数 · 全网交叉验证赋分） ----------
      口径：涨超5% = 全市场强趋势家数（含涨停），度量"广度深度"；跌超5% = 全市场亏钱广度（含跌停）。
      分级（用户给定 + 三源复核，见交付说明）：
        涨超5%  >250 强势扩散 / 150~250 结构性强势 / 80~150 中性震荡 / 30~80 偏弱 / <30 冰点；
        跌超5%  ≤3 大面极少 / 4~15 少量大面 / 16~30 大面增多 / >30 大面积亏钱。
-     赋分（pw 线性插值，与八维同口径）：涨超5% 0/30/80/150/250/∞ → 0/10/40/65/85/100；
+     赋分（pw 线性插值，与九维同口径）：涨超5% 0/30/80/150/250/∞ → 0/10/40/65/85/100；
        跌超5% 反向 3/15/30/60 → 100/75/40/0。合并权重 0.55（赚钱广度）/0.45（亏钱广度）—— 与市场宽度属"主广度"共识一致。
-     ⚠️ 仅作"补充维度"展示 + 规则提示，不参与八维权威 100 分（同 emoRevDimsCore 补充维度约定）。 */
+     ⚠️ 仅作"补充维度"展示 + 规则提示，不参与九维权威 100 分（同 emoRevDimsCore 补充维度约定）。 */
   var brUp5 = c.brUp5, brDn5 = c.brDn5, brOk = c.brOk;
   var brUpB = (brUp5 == null) ? '未取到' : (brUp5 > 250 ? '强势扩散' : brUp5 >= 150 ? '结构性强势' : brUp5 >= 80 ? '中性震荡' : brUp5 >= 30 ? '偏弱' : '冰点');
   var brDnB = (brDn5 == null) ? '未取到' : (brDn5 <= 3 ? '大面极少' : brDn5 <= 15 ? '少量大面' : brDn5 <= 30 ? '大面增多' : '大面积亏钱');
@@ -5919,7 +6021,7 @@ function renderVerdict(){
   var cycColor = { '冰点': '#60a5fa', '修复': '#34d399', '主升': '#f0453a', '高潮': '#fb923c', '分歧': '#fbbf24', '退潮': '#f59e0b' }[e.cyc] || '#94a3b8';
   var topS = sS[0] || sA[0];
   var cells =
-    '<div class="vd-cell"><div class="k">情绪指数</div><div class="v" style="color:' + cycColor + '">' + e.score.toFixed(1) + '</div><div class="s">0-100 · 八维加权</div></div>' +
+    '<div class="vd-cell"><div class="k">情绪指数</div><div class="v" style="color:' + cycColor + '">' + e.score.toFixed(1) + '</div><div class="s">0-100 · 九维加权</div></div>' +
     '<div class="vd-cell"><div class="k">周期 / 仓位上限</div><div class="v" style="color:' + cycColor + ';font-size:14px">' + esc(e.cyc || '—') + ' · ' + esc(e.pos || '—') + '</div><div class="s">⑥ 唯一权威源</div></div>' +
     '<div class="vd-cell"><div class="k">S / A 级板块</div><div class="v"><span class="up">' + sS.length + '</span> <span style="color:#64748b">/</span> <span class="yel">' + sA.length + '</span></div><div class="s">' + (topS ? '最高：' + esc(topS.name) : '今日无 S/A') + '</div></div>' +
     '<div class="vd-cell"><div class="k">⛔ 风险否决</div><div class="v" style="color:' + (veto.length ? '#10b981' : '#64748b') + '">' + veto.length + '</div><div class="s">' + (veto.length ? '已否决板块不可开仓' : '无否决板块') + '</div></div>' +
@@ -6291,7 +6393,7 @@ function renderM710B(){
     });
     h += '</div></details>';
   }
-  h += '<div class="note" style="margin-top:8px">口径：大盘周期 = ⑥ emotion()（八维加权 + 文档判定条件，含 2026-09-23 新增「强信号门槛」）；板块级别 / 板块周期 = 7.5 gradeSectors() + SECC 七阶段引擎。'
+  h += '<div class="note" style="margin-top:8px">口径：大盘周期 = ⑥ emotion()（九维加权 + 文档判定条件，含 2026-09-23 新增「强信号门槛」）；板块级别 / 板块周期 = 7.5 gradeSectors() + SECC 七阶段引擎。'
     + '两者冲突时取更严者。修正依据：① B 级需首板集群 ≥3（原「只有首板」会把孤股脉冲当信号）② 新增容量/资金/宽度闸门 ③ 组合互斥 + 总仓位上限 ④ 补分档止损 ⑤ 板块退潮补持仓处置 '
     + '⑥ <b>新增「封板质量分」（炸板率 60% + 回封率 40%）</b>：原版只在"炸板率 ≥40%"时一票否决，25~40% 这段完全不影响判定；'
     + '现按外部实证分档加权（&lt;25% 良好／25~35% 中性分歧、不单独作方向依据／&gt;35% 偏弱／≥40% 否决），并叠加「炸板率 ≥30% 且回封率 &lt;50% → 回封衰退」联动降档；'
@@ -8228,7 +8330,7 @@ function thmTop(code, g){
    定位：本卡回答的是「短线资金的薪酬表」——
          昨天打板的人今天能不能红盘出来？追高的人有没有被埋？
          它和 ⑥ 大盘情绪周期是**两把不同的尺子**，互不替代：
-           ⑥ emotion() = 市场体温（八维加权 0-100 + 周期档 + 仓位闸门）
+           ⑥ emotion() = 市场体温（九维加权 0-100 + 周期档 + 仓位闸门）
            7.44 MLE    = 短线损益（赚钱效应 A / 亏钱效应 B 双力净值）
          仓位取更严者。MLE **不重算 ⑥ 已有的指标**：涨停 / 跌停 / 炸板 /
          晋级率 / 封板率 / 广度 / 量能一律直接读 emoCtx()，零额外请求。
@@ -8435,7 +8537,7 @@ var MLE_OBS = [
           { max: 80, k: 'warm', label: '偏热', cls: 'up' },
           { max: Infinity, k: 'hot', label: '过热·贪婪', cls: 'up' }],
     read: function (cur, pv) {
-      if (pv == null) return { d: '—', txt: '无上一交易日样本。本台温度＝⑥ 八维加权分（0-100），与报告引用的第三方「情绪温度计」刻度不同，只做纵向对比。报告 §2.9 提醒它是滞后合成指标，单日跳变剧烈时反而要等一日确认。' };
+      if (pv == null) return { d: '—', txt: '无上一交易日样本。本台温度＝⑥ 九维加权分（0-100），与报告引用的第三方「情绪温度计」刻度不同，只做纵向对比。报告 §2.9 提醒它是滞后合成指标，单日跳变剧烈时反而要等一日确认。' };
       var d = cur - pv, dtxt = (d > 0 ? '+' : '') + Math.round(d) + '°';
       var t;
       if (d <= -20) t = '骤降 ' + Math.abs(Math.round(d)) + '° —— 单日回落过快。报告 §3.4 的 97°→54° 就是这一型：钟摆从贪婪端点回摆，属剧烈换挡；报告 §1.1 用损失厌恶解释为什么降温远快于升温';
@@ -8792,7 +8894,7 @@ var MLE_MX = [
   },
   {
     id: 'temp_zt', title: '情绪温度 × 涨停家数', src: '报告 §2.9/§3.3 · 雪球实操版（温度与热度的背离）',
-    x: { id: 'temp', name: '情绪温度（八维分）', get: function (i) { return i.temp; }, fmt: MLE_FMT.deg, bks: MLE_BK.temp },
+    x: { id: 'temp', name: '情绪温度（九维分）', get: function (i) { return i.temp; }, fmt: MLE_FMT.deg, bks: MLE_BK.temp },
     y: { id: 'zt', name: '涨停家数', get: function (i) { return i.zt; }, fmt: MLE_FMT.cnt, bks: MLE_BK.zt },
     cells: {
       'hi|hi': { c: '过热·高潮', cls: 'up', t: '温度与涨停同高 —— 报告 §3.3：钟摆已逼近贪婪端点，此时继续向上动能在衰减、向下引力在积聚。报告 §5 的实操清单：涨停 >80 + 温度 >80 + 红盘率 >80% ＝持股但分批卖，不追一字板' },
@@ -10108,7 +10210,7 @@ function mleCardHtml(r, inp) {
   h += '<details style="margin-top:12px;border:1px solid rgba(148,163,184,.25);border-radius:9px;background:rgba(148,163,184,.05)">' +
     '<summary style="cursor:pointer;list-style:none;font-size:12.5px;font-weight:700;color:#fbbf24;padding:9px 14px">📖 判定口径 / 五遍迭代 / 局限与免责（点开看）</summary>' +
     '<div style="font-size:12px;color:#8d99b8;line-height:1.95;padding:0 14px 12px">' +
-    '<b>与 ⑥ 大盘情绪周期的分工（两把尺子，互不替代）：</b>⑥ <code>emotion()</code> 量的是市场体温（八维加权 0-100 + 周期档 + 仓位闸门）；本卡量的是<b>短线资金薪酬表</b>——昨天打板的人今天能不能红盘出来。' +
+    '<b>与 ⑥ 大盘情绪周期的分工（两把尺子，互不替代）：</b>⑥ <code>emotion()</code> 量的是市场体温（九维加权 0-100 + 周期档 + 仓位闸门）；本卡量的是<b>短线资金薪酬表</b>——昨天打板的人今天能不能红盘出来。' +
     '仓位<b>取更严者</b>；两卡背离时以更保守的一边执行，并在上方标记里写明原因。<br>' +
     '<b>A 侧（机会）权重：</b>昨涨停今表现 30 ｜ 昨涨停池红盘率 18 ｜ 连板晋级率 20 ｜ 封板率 12 ｜ 全市场红盘率 12 ｜ 涨停家数 8。<br>' +
     '<b>B 侧（风险）权重：</b>大面率（弱面+大面）28 ｜ 核按钮率（≤-10%）20 ｜ 炸板率 18 ｜ 跌停家数 18 ｜ 断板 A 杀（≤-5%）16。<br>' +
@@ -13368,9 +13470,9 @@ function emoRawTxt(i, e){
 function emoRulesHtml(e){
   var map = { dn: 'dn', up: 'up', warn: 'yel', info: 'flat' };
   var li = e.rules.map(function(r){ return '<li class="' + (map[r.k] || 'flat') + '">' + r.t + '</li>'; }).join('');
-  return '<div class="concl c-blu" style="margin-top:6px"><b>周期判定过程（八维评分 \u2192 文档判定条件 \u2192 文档特殊规则）：</b>' +
+  return '<div class="concl c-blu" style="margin-top:6px"><b>周期判定过程（九维评分 \u2192 文档判定条件 \u2192 文档特殊规则）：</b>' +
     (li ? '<ul style="margin:4px 0 0 18px;line-height:1.75;font-size:12px">' + li + '</ul>' : '<span class="note">各项指标均在正常区间，无降档 / 升级规则命中。</span>') +
-    '<div class="note" style="margin-top:4px">基准档（八维加权 ' + e.score.toFixed(1) + ' 分）= <b>' + e.base + '</b> \u2192 最终执行档 = <b>' + e.cyc + '</b>（仓位上限 ' + e.pos + '）。文档口径：<b>分数定区间、判定条件做佐证、特殊规则一票降档</b>，同一条信息只扣分一次。</div></div>';
+    '<div class="note" style="margin-top:4px">基准档（九维加权 ' + e.score.toFixed(1) + ' 分）= <b>' + e.base + '</b> \u2192 最终执行档 = <b>' + e.cyc + '</b>（仓位上限 ' + e.pos + '）。文档口径：<b>分数定区间、判定条件做佐证、特殊规则一票降档</b>，同一条信息只扣分一次。</div></div>';
 }
 /* 文档第六章：指数 \u00d7 情绪 背离判断（4 象限 + 陷阱 4「指数强\u2260情绪强」） */
 function emoDivergence(e){
@@ -13420,7 +13522,7 @@ function emoFlowHtml(){
       var o = on(x[0]);
       return '<tr' + (o ? ' style="background:rgba(240,69,58,.12)"' : '') + '><td class="mono">' + x[0] + '</td><td><b class="' + (o ? 'up' : 'yel') + '">' + x[1] + '</b>' + (o ? ' <span class="badge b-r">当前</span>' : '') + '</td><td style="white-space:normal">' + x[2] + '</td></tr>';
     }).join('') + '</tbody></table></div>' +
-    '<div class="note" style="margin-top:4px">口诀：<b>涨停定强弱，跌停定生死，大面定风险，连板定高度，晋级定接力；八维加权算分数，五段周期定仓位，连续两日才确认，背离信号要降档。</b></div></details>';
+    '<div class="note" style="margin-top:4px">口诀：<b>涨停定强弱，跌停定生死，大面定风险，连板定高度，晋级定接力，指数看背离；九维加权算分数，五段周期定仓位，连续两日才确认，背离信号要降档。</b></div></details>';
 }
 
 /* ============================================================================
@@ -13500,7 +13602,7 @@ function emoBandLegHtml(score, cyc){
    --------------------------------------------------------------------------
    回答的问题：今天「领跌 / 反向」的方向是谁、有多重，以及它把情绪温度扣掉了几分。
    与 ⑥ emotion() 的关系 —— 本段**不另立第二套温度**：
-     · emotion() 八维加权 0-100 仍是唯一权威情绪温度；
+     · emotion() 九维加权 0-100 仍是唯一权威情绪温度；
      · 本段只做两件事：(a) 把该温度翻译成恐贪语汇（只换名字、不换数值）；
        (b) 把「反向维度」（真实跌停 & 断板）从原始池子现算，给出**可复算的扣分额**，
            并按方向聚类成表 —— 即外部复盘模板 2.1「今日领跌 / 反向方向」那一层的落点。
@@ -13525,7 +13627,7 @@ function emoBandLegHtml(score, cyc){
 /* 恐贪语汇 5 档。
    ⚠️ 刻度变更（v3.1 · 2026-10-08 三轮全网交叉验证后对齐）：
    旧版照抄加密恐贪四源口径（51-74=贪婪），但那是 Alternative.me 那把尺 —— 本台 0-100 分是
-   A股涨停生态八维分，其 45-65 区间已被周期档定义为「主升」。同一 55° 既叫「主升」又叫「贪婪」，
+   A股涨停生态九维分，其 45-65 区间已被周期档定义为「主升」。同一 55° 既叫「主升」又叫「贪婪」，
    自相矛盾（用户反例 10-08：满屏亏钱特征却显示贪婪）。
    A股口径共识（雪球·博士论文五阶段：修复 10-40 / 升温 40-70 / 狂热 ≥90；
    ottermind 七维：回暖 35-60 / 高潮 60-80）：55° 只是回暖偏中性，贪婪要 65+ 才成立。
@@ -13606,7 +13708,7 @@ function emoRevStatCore(dt, prev, prevPct, ztCodes, ztLbCodes, ok){
 }
 
 /* ---------- ② 反向扣分额（可复算） ----------
-   emotion() 的八维里，「跌停家数」(15%) 与「大面率」(15%) 就是反向维度本体 —— 合计 30% 权重。
+   emotion() 的九维里，「跌停家数」(14%) 与「大面率」(14%) 就是反向维度本体 —— 合计 28% 权重。
    与中性分（EMO_NEUTRAL）相比的偏离 × 权重 = 这两维对总分的净贡献。
    负值 = 反向维度把温度往下拖了 |total| 分。数据缺失的维度会被代入中性分
    （contrib 恰好为 0），此时按 total:0 处理并置 miss 标记，不假装扣了分。 */
@@ -13621,19 +13723,19 @@ function emoRevDragCore(e, neut, names){
 
 /* ---------- ③ 维度清单（复刻外部模板 2.3 的 dim 列表：色点 + 读数 + 等级） ----------
    star=true 的行是「反向维度本体」（跌停 / 断板 / 高位崩落 / 大面），UI 上高亮。
-   w = 该行在 ⑥ 八维里的权重（null 表示这是补充维度，不参与那 100 分）。 */
+   w = 该行在 ⑥ 九维里的权重（null 表示这是补充维度，不参与那 100 分）。 */
 function emoRevDimsCore(e, st){
   var L = [], raw = (e && e.raw) || {}, w = (e && e.w) || EMO_W, miss = (e && e.missing) || [];
   st = st || {};
   function has(nm){ return miss.indexOf(nm) < 0; }
   function add(label, val, lv, tone, wt, star){ L.push({ label: label, val: val, lv: lv, tone: tone, w: wt, star: !!star }); }
-  /* ① 涨停家数（权重 25%） */
+  /* ① 涨停家数（权重 23%） */
   var pvZt = raw.pvZt, dZt = (pvZt == null || raw.zt == null) ? null : (raw.zt - pvZt);
   add('涨停家数', (raw.zt == null ? '—' : raw.zt + ' 家') +
       (dZt == null ? '' : '（较昨日 ' + pvZt + ' ' + (dZt >= 0 ? '+' : '') + dZt + '）'),
     !has('涨停家数') ? '未取到' : (raw.zt >= 80 ? '火热' : raw.zt >= 50 ? '偏强' : raw.zt >= 20 ? '一般' : '低迷'),
     !has('涨停家数') ? 'ink' : (raw.zt >= 50 ? 'up' : raw.zt >= 20 ? 'yel' : 'dn'), w[0]);
-  /* ② 跌停家数（权重 15% · 反向本体）—— 拐点 10 / 30 来自第 2 轮三源收敛 */
+  /* ② 跌停家数（权重 14% · 反向本体）—— 拐点 10 / 30 来自第 2 轮三源收敛 */
   var dtLv, dtTone;
   if(!has('跌停家数')){ dtLv = '未取到'; dtTone = 'ink'; }
   else if(raw.dt === 0){ dtLv = '零跌停'; dtTone = 'up'; }
@@ -13645,7 +13747,7 @@ function emoRevDimsCore(e, st){
       (st.dtHigh ? '（连续跌停 ' + st.dtHigh + ' 家）' : '') +
       (st.prevDt ? ' · 含昨涨停今跌停 ' + st.prevDt + ' 家' : ''),
     dtLv, dtTone, w[1], true);
-  /* ③ 涨跌家数比 / 上涨占比（权重 10%） */
+  /* ③ 涨跌家数比 / 上涨占比（权重 9%） */
   var upr = raw.upRatio, us = raw.upShare;
   add('涨跌家数比', (upr == null ? '—' : upr.toFixed(2) + ' : 1') +
       (us == null ? '' : ' · 上涨占比 ' + (us * 100).toFixed(1) + '%'),
@@ -13664,7 +13766,7 @@ function emoRevDimsCore(e, st){
   add('成交额趋势', (D.amtToday != null ? famt(D.amtToday) : '—') +
       (ar == null ? '' : '（较昨日同期 ' + ((ar - 1) * 100 >= 0 ? '+' : '') + ((ar - 1) * 100).toFixed(1) + '%）'),
     amtLv, amtTone, w[7]);
-  /* ⑤ 封板率 / 晋级率（权重各 10%） */
+  /* ⑤ 封板率 / 晋级率（权重各 9%） */
   var sp = raw.sealPct, pp = raw.promoPct;
   add('封板率 / 晋级率',
     '封板 ' + (sp == null ? '—' : sp.toFixed(1) + '%') + ' / 晋级 ' + (pp == null ? '—' : pp.toFixed(1) + '%') +
@@ -13690,7 +13792,7 @@ function emoRevDimsCore(e, st){
       (st.brokenAvgPct == null ? '' : ' · 断板股均 ' + st.brokenAvgPct.toFixed(2) + '%'),
     (hbd >= 3 ? '高位批量崩落（拐点信号）' : hbd >= 1 ? '出现高位跌停' : hb >= 3 ? '高位断板但不跌停' : '无高位崩落'),
     (hbd >= 3 ? 'dn' : hbd >= 1 ? 'dn' : hb >= 3 ? 'yel' : 'up'), null, true);
-  /* ⑧ 大面率 / 断板大面（权重 15% · 反向本体）+ 炸板率（第 3 轮：>40% 偏弱 / >50% 退潮） */
+  /* ⑧ 大面率 / 断板大面（权重 14% · 反向本体）+ 炸板率（第 3 轮：>40% 偏弱 / >50% 退潮） */
   var mp = raw.mianPct, zr = (raw.zt != null && raw.zb != null && (raw.zt + raw.zb) > 0) ? raw.zb / (raw.zt + raw.zb) : null;
   var zrLv = (zr == null) ? '未取到' : (zr < 0.20 ? '封板硬' : zr <= 0.40 ? '正常分歧' : zr <= 0.50 ? '抛压沉重' : '退潮级');
   var zrTone = (zr == null) ? 'ink' : (zr < 0.20 ? 'up' : zr <= 0.40 ? 'yel' : 'dn');
@@ -13700,23 +13802,34 @@ function emoRevDimsCore(e, st){
     !has('大面率(昨涨停)') ? '未取到' : (zrTone === 'dn' || (mp != null && mp >= 20) ? '亏钱效应扩散' : (mp != null && mp >= 10) ? '中性偏弱' : '亏钱效应可控'),
     !has('大面率(昨涨停)') ? 'ink' : ((mp != null && mp >= 20) || zrTone === 'dn' ? 'dn' : (mp != null && mp >= 10) ? 'yel' : 'up'),
     w[2], true);
-  /* ⑨ 最高连板（权重 10%） */
+  /* ⑨ 最高连板（权重 9%） */
   add('最高连板', (raw.maxLbc == null ? '—' : raw.maxLbc + ' 板'),
     raw.maxLbc == null ? '未取到' : (raw.maxLbc >= 5 ? '高度充足' : raw.maxLbc >= 3 ? '有高度' : '高度被压制'),
     raw.maxLbc == null ? 'ink' : (raw.maxLbc >= 5 ? 'up' : raw.maxLbc >= 3 ? 'yel' : 'dn'), w[3]);
-  /* ⑩ 指数语境（补充维度）—— 只做背景，不参与那 100 分 */
-  var idxDn = null, idxUp = null;
-  try{
-    var ls = (D.idxList || []).filter(function(x){ return x && x.pct != null; });
-    if(ls.length){
-      ls = ls.slice().sort(function(a, b){ return (b.pct || 0) - (a.pct || 0); });
-      idxUp = ls[0]; idxDn = ls[ls.length - 1];
-    }
-  }catch(e0){}
-  add('指数语境',
-    idxDn ? ('领跌 ' + idxDn.name + ' ' + fpct(idxDn.pct) + ' / 领涨 ' + idxUp.name + ' ' + fpct(idxUp.pct)) : '未取到',
-    (idxDn && idxDn.pct <= -2) ? '指数与情绪共振向下' : '指数波动有限',
-    (idxDn && idxDn.pct <= -2) ? 'dn' : 'yel', null);
+  /* ⑩ 指数强弱（第 9 维 · 权重 8%）—— 2026-10-21 由「补充维度」升级为赋分维度。
+     读数给「上证 / 中证1000 + 维分」，背离命中时等级直接写明假强/假弱（与 emotion() 同源）。 */
+  var _il = (D.idxList || []), _iSH = null, _iSM = null;
+  for(var _k = 0; _k < _il.length; _k++){
+    var _x = _il[_k];
+    if(!_x || _x.pct == null) continue;
+    if(_x.code === 'sh000001') _iSH = num(_x.pct);
+    else if(_x.code === 'sh000852') _iSM = num(_x.pct);
+  }
+  var _ir = null; try{ _ir = emoIdxScore(_iSH, _iSM); }catch(e0){}
+  var idxLv, idxTone;
+  if(!has('指数强弱') || (_iSH == null && _iSM == null)){ idxLv = '未取到'; idxTone = 'ink'; }
+  else if(_ir && _ir.tag === '假强'){ idxLv = '假强 · 权重护盘'; idxTone = 'dn'; }
+  else if(_ir && _ir.tag === '假弱'){ idxLv = '假弱 · 权重拖累'; idxTone = 'up'; }
+  else {
+    var _ref = (_iSM != null ? _iSM : _iSH);
+    idxLv = _ref >= 1 ? '指数强势' : _ref >= 0.3 ? '指数偏强' : _ref > -0.3 ? '指数僵持（赚钱效应最差档）' : _ref > -1 ? '指数偏弱' : '指数杀跌';
+    idxTone = _ref >= 0.3 ? 'up' : _ref > -0.3 ? 'yel' : 'dn';
+  }
+  add('指数强弱（第9维）',
+    ((_iSH == null) ? '上证 —' : '上证 ' + (_iSH >= 0 ? '+' : '') + _iSH.toFixed(2) + '%') + ' / ' +
+    ((_iSM == null) ? '中证1000 —' : '中证1000 ' + (_iSM >= 0 ? '+' : '') + _iSM.toFixed(2) + '%') +
+      (_ir ? ' · 维分 ' + _ir.v.toFixed(0) : ''),
+    idxLv, idxTone, w[8]);
   /* ⑪ 市场宽度（补充维度 · 涨超5% / 跌超5% 家数）—— 用户给定分级 + 三源复核，权重 55/45 合并，不参与那 100 分 */
   /* ⚠ br 必须显式判空：e.breadth 缺失（旧快照 / 单测桩）时 br={} 会让 brOk 误判为 true → 渲染出 "undefined 家"。
      2026-09-29 修正：只要 breadth 不存在或 up5/dn5 缺一，一律落「未取到」。 */
@@ -13865,7 +13978,7 @@ function emoDingText() {
     L.push('—— 判定规则（前 ' + Math.min(5, e.rules.length) + '/' + e.rules.length + ' 条）——');
     for (var j = 0; j < e.rules.length && j < 5; j++) L.push('· ' + e.rules[j].t);
   }
-  L.push('口径：温度 ≡ ⑥ 情绪指数（八维加权 0-100，不另算一套）｜恐贪 5 档（25/45/65/80）｜亏钱效应强信号封顶 44°/64°｜数据基准 ' +
+  L.push('口径：温度 ≡ ⑥ 情绪指数（九维加权 0-100，不另算一套）｜恐贪 5 档（25/45/65/80）｜亏钱效应强信号封顶 44°/64°｜数据基准 ' +
     (D.date ? D.date.slice(4, 6) + '-' + D.date.slice(6, 8) : '—') + ' ' + nowHMS());
   /* ★ 2026-10-19 §177（用户要求「情绪周期增加推送 7.3 板块五榜排前五的板块」）：
      段自包含标题与口径；板块榜结构未就绪 → m73DingText 返回 '' 整段省略，
@@ -15963,7 +16076,7 @@ function tmPartHtml(p) {
 
 /* ==== STYLE2-BEGIN ==== */
 /* 市场风格 v2（2026-09-29 重写）—— 用户原话：
-     「采用实时复盘工作区的策略七、大盘情绪周期（⑥ 权威源 · 八维加权 0-100 · 含亏钱效应 ·
+     「采用实时复盘工作区的策略七、大盘情绪周期（⑥ 权威源 · 九维加权 0-100 · 含亏钱效应 ·
        跌停≥10 家降一档）改造大盘情绪周期工作区中的市场风格：
        未判定　方向性前置缺失（涨跌家数、成交额Top100结构）→ 无法判定，不给方向结论（非方向性结论）」
      「同时盘中识别共振上涨的时间权重（和你之前复盘体系对齐）：
@@ -15978,7 +16091,7 @@ function tmPartHtml(p) {
    本机长期取不到后两项 → v1 **恒落「未判定」**，线上原文就是用户截图里那句：
      「未判定　方向性前置缺失（涨跌家数、成交额Top100结构）→ 无法判定，不给方向结论（非方向性结论）」
    一个永远不出结论的模块 = 没有用。而「实时盯盘工作区」第七节用的是 ⑥ emotion() 权威源
-   （八维加权 0-100 + 含亏钱效应 + 跌停≥10 家降一档），它**从不依赖那三根前置**
+   （九维加权 0-100 + 含亏钱效应 + 跌停≥10 家降一档），它**从不依赖那三根前置**
    （缺维度代入中性分并逐条披露）→ 永远能出结论。⇒ 正解：把 ⑥ 的权威口径下沉到市场风格。
 
    ⚠️ 四态名（共振多头 / 指数行情 / 题材情绪行情 / 共振空头）**必须原样保留** ——
@@ -16027,7 +16140,7 @@ function tmPartHtml(p) {
          五篇独立资料一致指出消歧钥匙是**位置**：低位/启动=偏多（主力试盘，等一根放量阳线确认）
          / 上升中途=健康（锁仓拉升）/ 高位累积涨幅大=危险（诱多出货）。
          ⇒ v2 用 ⑥ 的 cyc 档做位置消歧（高潮=高位 → 按背离扣分；冰点/修复/主升 → 按惜售给分）。
-     ★ 缺陷 3｜**时间权重不能乘在「方向分」上**：若把 0.3 直接乘八维分，10:00 前会把分数压到近 0，
+     ★ 缺陷 3｜**时间权重不能乘在「方向分」上**：若把 0.3 直接乘九维分，10:00 前会把分数压到近 0，
          得出「不参与」——结论碰巧对，理由却是错的（不是「不看好」，是「还没定型」）。
          ⇒ v2 严格分层：**方向层不碰时间权重；时间权重只作用于 confirmation 这一个输出。**
      ★ 缺陷 4｜**低权重 ≠ 一律忽略**：唯一例外是「放量封死涨停 + 板块集体走强」——
@@ -16037,7 +16150,7 @@ function tmPartHtml(p) {
    三、数据来源（全部是页面既有权威源，零新增网络通道）
    ════════════════════════════════════════════════════════════════
      指数轴   ← emoCtx().shPct（上证涨跌%） + jdCore().v.vol（量价九格）
-     情绪轴   ← emotion().score（八维加权 0-100 · 唯一权威 · 直取）
+     情绪轴   ← emotion().score（九维加权 0-100 · 唯一权威 · 直取）
      独立对账 ← mleCoreOf().v.{A,B,net}（赚亏钱效应双力净值；只披露分歧，不二次扣分）
      时间权重 ← tmMinute()（TM 区块既有：0=9:30 · 120=午休 · 240=15:00）
      仓位落地 ← POSPLAN_TAB × POSPLAN_STAGE（复用既有查表，不另造一套上限）
@@ -16150,13 +16263,13 @@ function style2IdxAxis(idxPct, volK, cyc) {
   return { v: clamp(base + adj), base: base, adj: adj, volK: volK || null, vpNm: nm, vpNote: note, vpPos: pos, used: used };
 }
 
-/* 情绪轴 0-100：**直接取 ⑥ 八维加权分**（权威源，不重算、不二次扣分）。
-   ⚠️ 为什么不在这里再扣「亏钱效应 / 跌停≥10 家」：⑥ 的八维里已含亏钱效应维度，
+/* 情绪轴 0-100：**直接取 ⑥ 九维加权分**（权威源，不重算、不二次扣分）。
+   ⚠️ 为什么不在这里再扣「亏钱效应 / 跌停≥10 家」：⑥ 的九维里已含亏钱效应维度，
       且跌停≥10 家已触发 ⑥ 的周期降档 —— 再扣一次就是重复计罚（本台既有纪律）。
       MLE 的赚亏钱效应净力只作**独立证据对账**（见 style2Breach），不参与本轴分数。 */
 function style2EmoAxis(score) {
-  if (score == null || isNaN(score)) return { v: 50, used: ['⑥ 八维分未就绪 → 中性 50'], noData: true };
-  return { v: clamp(score), used: ['⑥ 八维加权情绪指数 ' + Number(score).toFixed(1) + ' / 100（权威源直取，不重算）'], noData: false };
+  if (score == null || isNaN(score)) return { v: 50, used: ['⑥ 九维分未就绪 → 中性 50'], noData: true };
+  return { v: clamp(score), used: ['⑥ 九维加权情绪指数 ' + Number(score).toFixed(1) + ' / 100（权威源直取，不重算）'], noData: false };
 }
 
 /* 两轴置信度。
@@ -16249,12 +16362,12 @@ function style2Judge(inp) {
     : state === '题材情绪行情' ? '情绪活跃、指数弱（小票独立）'
     : '指数与情绪同步走弱（共振向下）';
   var tone = state === '共振多头' ? 'up' : (state === '共振空头' ? 'dn' : 'warn');
-  /* 独立证据对账：MLE 双力净值 vs ⑥ 八维分 —— 只披露分歧，不改分（避免重复计罚） */
+  /* 独立证据对账：MLE 双力净值 vs ⑥ 九维分 —— 只披露分歧，不改分（避免重复计罚） */
   var breach = null;
   if (inp.net != null && inp.score != null) {
     var emoHot = inp.score >= 50, netHot = inp.net > 0;
     if (emoHot !== netHot) {
-      breach = { tone: 'yel', txt: '口径分歧：⑥ 八维分 ' + Number(inp.score).toFixed(1) + '（' + (emoHot ? '偏热' : '偏冷') +
+      breach = { tone: 'yel', txt: '口径分歧：⑥ 九维分 ' + Number(inp.score).toFixed(1) + '（' + (emoHot ? '偏热' : '偏冷') +
         '）与赚亏钱效应净力 ' + (inp.net > 0 ? '+' : '') + Number(inp.net).toFixed(0) + '（' + (netHot ? '偏赚' : '偏亏') +
         '）方向不一致 → 不互相覆盖、不二次扣分，两读并列供人工核对' };
     }
@@ -16357,7 +16470,7 @@ function style2Html() {
   if (r.breach) h += '<span style="font-size:11.5px;color:#fbbf24">⚠ ' + esc(r.breach.txt) + '</span><br>';
   if (r0.emoMissing && r0.emoMissing.length) h += '<span style="font-size:11px;color:#fbbf24">⚠ ⑥ 有 ' + r0.emoMissing.length + ' 个维度走中性占位（' + esc(r0.emoMissing.join('、')) + '）→ 情绪轴偏保守</span><br>';
   if (r0.dtDemote) h += '<span style="font-size:11px;color:#fbbf24">⑥ 已按「跌停 ≥10 家降一档」降档' + (r0.reasonTxt ? '（' + esc(r0.reasonTxt) + '）' : '') + ' → 本块直取降档后的档位，不重复计罚</span><br>';
-  h += '<span style="font-size:11px;color:var(--muted)">口径：方向=⑥ 权威源（八维 0-100 × 上证/量价）× 时间权重 0.3/0.6/0.8/1.0；' +
+  h += '<span style="font-size:11px;color:var(--muted)">口径：方向=⑥ 权威源（九维 0-100 × 上证/量价）× 时间权重 0.3/0.6/0.8/1.0；' +
     '四态名沿用 POSPLAN 查表键；纯技术描述，不构成投资建议</span>';
   /* ── 折叠：全部依据 + 逻辑缺陷自检 + v1 对账 ── */
   var body = '';
@@ -16395,7 +16508,7 @@ function style2Html() {
     '　· 尾盘反证：23 万+ 样本（次日上涨 48.7% / 盈亏比 0.75 / 均笔 −0.29%）；严口径 22.5% / −1.08%；尾盘拉抬次日低开 69%、最后 5 分钟 83.7%<br>' +
     '　· 量价九格：约投顾《如何用量价关系判断次日指数方向》+ 台股九组合对照表<br>' +
     '　· 缩量上涨位置消歧：雪球《缩量上涨意味什么》等五篇一致口径<br>' +
-    '　· ⑥ 权威源：本台 emotion()（八维加权 0-100 · 含亏钱效应 · 跌停≥10 家降一档）</div>';
+    '　· ⑥ 权威源：本台 emotion()（九维加权 0-100 · 含亏钱效应 · 跌停≥10 家降一档）</div>';
   /* v1 对账（保留旧口径，不删除） */
   var v1 = r0.v1;
   if (v1) {
@@ -16630,7 +16743,7 @@ function renderM6(){
     var on = c === e.cyc;
     return '<div class="' + (on ? 'on' : '') + '"' + (on ? ' style="background:' + cycColors[c] + '"' : '') + '>' + c + '</div>';
   }).join('') + '</div>';
-  /* 八维偏差条已于 2026-09-26 合并进下方「定量化情绪温度」卡（emoDimBarsHtml）——
+  /* 九维偏差条已于 2026-09-26 合并进下方「定量化情绪温度」卡（emoDimBarsHtml）——
      原在这里的 dimRows 生成与 .bars 渲染、以及随条的「缺失维度」提示一并搬走，
      避免同一组数字在一张卡里出现两遍。 */
   var dv = emoDivergence(e);
@@ -16654,7 +16767,7 @@ function renderM6(){
     '</div>' +
     '<div class="emo-right">' +
       '<div class="grid4">' +
-        '<div class="kpi sig ' + _cs + ' keep"><div class="t">情绪指数(0-100)</div><div class="v" style="color:' + cycColors[e.cyc] + '">' + e.score.toFixed(1) + '</div><div class="s">八维加权 \u00b7 文档权重 25/15/15/10/10/10/10/5</div></div>' +
+        '<div class="kpi sig ' + _cs + ' keep"><div class="t">情绪指数(0-100)</div><div class="v" style="color:' + cycColors[e.cyc] + '">' + e.score.toFixed(1) + '</div><div class="s">九维加权 \u00b7 权重 23/14/14/9/9/9/9/5/8</div></div>' +
         '<div class="kpi sig ' + _cs + ' keep"><div class="t">当前周期判定</div><div class="v" style="color:' + cycColors[e.cyc] + ';font-size:18px">' + e.cyc + '</div><div class="s">' + band + '</div></div>' +
         '<div class="kpi sig ' + _cs + ' keep"><div class="t">仓位上限建议</div><div class="v ' + (e.cyc === '主升' ? 'up' : (e.cyc === '冰点' || e.cyc === '退潮' ? 'dn' : 'yel')) + '" style="font-size:18px">' + e.pos + '</div><div class="s">按纪律执行</div></div>' +
         '<div class="kpi sig ' + _uprSig + ' keep"><div class="t">涨跌家数</div><div class="v"><span class="up">' + (e.up || '\u2014') + '</span> / <span class="dn">' + (e.dn || '\u2014') + '</span></div><div class="s">涨跌比 ' + (e.upRatio == null ? '\u2014' : e.upRatio.toFixed(2) + ' : 1') + (e.mktSrc === 'br0' ? ' · 全市场口径(含北交)' : '') + '</div></div>' +
@@ -16676,7 +16789,7 @@ function renderM6(){
     '</div>' +
   '</div>' +
   (e.noData ? '<div class="concl c-ora" style="margin-top:6px"><b>数据未就绪：</b>涨停池 / 板块 / 指数均未取到，本轮 8 个维度已代入中性分占位，<b>不可用于决策</b>，请等本轮刷新完成或点右上角刷新。</div>' : '') +
-  /* 「缺失维度」提示已随八维偏差条一并合并进「定量化情绪温度」卡（emoDimBarsHtml）——
+  /* 「缺失维度」提示已随九维偏差条一并合并进「定量化情绪温度」卡（emoDimBarsHtml）——
      它指代的就是那 8 条里哪几条是中性分占位，留在主体反而失去指代对象 */
   '<div class="note" style="margin-top:4px">' + emoNotes.join(' ｜ ') + '</div>' +
   emoRulesHtml(e) +
@@ -16698,7 +16811,7 @@ function renderM6(){
   (function(){ try{ return emoRevHtml(); }catch(eRev){ console.error('[看盘台] 反向情绪温度渲染异常', eRev); return ''; } })() +
   /* 2026-09-28（用户要求）：市场风格识别（四大状态 + 主升/鱼尾细分）—— 只给结论不铺方法。
      ★ 2026-09-29 改造（用户要求「采用实时复盘工作区的第七节（⑥ 权威源）改造市场风格」）：
-       主结论换成 STYLE2 区块（style2Safe），口径 = ⑥ 八维加权 0-100 × 上证/量价组合 × 时间权重，
+       主结论换成 STYLE2 区块（style2Safe），口径 = ⑥ 九维加权 0-100 × 上证/量价组合 × 时间权重，
        恒出四态之一、**永不返回「未判定」**。
        v1（styleBlockHtml / D.style）保留但降级 —— 它已进 STYLE2 卡片折叠内作「精细口径对账」，
        不再当主结论：它的三条方向性前置（涨跌家数 / 指数相对强弱 / 成交额Top100结构）
@@ -26684,10 +26797,10 @@ function stageCheck(cyc, ctx){
     soft: soft.length, hits: hits, total: items.length, all: (items.length > 0 && hits === items.length) };
 }
 /* ---------- 执行周期判定（单一事实源，此前 6 处复制粘贴 → 全部改用本函数） ----------
-   周期判定的全部逻辑已收口进 emotion()（八维评分 → 文档判定条件 → 文档特殊规则降档），
+   周期判定的全部逻辑已收口进 emotion()（九维评分 → 文档判定条件 → 文档特殊规则降档），
    本函数只负责"取同一个结论 + 同一份仓位表 + 同一段可读原因"，杜绝各模块各算一套。
    历史教训：旧版在 emotion() 之外又对"特征吻合度 <60%"降一档，导致「跌停多」这类信息被罚两次
-   （八维降档一次、大面率类特征必然不吻合又一次）→ 仓位过度保守且原因不明。现已彻底移除。 */
+   （九维降档一次、大面率类特征必然不吻合又一次）→ 仓位过度保守且原因不明。现已彻底移除。 */
 function execStageOf(){
   var e = emotion();
   var chk = stageCheck(e.cyc);
@@ -27511,7 +27624,7 @@ function wtAction(k) {
    与页面三大权威模块联动的**实时结论**（2026-09-22 新增 · 用户要求）
    ------------------------------------------------------------------
    接的是这三个工作区，做法一律是**读它们的权威函数**、不重算、不另写一套：
-     ⑥ 大盘情绪周期    → emotion()      （八维加权 0-100 + 文档判定条件 + 特殊规则 + 陷阱自检）
+     ⑥ 大盘情绪周期    → emotion()      （九维加权 0-100 + 文档判定条件 + 特殊规则 + 陷阱自检）
      ⑦ 全市场资金与主线 → D.ml（← buildMainline：三维 0-9 + 结构加验 0-6 + 环境联动降档）
                           + rotStageInfo()（7.7 板块高低切 / 资金轮动，与 7.7 卡共用同一份判定）
      7.5 板块五级分级   → gradeSectors()（S/A/B/C/D + 板块自身情绪周期阶段 secc）
@@ -27788,7 +27901,7 @@ async function wtdLoadHoldMa(force) {
 /* ---------- 七、⑥ 大盘情绪周期 ---------- */
 function wtSixHtml() {
   var e = wtSix();
-  var h = '<h3>七、大盘情绪周期（⑥ 权威源 · 八维加权 0-100 · 含亏钱效应 · 跌停≥10 家降一档）</h3>';
+  var h = '<h3>七、大盘情绪周期（⑥ 权威源 · 九维加权 0-100 · 含亏钱效应 · 跌停≥10 家降一档）</h3>';
   if (!e) { h += '<div class="wt-modwait">⑥ 情绪周期判定函数（emotion）未就绪 —— 该模块不可用时这里不猜，如实留空。</div>'; return h; }
   var col = WT_CYCOL[e.cyc] || '#94a3b8';
   var dv = null; try { dv = emoDivergence(e); } catch (err) { dv = null; }
@@ -27801,13 +27914,13 @@ function wtSixHtml() {
     '　周期仓位上限 <b>' + esc(e.pos) + '</b>' +
     (finMax != null ? '　→ <b style="color:#fbbf24">取更严者：≤' + finMax + '%</b>' : '') + '</div>';
   if (dv) h += '<div class="wt-msg ' + (dv.cls === 'up' ? 'up' : (dv.cls === 'dn' ? 'dn' : 'warn')) + '"><b>指数 × 情绪背离：' + esc(dv.name) + '</b> —— ' + dv.act + '</div>';
-  /* 八维得分（分越高 = 情绪越热 → 红；越低越冷 → 绿。红涨绿跌口径与全页一致） */
-  h += '<div class="wt-line" style="line-height:2.2"><b>八维得分：</b>' + (e.names || []).map(function (n, i) {
+  /* 九维得分（分越高 = 情绪越热 → 红；越低越冷 → 绿。红涨绿跌口径与全页一致） */
+  h += '<div class="wt-line" style="line-height:2.2"><b>九维得分：</b>' + (e.names || []).map(function (n, i) {
     var v = (e.s && e.s[i] != null) ? e.s[i] : 0, w = (e.w && e.w[i]) ? e.w[i] : 0;
     var c = v >= 70 ? '#f0453a' : (v >= 45 ? '#fbbf24' : '#10b981');
     var miss = (e.missing || []).indexOf(n) >= 0;
     return '<span class="wt-tag" style="border-color:' + c + '66;color:' + c + '" title="' + esc(n) + '：得分 ' + v.toFixed(0) +
-      ' ／ 权重 ' + (w * 100) + '%' + (miss ? '（数据缺失 → 已代入中性分）' : '') + '">' +
+      ' ／ 权重 ' + Math.round(w * 100) + '%' + (miss ? '（数据缺失 → 已代入中性分）' : '') + '">' +
       esc(n) + ' <b>' + v.toFixed(0) + '</b>' + (miss ? '⚠' : '') + '</span>';
   }).join(' ') + '</div>';
   var rl = (e.rules || []).slice(0, 4);
@@ -28654,7 +28767,7 @@ function wtGlobalHtml(){
    十四、退潮 / 风险预警（2026-09-24 新增 · 用户要求「实时盯盘工作区增加退潮/风险预警」）
    ------------------------------------------------------------------
    与 ⑥ emotion() 的分工（**不重复、也不打架**）：
-     ⑥ 给的是「大盘情绪周期」一个档位（八维加权 + 文档判定条件 + 特殊规则），是**二值结论**；
+     ⑥ 给的是「大盘情绪周期」一个档位（九维加权 + 文档判定条件 + 特殊规则），是**二值结论**；
      本节给的是「接力链条健康度」的**分级预警** —— 把外部复盘口径的 8 条退潮信号逐条判定、
      数出命中条数 → 落 4 档（正常 / 观察 / 退潮预警 / 退潮确认），并给出仓位上限与解除条件。
    为什么需要它：用户看不到"还差几条、是哪几条、什么时候算解除"。外部实盘口径本就是分级的
@@ -28861,7 +28974,7 @@ function wtRiskHtml() {
     '<div class="wt-msg mute">分档（<b>重结论必须有强信号支撑</b>）：命中 ≤1 → ✅ 正常；=2 → 👀 观察；≥3 且有强信号 → ⚠️ 退潮预警（3~4 条）/ 🔴 退潮确认（≥5 条）；≥3 条但全是轻度信号 → 退回 👀 观察。</div>' +
     '<div class="wt-msg mute">仓位上限：正常 不额外压 · 观察 ≤50% · 预警 ≤30%（禁高位接力）· 确认 ≤10%（空仓或只减不加）；并与 ⑥ 周期仓位<b>取更严者</b>。</div>' +
     '<div class="wt-msg ' + (rs.ok ? 'mute' : (rs.known ? 'warn' : 'mute')) + '"><b>解除条件（外部固定双指标）：</b>' + esc(rs.txt) + '</div>' +
-    '<div class="wt-msg mute"><b>与 ⑥ 的关系：</b>⑥ <code>emotion()</code> 判的是「大盘情绪周期」（八维加权 + 文档判定条件，二值结论）；本节判的是「接力链条健康度」的分级预警 —— 两者的原始读数同源（都读 <code>emoCtx()</code>），但用途不同：⑥ 给周期名与周期仓位，本节给"还差几条退潮信号"与分级仓位。冲突时取更严者。</div>' +
+    '<div class="wt-msg mute"><b>与 ⑥ 的关系：</b>⑥ <code>emotion()</code> 判的是「大盘情绪周期」（九维加权 + 文档判定条件，二值结论）；本节判的是「接力链条健康度」的分级预警 —— 两者的原始读数同源（都读 <code>emoCtx()</code>），但用途不同：⑥ 给周期名与周期仓位，本节给"还差几条退潮信号"与分级仓位。冲突时取更严者。</div>' +
     '<div class="wt-msg mute"><b>8 条信号出处：</b>①②③④⑤⑥⑦ 取自东方财富财富号《A股短线攻防：情绪加速、退潮确认与买点后置的风险预算框架》(2026-09-19)「退潮周期八大核心判定信号」；⑧ 取自同篇「主线题材无修复力度」的可量化部分。经验阈值，需随市场常态定期复核。</div>' +
     (a ? '' : '<div class="wt-msg warn">⚠ 昨日涨停池样本为空 → ⑤ 晋级率 / ⑥ 大面率 不判定（显示"无样本"），未按命中计。</div>') +
     (c.ok && c.ok.mkt === false && !c.mktSrc ? '<div class="wt-msg warn">⚠ 涨跌家数未取到 → ⑦ 红盘率不判定，解除条件也无法确认。</div>' : '') +
@@ -29093,6 +29206,12 @@ function wtPaintMods(force) {
      且 RENDER_SEQ 每轮 ++ ⇒ 指纹必然变化 ⇒ 该块会随主刷新一起重画（否则会停在上一轮读数）。 */
   var tb = $('wtTiming');
   if (tb) { try { tb.innerHTML = tmSafe(); } catch (eT) { tb.innerHTML = '<div class="wt-note">择时提示渲染失败：' + esc((eT && eT.message) || eT) + '</div>'; } }
+  /* ★ 2026-10-21：#wtGrade（📊 行情分级条）接同一条指纹门控 ——
+     它的等级只看 WT 快照的指数涨跌幅（3 分钟一换），但「假强/假弱」与「量能配合」读的是
+     主刷新的广度 / 炸板率 / 跌停数 / 成交额环比（每轮都变）。只在 wtRender 画一次会停在
+     上一轮的盘面特征上，故必须随主刷新一起重画；无快照时 wtGradeBar 自身返回空串，安全。 */
+  var gb = $('wtGrade');
+  if (gb) { try { gb.outerHTML = wtGradeBar() || '<div class="wt-grade" id="wtGrade"></div>'; } catch (eG) { } }
   /* ★ 2026-09-29 补漏：#wtJudge1（📐 大盘判定 · 含「量能水位」）/ #wtJudge3（主线与资金）/
      #jdSixB / #jdRot7 此前**只由 wtRender 画一次** —— 而 wtRender 只在 wtLoad 的 then 里跑，
      与主刷新（refreshAll 换掉 D.amtToday / 涨跌家数 / 涨停池）**不同步**：
@@ -29628,6 +29747,128 @@ function wtThermoPosition() {
     var n = svg.querySelector('.tg-num'); if (n) { n.setAttribute('y', (fillTop - 4).toFixed(1)); n.textContent = Math.round(T) + '°'; }
   });
 }
+/* ===== 单日行情分级（2026-10-21 · 用户《单日行情分级策略表》） =====
+   用户诉求（原话）：「按照我提供的策略，对大盘指数、创业板指进行标注。标注对应的结论即可，
+   **不要把判断依据写入工作区，保持页面整洁**」。
+   → 版面只出「等级 · 定性 · 一句应对」三段；判断依据（区间阈值 / 涨跌比 / 炸板率 / 跌停数 / 量比）
+     全部塞进 chip 的 title，鼠标停一下才看，不看时不占版面。
+
+   ⚠️ 三处口径必须写死，否则日后会被「统一」改错：
+   ① 主板七级 S~F 用用户表原区间（S ≥+2.5 / A +1.5~2.49 / B +0.3~1.49 / C ±0.3 /
+      D −1.49~−0.31 / E −2.5~−1.51 / F ≤−2.5）；用户表 E 与 F 在 −2.5% 处重叠 → 取更保守的 F。
+   ② 创业板用用户另给的「适配修正」五级（波动更大：≥+2 强势 / +0.5~1.99 温和上涨 /
+      ±0.5 震荡 / −1.99~−0.51 温和回调 / ≤−2 大跌）—— 不是主板区间的等比缩放。
+   ③ 字母只是给两套档位一个可比标签：创业板「强势」记 A（该表无 S 级）、「大跌」记 F
+      （与主板 F 同色）。不改用户在主板定义的字面。 */
+var WT_GRADE_MAIN = [
+  { lv: 'S', name: '大阳普涨', min: 2.5, cls: 'up', act: '不追高潮，等次日分歧' },
+  { lv: 'A', name: '强势上涨', min: 1.5, cls: 'up', act: '正常仓位做主线' },
+  { lv: 'B', name: '温和偏强', min: 0.3, cls: 'up', act: '只做主线龙头，不扩散' },
+  { lv: 'C', name: '窄幅震荡', min: -0.3, cls: 'flat', act: '小仓试错，不重仓' },
+  { lv: 'D', name: '温和偏弱', min: -1.5, cls: 'dn', act: '降仓，回避高位接力' },
+  { lv: 'E', name: '弱势杀跌', min: -2.5, cls: 'dn', act: '防守为主，少开新仓' },
+  { lv: 'F', name: '大阴暴跌', min: -Infinity, cls: 'dn', act: '空仓观望，不抄底' }
+];
+var WT_GRADE_GEM = [
+  { lv: 'A', name: '强势', min: 2, cls: 'up', act: '正常仓位做主线' },
+  { lv: 'B', name: '温和上涨', min: 0.5, cls: 'up', act: '只做主线龙头，不扩散' },
+  { lv: 'C', name: '窄幅震荡', min: -0.5, cls: 'flat', act: '小仓试错，不重仓' },
+  { lv: 'D', name: '温和回调', min: -2, cls: 'dn', act: '降仓，优先低吸主线活口' },
+  { lv: 'F', name: '大跌', min: -Infinity, cls: 'dn', act: '防守为主，不抄底' }
+];
+function wtGradeOf(pct, gem) {
+  if (pct == null || isNaN(pct)) return null;
+  var tb = gem ? WT_GRADE_GEM : WT_GRADE_MAIN, i;
+  for (i = 0; i < tb.length; i++) { if (pct >= tb[i].min) return tb[i]; }
+  return tb[tb.length - 1];
+}
+function wtGradeChip(g, label, pct, basis) {
+  if (!g) return '';
+  var t = label + ' ' + jdSgn(pct) + '% → ' + g.lv + ' 级「' + g.name + '」\n判定区间：' + basis;
+  return '<span class="gc ' + g.cls + '" title="' + esc(t) + '"><b>' + esc(label) + ' ' + esc(g.lv) + ' 级 · ' + esc(g.name) + '</b>' +
+    '<i>' + esc(g.act) + '</i></span>';
+}
+/* 配套情绪校验（用户策略第 2 条「指数骗线」）：只出结论，依据进 title。
+   ★ 判定核心 = **指数方向与个股广度相反**，这是「骗线」的定义本身，不能省：
+     首版曾用「炸板率<30 + 跌停<5」凑满 2 条就判假弱，结果 10-21 盘中出现
+     「上证 −0.6%、涨跌比 0.75:1（个股普跌）」被标成「★ 假弱·可轻仓参与主线」——
+     恰恰把真实弱势读成机会。故：广度相反是**硬条件**（涨跌比缺失 → 直接不判），
+     炸板率 / 跌停数只作辅助强化（用户表里的并列特征，命中才写进 title）。
+     数据全部取本台既有读数，零新增请求。 */
+function wtGradeEmo(idxPct) {
+  if (idxPct == null || isNaN(idxPct)) return null;
+  var c = null; try { c = emoCtx(); } catch (e) { return null; }
+  if (!c) return null;
+  var ok = c.ok || {};
+  var upRatio = (c.upRatio != null && !isNaN(c.upRatio)) ? c.upRatio : null;
+  var sealPct = (ok.zt && ok.zb && c.sealPct != null && !isNaN(c.sealPct)) ? c.sealPct : null;
+  var zbRate = (sealPct == null) ? null : (100 - sealPct);      /* 炸板率 = 100 − 封板率 */
+  var dt = (ok.dt && c.dt != null) ? c.dt : null;
+  if (upRatio == null) return null;      /* 广度未取到 → 骗线无从判，诚实留白（不猜） */
+  /* 辅助特征文案：显示留 1 位小数（29.6% 印成 "30%" 会写出「30% <30%」自相矛盾），判定用原值 */
+  var aux = [];
+  if (zbRate != null) aux.push('炸板率 ' + zbRate.toFixed(1) + '%');
+  if (dt != null) aux.push('跌停 ' + dt + ' 家');
+  var auxTxt = aux.length ? ('（' + aux.join('、') + '）') : '';
+  /* 假强：指数红，但个股普跌（涨跌比 < 1）。辅助须命中 ≥1 条；辅助全缺则只凭广度相反照判。 */
+  if (idxPct > 0 && upRatio < 0.995) {
+    var badHit = ((zbRate != null && zbRate >= 40) ? 1 : 0) + ((dt != null && dt >= 10) ? 1 : 0);
+    var badAllMissing = (zbRate == null && dt == null);
+    if (badHit >= 1 || badAllMissing)
+      return { cls: 'warn', label: '⚠ 假强 · 不按上涨档操作',
+        txt: '指数 ' + jdSgn(idxPct) + '% 红盘，但涨跌比仅 ' + upRatio.toFixed(2) + ':1（上涨家数 < 下跌）' + auxTxt +
+          ' → 权重护盘、小票杀跌，按上涨档的仓位操作会被骗。' };
+  }
+  /* 假弱：指数绿，但个股普涨（涨跌比 > 1）。 */
+  if (idxPct < 0 && upRatio > 1.005) {
+    var goodHit = ((zbRate != null && zbRate < 30) ? 1 : 0) + ((dt != null && dt < 5) ? 1 : 0);
+    var goodAllMissing = (zbRate == null && dt == null);
+    if (goodHit >= 1 || goodAllMissing)
+      return { cls: 'ok', label: '★ 假弱 · 可轻仓参与主线',
+        txt: '指数 ' + jdSgn(idxPct) + '% 绿盘，但涨跌比 ' + upRatio.toFixed(2) + ':1（上涨家数 > 下跌）' + auxTxt +
+          ' → 权重拖累、小票赚钱效应在线，不是全面走弱。' };
+  }
+  return null;
+}
+/* 配套量能规则（用户策略第 3 条）：上涨看是否放量、下跌看是否缩量。 */
+function wtGradeVol(idxPct) {
+  if (idxPct == null || isNaN(idxPct)) return null;
+  var c = null; try { c = emoCtx(); } catch (e) { return null; }
+  var r = (c && c.amtR != null && !isNaN(c.amtR)) ? c.amtR : null;
+  if (r == null) return null;
+  var pctTxt = ((r - 1) * 100 >= 0 ? '+' : '') + ((r - 1) * 100).toFixed(0) + '%';
+  var basis = '成交额环比 ' + pctTxt + '（放量线 ≥+5%、缩量线 ≤−5%）';
+  if (idxPct > 0.05 && r >= 1.05) return { cls: 'up', label: '放量上涨 · 健康', txt: basis + ' → 放量上涨才健康，趋势可持续。' };
+  if (idxPct > 0.05 && r <= 0.95) return { cls: 'flat', label: '缩量上涨 · 易一日游', txt: basis + ' → 缩量大阳容易一日游，不追高。' };
+  if (idxPct < -0.05 && r <= 0.95) return { cls: 'ok', label: '缩量回调 · 良性分歧', txt: basis + ' → 缩量回调是良性分歧，不恐慌。' };
+  if (idxPct < -0.05 && r >= 1.05) return { cls: 'dn', label: '放量大跌 · 风险未完', txt: basis + ' → 放量大跌说明风险在持续释放，先防守。' };
+  return null;
+}
+/* 分级条主体：给「一、大盘与量能」的指数网格补一条结论行。
+   只标用户点名的两只（上证 = 主板基准、创业板 = 适配修正），其余六只指数不加，
+   否则八只指数各挂一条会把这一区挤爆（用户要求「保持页面整洁」）。 */
+function wtGradeBar() {
+  var s = WT.snap;
+  if (!s || !s.idx || !s.idx.length) return '';
+  function pick(n) { for (var i = 0; i < s.idx.length; i++) { if (s.idx[i].name === n) return s.idx[i]; } return null; }
+  var sh = pick('上证指数'), gem = pick('创业板指');
+  var shPct = (sh && sh.q && sh.q.chgPct != null && !isNaN(sh.q.chgPct)) ? sh.q.chgPct : null;
+  var gemPct = (gem && gem.q && gem.q.chgPct != null && !isNaN(gem.q.chgPct)) ? gem.q.chgPct : null;
+  if (shPct == null && gemPct == null) return '';
+  var chips = [];
+  if (shPct != null)
+    chips.push(wtGradeChip(wtGradeOf(shPct, false), '上证', shPct,
+      'S ≥+2.5%｜A +1.5~+2.49%｜B +0.3~+1.49%｜C −0.3~+0.29%｜D −1.49~−0.31%｜E −2.5~−1.51%｜F ≤−2.5%'));
+  if (gemPct != null)
+    chips.push(wtGradeChip(wtGradeOf(gemPct, true), '创业板', gemPct,
+      '创业板适配（波动更大）强势 ≥+2%｜温和上涨 +0.5~+1.99%｜震荡 ±0.5%｜温和回调 −1.99~−0.51%｜大跌 ≤−2%'));
+  var emo = null; try { emo = wtGradeEmo(shPct); } catch (eE) { }
+  if (emo) chips.push('<span class="gc ' + emo.cls + '" title="' + esc(emo.txt) + '"><b>' + esc(emo.label) + '</b></span>');
+  var vl = null; try { vl = wtGradeVol(shPct); } catch (eV) { }
+  if (vl) chips.push('<span class="gc ' + vl.cls + '" title="' + esc(vl.txt) + '">' + esc(vl.label) + '</span>');
+  if (!chips.length) return '';
+  return '<div class="wt-grade" id="wtGrade"><span class="gh">📊 行情分级</span>' + chips.join('') + '</div>';
+}
 /* 一·C 板块五榜（原 7.3，2026-10-20 按用户要求迁入「一、大盘与量能」下方）：
    容器 #m7_3 + 正文全部由 m73BodyHtml() 产出，与 renderM73 / wtPaintMods 同一把尺。
    ⚠️ wtBody 的三种状态（无快照 / 收盘口径 / 正常）都必须**各自**输出这一块 —— 少一处就会出现
@@ -29669,6 +29910,12 @@ function wtRender() {
       '<div class="d">竞价 ' + wtPct(q.auctionChg) + '　成交 ' + ((q.amountWan || 0) / 1e4).toFixed(0) + ' 亿</div></div>';
   });
   h += '</div>';
+  /* ★ 2026-10-21（用户《单日行情分级策略表》）：指数网格正下方补一条「行情分级」结论行 ——
+     上证按主板 S~F 七级、创业板按适配五级，加情绪校验（假强/假弱）与量能配合。
+     只出结论、依据进 title（用户明确要求不在工作区写判断依据）。
+     容器 #wtGrade 同时挂在 wtPaintMods 的指纹门控上，保证它随主刷新（广度/炸板/跌停）一起更新，
+     而不是只在 wtLoad 那一刻画一次。 */
+  h += wtGradeBar();
   /* 一·A 择时提示（2026-09-29 新增）：把「冰点 / 抛压出清 / 回暖确认 / 发酵」的阶段结论
      与「什么阶段买、买多少、为什么」直接摆在指数 KPI 之下、判定面板之上。
      数据源＝主刷新 D.* + ⑥ emotion()/emoCtx（零新增通道）；容器交给 wtPaintMods 指纹门控。
@@ -29683,7 +29930,7 @@ function wtRender() {
   h += wtM73Block();
   /* ★ 2026-10-20（用户要求「删除 一·D 情绪温度 / 🧭 策略判定总控 / 三、龙头 / 四、中军 /
      五、风险与操作」）—— 四处一并删除，理由与去向逐条写在这里，方便日后回滚与复核：
-       · 一·D 竖温度计（0~100° 八维加权）：与页面 ⑥ 大盘情绪周期同源，⑥ 已有专卡；
+       · 一·D 竖温度计（0~100° 九维加权）：与页面 ⑥ 大盘情绪周期同源，⑥ 已有专卡；
          而一·A 的「客观温度计」用的是跌停 / 炸板 / 晋级率 / 梯队这类**可核对读数**，
          两块并存只会让人问「到底该看哪一个」。故删除，一·A 保留为唯一温度计。
          ⚠ wtThermoHtml / wtThermoPosition 两个函数**保留不删** —— jdRepaint、test_wtfix、
@@ -32775,7 +33022,7 @@ function jjaAnomHtml(s){
   h += '<div class="concl ' + (A.env.k === 'defend' ? 'c-grn' : (A.env.k === 'attack' ? 'c-red' : 'c-ora')) + '"><b>环境定级：' + esc(A.env.name) + '</b>' +
     '<br><span class="flat">' + esc(A.env.txt) + '。' +
     '口径：环境档<b>只由竞价读数</b>（指数竞价五档 + 竞价涨跌停家数 + 核按钮）决定，' +
-    '与 ⑥ 大盘情绪周期（八维加权 0-100，含全天亏钱效应与跌停降档）是<b>两把尺子、互不替代</b> —— 竞价是开盘前的概率，⑥ 是全天定档。</span></div>';
+    '与 ⑥ 大盘情绪周期（九维加权 0-100，含全天亏钱效应与跌停降档）是<b>两把尺子、互不替代</b> —— 竞价是开盘前的概率，⑥ 是全天定档。</span></div>';
   /* B 预期差总览（§1 + §5） */
   var tot = A.n || 1;
   h += '<h3 style="font-size:12.5px;margin:10px 0 4px;color:#c084fc">B · 预期差总览（昨日是谁 → 今天该开多少 → 实际差多少）</h3>';

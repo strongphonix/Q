@@ -668,6 +668,26 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
   #wtop .wt-grade .gc.ok { border-color:rgba(34,211,238,.6); background:rgba(34,211,238,.11); color:#a5f3fc; }
   #wtop .wt-grade .gc.ok b { color:#67e8f9; }
   #wtop .wt-grade .gc.na { opacity:.55; }
+  /* ★ 2026-10-22：一、大盘与量能 · 涨跌家数 / 涨跌比（涨红跌绿，与全站一致） */
+  #wtop .wt-breadth { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:2px 0 10px; font-size:11.5px; color:#94a3b8; }
+  #wtop .wt-breadth .bl { letter-spacing:.2px; }
+  #wtop .wt-breadth .bv { font-weight:800; font-variant-numeric:tabular-nums; }
+  #wtop .wt-breadth .bv.up { color:#ff9f97; }
+  #wtop .wt-breadth .bv.dn { color:#6ee7b7; }
+  #wtop .wt-breadth .bs { color:#475569; }
+  #wtop .wt-breadth .br { padding:2px 10px; border-radius:999px; border:1px solid rgba(148,163,184,.35); background:rgba(148,163,184,.08); color:#cbd5e1; }
+  #wtop .wt-breadth .br b { font-weight:800; font-variant-numeric:tabular-nums; }
+  #wtop .wt-breadth .br.up { border-color:rgba(240,69,58,.45); background:rgba(240,69,58,.09); }
+  #wtop .wt-breadth .br.up b { color:#ff9f97; }
+  #wtop .wt-breadth .br.dn { border-color:rgba(16,185,129,.45); background:rgba(16,185,129,.09); }
+  #wtop .wt-breadth .br.dn b { color:#6ee7b7; }
+  /* 成交额（2026-10-22 追加）：中性胶囊 + 同比着色，与涨跌比的红绿胶囊并列但不抢色 */
+  #wtop .wt-breadth .ba { padding:2px 10px; border-radius:999px; border:1px solid rgba(148,163,184,.28); background:rgba(148,163,184,.05); color:#cbd5e1; }
+  #wtop .wt-breadth .ba b { font-weight:800; font-variant-numeric:tabular-nums; color:#e2e8f0; }
+  #wtop .wt-breadth .ba .bp { margin-left:6px; }
+  #wtop .wt-breadth .ba .bp.up { color:#ff9f97; }
+  #wtop .wt-breadth .ba .bp.dn { color:#6ee7b7; }
+  #wtop .wt-breadth .bl.na { color:#64748b; font-weight:400; }
   #wtop h3 { font-size:13.5px; margin:14px 0 8px; padding:7px 12px; border-radius:8px;
     background:linear-gradient(90deg,rgba(34,211,238,.13),rgba(34,211,238,.02) 62%,transparent);
     border:1px solid rgba(34,211,238,.22); border-left:3px solid #22d3ee; }
@@ -29212,6 +29232,10 @@ function wtPaintMods(force) {
      上一轮的盘面特征上，故必须随主刷新一起重画；无快照时 wtGradeBar 自身返回空串，安全。 */
   var gb = $('wtGrade');
   if (gb) { try { gb.outerHTML = wtGradeBar() || '<div class="wt-grade" id="wtGrade"></div>'; } catch (eG) { } }
+  /* ★ 2026-10-22：涨跌家数 / 涨跌比同挂这条门控 —— 它读的 up / dn / upRatio 就是 refreshAll
+     每轮换掉的那几个数，只在 wtRender 画一次会永远停在上一次读数。 */
+  var bb = $('wtBreadth');
+  if (bb) { try { bb.outerHTML = wtBreadthHtml(); } catch (eB) { } }
   /* ★ 2026-09-29 补漏：#wtJudge1（📐 大盘判定 · 含「量能水位」）/ #wtJudge3（主线与资金）/
      #jdSixB / #jdRot7 此前**只由 wtRender 画一次** —— 而 wtRender 只在 wtLoad 的 then 里跑，
      与主刷新（refreshAll 换掉 D.amtToday / 涨跌家数 / 涨停池）**不同步**：
@@ -29753,32 +29777,60 @@ function wtThermoPosition() {
    → 版面只出「等级 · 定性 · 一句应对」三段；判断依据（区间阈值 / 涨跌比 / 炸板率 / 跌停数 / 量比）
      全部塞进 chip 的 title，鼠标停一下才看，不看时不占版面。
 
-   ⚠️ 三处口径必须写死，否则日后会被「统一」改错：
-   ① 主板七级 S~F 用用户表原区间（S ≥+2.5 / A +1.5~2.49 / B +0.3~1.49 / C ±0.3 /
-      D −1.49~−0.31 / E −2.5~−1.51 / F ≤−2.5）；用户表 E 与 F 在 −2.5% 处重叠 → 取更保守的 F。
-   ② 创业板用用户另给的「适配修正」五级（波动更大：≥+2 强势 / +0.5~1.99 温和上涨 /
-      ±0.5 震荡 / −1.99~−0.51 温和回调 / ≤−2 大跌）—— 不是主板区间的等比缩放。
-   ③ 字母只是给两套档位一个可比标签：创业板「强势」记 A（该表无 S 级）、「大跌」记 F
-      （与主板 F 同色）。不改用户在主板定义的字面。 */
-var WT_GRADE_MAIN = [
-  { lv: 'S', name: '大阳普涨', min: 2.5, cls: 'up', act: '不追高潮，等次日分歧' },
-  { lv: 'A', name: '强势上涨', min: 1.5, cls: 'up', act: '正常仓位做主线' },
-  { lv: 'B', name: '温和偏强', min: 0.3, cls: 'up', act: '只做主线龙头，不扩散' },
-  { lv: 'C', name: '窄幅震荡', min: -0.3, cls: 'flat', act: '小仓试错，不重仓' },
-  { lv: 'D', name: '温和偏弱', min: -1.5, cls: 'dn', act: '降仓，回避高位接力' },
-  { lv: 'E', name: '弱势杀跌', min: -2.5, cls: 'dn', act: '防守为主，少开新仓' },
-  { lv: 'F', name: '大阴暴跌', min: -Infinity, cls: 'dn', act: '空仓观望，不抄底' }
+   ⚠️ 四处口径必须写死，否则日后会被「统一」改错：
+   ① 上证用 **2026-10-22 用户新表**（《上证指数 & 中证 1000 单日涨跌幅强弱分级》），七级 1~7：
+      1 ≥+3.0 / 2 +1.5~+2.99 / 3 +0.5~+1.49 / 4 ±0.49 / 5 −1.49~−0.5 / 6 −2.99~−1.5 / 7 ≤−3.0。
+      ※ 这张表**取代** 10-21 那张（S ≥+2.5 / B +0.3 / C ±0.3 / E/F −2.5）—— 阈值整体抬高，
+        因为新表把「极端」定义得更极端（3.0 而非 2.5）。旧字母 S~F 仍作别名保留，避免别处引用断掉。
+   ② 中证 1000 用同一张表的第二列（波动天然更大，阈值按比例放宽）：
+      1 ≥+4.0 / 2 +2.0~+3.99 / 3 +0.8~+1.99 / 4 ±0.79 / 5 −1.99~−0.8 / 6 −3.99~−2.0 / 7 ≤−4.0。
+      两表**等级编号一致、阈值不同** —— 这样才能横向比「谁更强」，也才有后面的背离判定。
+   ③ 创业板用用户 10-21 另给的「适配修正」五级（≥+2 强势 / +0.5~1.99 温和上涨 /
+      ±0.5 震荡 / −1.99~−0.51 温和回调 / ≤−2 大跌）—— 不是任何一列的等比缩放，别合并。
+   ④ 字母只是给旧档位一个可比标签：创业板「强势」记 A、「大跌」记 F。不改用户字面。
+   ⑤ **rank（可比秩）= 跨表比价用的统一刻度 1~7（1 最强、7 最弱）**，2026-10-22 新增。
+      为什么需要它：三张表阈值与档位数都不同（上证/中证1000 是 1~7、创业板是 A/B/C/D/F 五档），
+      想判断「谁强谁弱、差几档」就必须落到同一把尺上 —— 直接比涨跌幅会被阈值差异骗
+      （中证1000 +1.0% 与上证 +0.6% 数值差 0.4，其实同为 3 级）。
+      创业板映射：A 强势→2（对应「大涨」）、B 温和上涨→3、C 震荡→4、D 温和回调→5、F 大跌→6。
+      ⚠️ rank **只用于背离比价**，不参与任何显示、不改变各自的分级文案。 */
+var WT_GRADE_SH = [
+  { lv: '1', name: '极端暴涨', min: 3.0, cls: 'up', act: '全面普涨·少见行情，不追高潮', rank: 1 },
+  { lv: '2', name: '大涨', min: 1.5, cls: 'up', act: '多头主导，正常仓位做主线', rank: 2 },
+  { lv: '3', name: '偏强震荡', min: 0.5, cls: 'up', act: '个股分化，只做主线不扩散', rank: 3 },
+  { lv: '4', name: '中性震荡', min: -0.49, cls: 'flat', act: '横盘拉锯，低吸不追高', rank: 4 },
+  { lv: '5', name: '偏弱震荡', min: -1.49, cls: 'dn', act: '降仓，回避高位接力', rank: 5 },
+  { lv: '6', name: '大跌', min: -2.99, cls: 'dn', act: '防守为主，少开新仓', rank: 6 },
+  { lv: '7', name: '极端暴跌', min: -Infinity, cls: 'dn', act: '系统性风险，空仓观望', rank: 7 }
 ];
+/* 中证 1000：同一张等级表、阈值放宽 —— 小盘波动天然大于上证，同一档位对应更大幅度。
+   ★ 短线圈（首板 / 连板 / 题材）以这一列为主判据：它才是游资与小票真实赚钱效应的镜子。 */
+var WT_GRADE_ZZ = [
+  { lv: '1', name: '极端暴涨', min: 4.0, cls: 'up', act: '小票批量涨停·主线全面爆发', rank: 1 },
+  { lv: '2', name: '大涨', min: 2.0, cls: 'up', act: '题材活跃，首板连板溢价好', rank: 2 },
+  { lv: '3', name: '偏强震荡', min: 0.8, cls: 'up', act: '局部主线机会，只做主线', rank: 3 },
+  { lv: '4', name: '中性震荡', min: -0.79, cls: 'flat', act: '轮动加快，低吸不追高', rank: 4 },
+  { lv: '5', name: '偏弱震荡', min: -1.99, cls: 'dn', act: '题材退潮，炸板率抬升', rank: 5 },
+  { lv: '6', name: '大跌', min: -3.99, cls: 'dn', act: '集体退潮，短线降仓', rank: 6 },
+  { lv: '7', name: '极端暴跌', min: -Infinity, cls: 'dn', act: '主线崩盘，优先空仓', rank: 7 }
+];
+/* 兼容旧名：历史代码 / 测试按 WT_GRADE_MAIN 取上证表 */
+var WT_GRADE_MAIN = WT_GRADE_SH;
 var WT_GRADE_GEM = [
-  { lv: 'A', name: '强势', min: 2, cls: 'up', act: '正常仓位做主线' },
-  { lv: 'B', name: '温和上涨', min: 0.5, cls: 'up', act: '只做主线龙头，不扩散' },
-  { lv: 'C', name: '窄幅震荡', min: -0.5, cls: 'flat', act: '小仓试错，不重仓' },
-  { lv: 'D', name: '温和回调', min: -2, cls: 'dn', act: '降仓，优先低吸主线活口' },
-  { lv: 'F', name: '大跌', min: -Infinity, cls: 'dn', act: '防守为主，不抄底' }
+  { lv: 'A', name: '强势', min: 2, cls: 'up', act: '正常仓位做主线', rank: 2 },
+  { lv: 'B', name: '温和上涨', min: 0.5, cls: 'up', act: '只做主线龙头，不扩散', rank: 3 },
+  { lv: 'C', name: '窄幅震荡', min: -0.5, cls: 'flat', act: '小仓试错，不重仓', rank: 4 },
+  { lv: 'D', name: '温和回调', min: -2, cls: 'dn', act: '降仓，优先低吸主线活口', rank: 5 },
+  { lv: 'F', name: '大跌', min: -Infinity, cls: 'dn', act: '防守为主，不抄底', rank: 6 }
 ];
-function wtGradeOf(pct, gem) {
+/* kind：'sh'（默认，上证表）｜'zz'（中证1000表）｜'gem'/true（创业板表）
+   兼容旧调用：第二参传 true/false 的写法仍然有效（false = 上证）。 */
+function wtGradeOf(pct, kind) {
   if (pct == null || isNaN(pct)) return null;
-  var tb = gem ? WT_GRADE_GEM : WT_GRADE_MAIN, i;
+  var tb = (kind === 'zz' || kind === 'zz1000') ? WT_GRADE_ZZ
+    : (kind === true || kind === 'gem') ? WT_GRADE_GEM
+      : WT_GRADE_SH;
+  var i;
   for (i = 0; i < tb.length; i++) { if (pct >= tb[i].min) return tb[i]; }
   return tb[tb.length - 1];
 }
@@ -29844,6 +29896,153 @@ function wtGradeVol(idxPct) {
   if (idxPct < -0.05 && r >= 1.05) return { cls: 'dn', label: '放量大跌 · 风险未完', txt: basis + ' → 放量大跌说明风险在持续释放，先防守。' };
   return null;
 }
+/* 指数背离（用户 2026-10-22 表「一、指数背离（短线复盘最核心场景）」）
+   ★ 2026-10-22 二次修订：用户要求「把创业板也纳进来」→ 从「上证 × 中证1000 单对」扩到**三只两两配对**。
+   三只的角色不同，两两配对的意义也不同：
+     · 上证 × 中证1000 —— 大盘权重 vs 小微盘题材（用户表里定义的核心场景）
+     · 上证 × 创业板   —— 大盘权重 vs 成长权重（宁德/东财这类大市值成长，会跟着权重一起动）
+     · 中证1000 × 创业板 —— 小盘内部是否一致（题材内部分化的信号）
+   判定仍用 **rank（可比秩 1~7）**，不是裸涨跌幅：三张表阈值不同（上证 3.0 / 中证1000 4.0 / 创业板 2.0），
+   直接比数值会把「中证1000 +1.0% 强于上证 +0.6%」误读成背离，实际两者同为 3 级。
+   规则：**强者 rank ≤3（偏强及以上）∧ 弱者 rank ≥5（偏弱及以下）∧ 方向相反** = 强背离；
+        方向相反但档位不够 = 只标「分化」。多对同时命中时取**档位差最大**的那一对，
+        但若命中对里包含上证，优先用与上证的配对（那才是「指数骗线」的本义）。
+   ⚠️ 缺值纪律：三只里少一只就少比那一对，绝不拿 0 或昨日值顶替（0% 会被判成中性震荡）。 */
+function wtGradeDiverge(shPct, zzPct, gemPct) {
+  var items = [];
+  function add(name, pct, kind) {
+    if (pct == null || isNaN(pct)) return;
+    var g = wtGradeOf(pct, kind);
+    if (!g || g.rank == null) return;
+    items.push({ name: name, pct: pct, g: g });
+  }
+  add('上证', shPct, 'sh');
+  add('中证1000', zzPct, 'zz');
+  add('创业板', gemPct, 'gem');
+  if (items.length < 2) return null;
+
+  var pairs = [], i, j;
+  for (i = 0; i < items.length; i++) for (j = i + 1; j < items.length; j++) {
+    var a = items[i], b = items[j];
+    var ra = a.g.rank, rb = b.g.rank;
+    var hi = (ra <= rb) ? a : b, lo = (ra <= rb) ? b : a;
+    var opposite = (a.pct > 0 && b.pct < 0) || (a.pct < 0 && b.pct > 0);
+    pairs.push({
+      a: a, b: b, hi: hi, lo: lo, gap: Math.abs(ra - rb), opposite: opposite,
+      strong: opposite && hi.g.rank <= 3 && lo.g.rank >= 5,
+      hasSH: (a.name === '上证' || b.name === '上证')
+    });
+  }
+  var pickBest = function (list) {
+    return list.slice().sort(function (x, y) {
+      if (x.hasSH !== y.hasSH) return x.hasSH ? -1 : 1;      /* 含上证的配对优先 */
+      return y.gap - x.gap;                                   /* 再取档位差最大 */
+    })[0];
+  };
+
+  var head = items.map(function (x) {
+    return x.name + ' ' + jdSgn(x.pct) + '%（' + x.g.lv + ' 级 ' + x.g.name + '）';
+  }).join('｜');
+  var pairTxt = function (p) {
+    return '判定对：' + p.hi.name + '（' + p.hi.g.rank + ' 秩）vs ' + p.lo.name + '（' + p.lo.g.rank + ' 秩），差 ' + p.gap + ' 档';
+  };
+
+  var strongs = pairs.filter(function (p) { return p.strong; });
+  if (strongs.length) {
+    var p = pickBest(strongs);
+    if (p.hi.name === '上证')
+      return { cls: 'warn', label: '⚠ 指数背离 · 赚指数不赚钱',
+        txt: head + '\n→ 权重拉抬指数、' + p.lo.name + '资金出逃。短线不追题材高位股，出手要谨慎。\n' +
+          pairTxt(p) + '；门槛：强者 ≤3 秩（偏强及以上）∧ 弱者 ≥5 秩（偏弱及以下）∧ 方向相反。' };
+    if (p.lo.name === '上证')
+      return { cls: 'ok', label: '★ 指数背离 · 权重拖累小票活跃',
+        txt: head + '\n→ 权重拖累大盘，' + p.hi.name + '活跃、游资主导结构性行情。短线聚焦题材主线，忽略上证弱势。\n' +
+          pairTxt(p) + '；门槛：强者 ≤3 秩（偏强及以上）∧ 弱者 ≥5 秩（偏弱及以下）∧ 方向相反。' };
+    /* 只剩「中证1000 × 创业板」这一对：小盘内部不一致，题材在分化 */
+    return { cls: 'warn', label: '⚠ 指数背离 · 小盘内部分化',
+      txt: head + '\n→ 小盘内部不同步：' + p.hi.name + '强、' + p.lo.name + '弱，题材资金在做结构切换，别把「小票普涨」当默认前提。\n' +
+        pairTxt(p) + '；门槛：强者 ≤3 秩 ∧ 弱者 ≥5 秩 ∧ 方向相反。' };
+  }
+
+  var opps = pairs.filter(function (p) {
+    return p.opposite && Math.abs(p.a.pct) >= 0.05 && Math.abs(p.b.pct) >= 0.05;
+  });
+  if (opps.length) {
+    var q = pickBest(opps);
+    return { cls: 'flat', label: '指数分化 · 未达背离门槛',
+      txt: head + '\n→ ' + q.hi.name + '红 / ' + q.lo.name + '绿，方向相反但两侧都还在震荡档，档位差不足，不构成表内背离。'
+        + '按各自档位分别执行即可。\n' + pairTxt(q) + '；门槛：强者 ≤3 秩 ∧ 弱者 ≥5 秩。' };
+  }
+  return null;
+}
+/* 涨跌家数 / 涨跌比（2026-10-22 用户要求：「一、大盘与量能 工作区再增加显示涨跌家数 / 涨跌比」）
+   数据：涨跌家数 / 涨跌比取 ⑥ emoCtx() 的既有读数；成交额取 D.amtToday + emoCtx().amtR，零新增请求。
+   ★ 纪律：缺失时**不显示 0**，直接写「未取到」—— 把「没取到」印成「涨 0 / 跌 0」会被读成广度冰点，
+     进而误导仓位判断（本台 §19 起就定死这条）。
+   口径：涨跌家数**不含平盘**（东财 f104 上涨 / f105 下跌，平盘 f106 单列），
+     故两数之和 ≠ 全市场总家数 —— 这句写进 title，避免被当成「样本不全」。
+
+   ★ 2026-10-22 二次追加（用户要求）：「涨跌比后面加上实时的大盘成交额，格式 6598.22亿（较昨日同期 +49.7%）」。
+     · 6598.22 = D.amtToday（单位已是亿元，见 7.44 观测表的单位修正）
+     · +49.7% = (amtR − 1) × 100，而 amtR = D.amtToday / D.amtEst，
+       其中 D.amtEst = D.amtYest × tradeProgressW() —— 即「昨日**同期**成交额」，
+       权重是 U 型分时经验表（早盘/尾盘重），不是按分钟数均匀摊。
+     · ⚠ 所以这个「较昨日同期」是**估算口径**（tradeProgressW 是经验权重），title 里必须写明，
+       否则会被当成精确的昨日同时刻成交额。
+     · 成交额与广度**互不依赖**：广度全挂了照样要显示成交额（反之亦然），
+       首版把两者塞进同一个 if 里，广度缺失会连成交额一起吞掉 —— 这里拆成两段各自兜底。 */
+function wtBreadthHtml() {
+  var c = null;
+  try { c = emoCtx(); } catch (e) { c = null; }
+  var fmt = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+  var segs = [], tips = [];
+
+  /* ① 涨跌家数 + 涨跌比 */
+  var okB = !!(c && c.hasMkt === true && c.up != null && c.dn != null && (c.up + c.dn > 0));
+  if (okB) {
+    var up = c.up, dn = c.dn, r = c.upRatio;
+    var src = (c.mktSrc === 'mkt') ? '东财全市场 clist（f104 上涨 / f105 下跌）'
+      : (c.mktSrc === 'br0') ? '东财 clist 备用口径（brUp0 / brDn0）'
+        : '新浪 hs_a 排序边界计数（东财双主机缺失时兜底）';
+    var rCls = (r == null) ? '' : (r >= 1 ? ' up' : ' dn');
+    segs.push('<span class="bl">涨跌家数</span>' +
+      '<span class="bv up">涨 ' + fmt(up) + '</span>' +
+      '<span class="bs">/</span>' +
+      '<span class="bv dn">跌 ' + fmt(dn) + '</span>' +
+      '<span class="br' + rCls + '">涨跌比 <b>' + (r == null ? '—' : r.toFixed(2)) + '</b> : 1</span>');
+    tips.push('全市场涨跌家数（不含平盘：东财 f106 单列，故两数之和 ≠ 全市场总家数）\n' +
+      '上涨 ' + fmt(up) + ' 家 ／ 下跌 ' + fmt(dn) + ' 家\n' +
+      '涨跌比 = 上涨 ÷ 下跌 = ' + (r == null ? '—' : r.toFixed(2)) + ' : 1\n' +
+      '数据源：' + src);
+  } else {
+    segs.push('<span class="bl na">涨跌家数 未取到（全市场广度三通道均失败 · 按实留白，不按 0 显示）</span>');
+    tips.push('涨跌家数：全市场广度三通道均失败 → 按实留白，不按 0 显示（0 家长涨会被读成广度冰点）');
+  }
+
+  /* ② 实时两市成交额 + 较昨日同期（与广度互不依赖） */
+  var amt = (typeof D !== 'undefined' && D && D.amtToday != null && isFinite(D.amtToday) && D.amtToday > 0) ? D.amtToday : null;
+  var ar = (c && c.amtR != null && !isNaN(c.amtR)) ? c.amtR : null;
+  if (amt != null) {
+    var pTxt = '', pCls = '';
+    if (ar != null) {
+      var dd = (ar - 1) * 100;
+      pTxt = '（较昨日同期 ' + (dd >= 0 ? '+' : '') + dd.toFixed(1) + '%）';
+      pCls = dd >= 0 ? ' up' : ' dn';
+    }
+    segs.push('<span class="ba">成交 <b>' + amt.toFixed(2) + '</b>亿' +
+      (pTxt ? '<span class="bp' + pCls + '">' + pTxt + '</span>' : '') + '</span>');
+    tips.push('实时两市成交额 ' + amt.toFixed(2) + ' 亿元（沪 + 深）\n' +
+      (ar == null
+        ? '较昨日同期：未取到（昨日全天成交额缺失，不估算）'
+        : '较昨日同期 ' + (ar - 1 >= 0 ? '+' : '') + ((ar - 1) * 100).toFixed(1) + '%' +
+          '（= 今日 ÷ 昨日同期；昨日同期 = 昨日全天 × U 型分时经验权重 tradeProgressW()，属**估算口径**，非精确同时刻值）'));
+  } else {
+    segs.push('<span class="bl na">成交额 未取到</span>');
+    tips.push('实时成交额：未取到（D.amtToday 为空或 ≤0；盘前无成交时也走这一支，不印 0.00 亿）');
+  }
+
+  return '<div class="wt-breadth" id="wtBreadth" title="' + esc(tips.join('\n\n')) + '">' + segs.join('') + '</div>';
+}
 /* 分级条主体：给「一、大盘与量能」的指数网格补一条结论行。
    只标用户点名的两只（上证 = 主板基准、创业板 = 适配修正），其余六只指数不加，
    否则八只指数各挂一条会把这一区挤爆（用户要求「保持页面整洁」）。 */
@@ -29851,17 +30050,26 @@ function wtGradeBar() {
   var s = WT.snap;
   if (!s || !s.idx || !s.idx.length) return '';
   function pick(n) { for (var i = 0; i < s.idx.length; i++) { if (s.idx[i].name === n) return s.idx[i]; } return null; }
-  var sh = pick('上证指数'), gem = pick('创业板指');
+  var sh = pick('上证指数'), zz = pick('中证1000'), gem = pick('创业板指');
   var shPct = (sh && sh.q && sh.q.chgPct != null && !isNaN(sh.q.chgPct)) ? sh.q.chgPct : null;
+  var zzPct = (zz && zz.q && zz.q.chgPct != null && !isNaN(zz.q.chgPct)) ? zz.q.chgPct : null;
   var gemPct = (gem && gem.q && gem.q.chgPct != null && !isNaN(gem.q.chgPct)) ? gem.q.chgPct : null;
-  if (shPct == null && gemPct == null) return '';
+  if (shPct == null && zzPct == null && gemPct == null) return '';
   var chips = [];
   if (shPct != null)
-    chips.push(wtGradeChip(wtGradeOf(shPct, false), '上证', shPct,
-      'S ≥+2.5%｜A +1.5~+2.49%｜B +0.3~+1.49%｜C −0.3~+0.29%｜D −1.49~−0.31%｜E −2.5~−1.51%｜F ≤−2.5%'));
+    chips.push(wtGradeChip(wtGradeOf(shPct, 'sh'), '上证', shPct,
+      '1 ≥+3.0%｜2 +1.5~+2.99%｜3 +0.5~+1.49%｜4 −0.49~+0.49%｜5 −1.49~−0.5%｜6 −2.99~−1.5%｜7 ≤−3.0%'));
+  /* ★ 2026-10-22（用户要求「增加中证1000指数的判断结果」）：紧随上证之后，便于左右对比。
+     缺失时不出空壳 —— 上证还在就只显示上证，不占位、不猜值。 */
+  if (zzPct != null)
+    chips.push(wtGradeChip(wtGradeOf(zzPct, 'zz'), '中证1000', zzPct,
+      '1 ≥+4.0%｜2 +2.0~+3.99%｜3 +0.8~+1.99%｜4 −0.79~+0.79%｜5 −1.99~−0.8%｜6 −3.99~−2.0%｜7 ≤−4.0%（小盘波动更大，阈值同比放宽）'));
   if (gemPct != null)
-    chips.push(wtGradeChip(wtGradeOf(gemPct, true), '创业板', gemPct,
+    chips.push(wtGradeChip(wtGradeOf(gemPct, 'gem'), '创业板', gemPct,
       '创业板适配（波动更大）强势 ≥+2%｜温和上涨 +0.5~+1.99%｜震荡 ±0.5%｜温和回调 −1.99~−0.51%｜大跌 ≤−2%'));
+  /* ★ 2026-10-22：三指数两两比（含创业板），取最值得提示的那一对 */
+  var dv = null; try { dv = wtGradeDiverge(shPct, zzPct, gemPct); } catch (eDv) { }
+  if (dv) chips.push('<span class="gc ' + dv.cls + '" title="' + esc(dv.txt) + '"><b>' + esc(dv.label) + '</b></span>');
   var emo = null; try { emo = wtGradeEmo(shPct); } catch (eE) { }
   if (emo) chips.push('<span class="gc ' + emo.cls + '" title="' + esc(emo.txt) + '"><b>' + esc(emo.label) + '</b></span>');
   var vl = null; try { vl = wtGradeVol(shPct); } catch (eV) { }
@@ -29910,6 +30118,12 @@ function wtRender() {
       '<div class="d">竞价 ' + wtPct(q.auctionChg) + '　成交 ' + ((q.amountWan || 0) / 1e4).toFixed(0) + ' 亿</div></div>';
   });
   h += '</div>';
+  /* ★ 2026-10-22（用户要求「一、大盘与量能 工作区 再增加显示涨跌家数 / 涨跌比」）：
+     紧跟指数网格、在行情分级条之上 —— 先看「指数涨跌」，再看「个股普涨还是普跌」，
+     这正好对上用户表里的「指数骗线」校验顺序。
+     容器 #wtBreadth 同样挂 wtPaintMods 指纹门控（广度每轮 refreshAll 都变，
+     只在 wtRender 画一次会停在上一轮读数）。 */
+  h += wtBreadthHtml();
   /* ★ 2026-10-21（用户《单日行情分级策略表》）：指数网格正下方补一条「行情分级」结论行 ——
      上证按主板 S~F 七级、创业板按适配五级，加情绪校验（假强/假弱）与量能配合。
      只出结论、依据进 title（用户明确要求不在工作区写判断依据）。

@@ -90,6 +90,34 @@ details .dbody{padding:4px 12px 12px;}
 .grp-b{padding:6px 10px;}
 .g-row{display:flex;flex-wrap:wrap;gap:6px 14px;padding:4px 2px;font-size:12.8px;border-bottom:1px dashed rgba(51,65,85,.5);}
 .g-row:last-child{border-bottom:none;}
+/* ===== 强势异动工作区 #m5q（2026-10-22 新增 · 5 分钟涨速按板块分类）=====
+   分组骨架直接复用 .grp/.grp-h/.grp-b/.g-row（与 ⑤ 涨停复盘同款），
+   这里只做两件事：① 组头底色改红（强势异动=进攻，不用涨停复盘的黄）；
+   ② 新增涨速档位胶囊 .m5t（5 档）与涨速数值 .spd（涨红跌绿，0 附近用近白）。 */
+#m5q .grp-h{background:rgba(240,69,58,.09);border-bottom:1px solid rgba(240,69,58,.32);}
+#m5q .grp-h .gn{color:#ff9f97;}
+#m5q .g-row{align-items:center;}
+#m5q .m5-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:2px 0 10px;font-size:11.5px;color:#94a3b8;}
+#m5q .m5-bar .cell{padding:2px 9px;border-radius:999px;border:1px solid rgba(148,163,184,.26);background:rgba(148,163,184,.05);}
+#m5q .m5-bar .cell b{font-weight:800;color:#e2e8f0;font-variant-numeric:tabular-nums;}
+#m5q .m5t{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;line-height:1.55;border:1px solid transparent;white-space:nowrap;}
+#m5q .m5t.pulse{color:#ff6b5e;border-color:rgba(240,69,58,.52);background:rgba(240,69,58,.13);}
+#m5q .m5t.strong{color:#ff9f97;border-color:rgba(240,69,58,.34);background:rgba(240,69,58,.08);}
+#m5q .m5t.mild{color:#fcd34d;border-color:rgba(251,191,36,.32);background:rgba(251,191,36,.07);}
+#m5q .m5t.weak{color:#94a3b8;border-color:rgba(148,163,184,.28);background:rgba(148,163,184,.05);}
+#m5q .m5t.down{color:#6ee7b7;border-color:rgba(16,185,129,.30);background:rgba(16,185,129,.07);}
+#m5q .m5t.sealed{color:#ff5c4d;border-color:rgba(240,69,58,.62);background:rgba(240,69,58,.20);}
+/* 「仍强 / 已回落 / 封板」状态标记：留存后票会一直在榜上，必须能一眼看出它现在是死是活 */
+#m5q .m5s-st{display:inline-block;font-size:11px;font-weight:700;line-height:1.5;padding:0 6px;border-radius:4px;
+  border:1px solid rgba(148,163,184,.26);color:#94a3b8;white-space:nowrap;}
+#m5q .m5s-st.on{color:#ff9f97;border-color:rgba(240,69,58,.40);background:rgba(240,69,58,.10);}
+#m5q .m5s-st.off{color:#8b98a9;border-color:rgba(148,163,184,.20);background:rgba(148,163,184,.04);}
+#m5q .spd{font-weight:800;font-variant-numeric:tabular-nums;display:inline-block;min-width:60px;}
+#m5q .spd.up{color:#ff9f97;}
+#m5q .spd.dn{color:#6ee7b7;}
+#m5q .spd.flat{color:#e2e8f0;}
+#m5q .g-row .nm{font-weight:700;}
+#m5q .m5-empty{padding:10px 2px;color:#94a3b8;font-size:12px;}
 .statbar{display:flex;flex-wrap:wrap;gap:10px;background:rgba(240,69,58,.08);border:1px solid rgba(240,69,58,.35);border-radius:8px;padding:10px 14px;margin-bottom:12px;}
 .statbar .si{text-align:center;min-width:90px;flex:1;}
 .statbar .si .v{font-size:20px;font-weight:700;font-family:ui-monospace,monospace;color:var(--up);}
@@ -668,8 +696,13 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
   #wtop .wt-grade .gc.ok { border-color:rgba(34,211,238,.6); background:rgba(34,211,238,.11); color:#a5f3fc; }
   #wtop .wt-grade .gc.ok b { color:#67e8f9; }
   #wtop .wt-grade .gc.na { opacity:.55; }
-  /* ★ 2026-10-22：一、大盘与量能 · 涨跌家数 / 涨跌比（涨红跌绿，与全站一致） */
-  #wtop .wt-breadth { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:2px 0 10px; font-size:11.5px; color:#94a3b8; }
+  /* ★ 2026-10-22：一、大盘与量能 · 涨跌家数 / 涨跌比（涨红跌绿，与全站一致）
+     结构改为「两行」：① 广度 + 成交额  ② 分梯队晋级率（10 点快照口径）。
+     外层从 flex 改 block，行内各自 flex —— 否则第二行会被挤到第一行末尾。 */
+  #wtop .wt-breadth { margin:2px 0 10px; font-size:11.5px; color:#94a3b8; }
+  #wtop .wt-breadth .wt-brow,
+  #wtop .wt-breadth .wt-lrow { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+  #wtop .wt-breadth .wt-lrow { margin-top:6px; }
   #wtop .wt-breadth .bl { letter-spacing:.2px; }
   #wtop .wt-breadth .bv { font-weight:800; font-variant-numeric:tabular-nums; }
   #wtop .wt-breadth .bv.up { color:#ff9f97; }
@@ -688,6 +721,38 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
   #wtop .wt-breadth .ba .bp.up { color:#ff9f97; }
   #wtop .wt-breadth .ba .bp.dn { color:#6ee7b7; }
   #wtop .wt-breadth .bl.na { color:#64748b; font-weight:400; }
+  /* 分梯队晋级率（2026-10-22 追加）：1进2 / 2进3 / 3进4 各一枚小胶囊。     强度着色沿用本台「热红 / 中性黄 / 弱绿」：晋级率高=接力热，低=冷（不是涨跌，故不用 .bv 那套）。 */
+  #wtop .wt-breadth .wt-lrow .lt { display:inline-flex; align-items:baseline; gap:6px; padding:2px 10px; border-radius:999px;
+    border:1px solid rgba(148,163,184,.28); background:rgba(148,163,184,.05); color:#cbd5e1; }
+  #wtop .wt-breadth .wt-lrow .lt .ln { font-size:10.5px; color:#8fa0b8; letter-spacing:.2px; }
+  #wtop .wt-breadth .wt-lrow .lt b { font-weight:800; font-variant-numeric:tabular-nums; color:#e2e8f0; }
+  #wtop .wt-breadth .wt-lrow .lt .lv { font-size:10.5px; font-weight:700; padding:0 5px; border-radius:4px; }
+  #wtop .wt-breadth .wt-lrow .lt .ns { font-size:10px; color:#64748b; font-variant-numeric:tabular-nums; }
+  /* 强 / 火热 → 红 */
+  #wtop .wt-breadth .wt-lrow .lt.hot { border-color:rgba(240,69,58,.45); background:rgba(240,69,58,.09); }
+  #wtop .wt-breadth .wt-lrow .lt.hot b { color:#ff9f97; }
+  #wtop .wt-breadth .wt-lrow .lt.hot .lv { color:#ff9f97; background:rgba(240,69,58,.16); }
+  /* 中性 → 黄 */
+  #wtop .wt-breadth .wt-lrow .lt.mid { border-color:rgba(251,191,36,.38); background:rgba(251,191,36,.07); }
+  #wtop .wt-breadth .wt-lrow .lt.mid b { color:#fcd34d; }
+  #wtop .wt-breadth .wt-lrow .lt.mid .lv { color:#fcd34d; background:rgba(251,191,36,.14); }
+  /* 偏弱 / 冰点 / 崩 → 绿（弱=冷） */
+  #wtop .wt-breadth .wt-lrow .lt.cold { border-color:rgba(16,185,129,.34); background:rgba(16,185,129,.06); }
+  #wtop .wt-breadth .wt-lrow .lt.cold b { color:#6ee7b7; }
+  #wtop .wt-breadth .wt-lrow .lt.cold .lv { color:#6ee7b7; background:rgba(16,185,129,.13); }
+  #wtop .wt-breadth .wt-lrow .lt.ice { opacity:.72; }
+  /* 样本过少（n<5）→ 降权，压住「2/3 = 67%」这种假强读数 */
+  #wtop .wt-breadth .wt-lrow .lt.few { border-style:dashed; opacity:.78; }
+  /* 虚强（1进2 强但炸板率 ≥40%）→ 橙红警示 */
+  #wtop .wt-breadth .wt-lrow .lt.warn { border-color:rgba(251,146,60,.5); background:rgba(251,146,60,.1); color:#fdba74; font-weight:700; }
+  /* 指数「较 15 分钟前」（2026-10-22 追加）：涨红 / 跌绿 / 平白 —— 用户明确指定，
+     与全站涨红跌绿一致；「平」用近白（#e2e8f0）而非灰色，否则在深底上会被当成"没数据" */
+  #wtop .wt-kpi .d.w15line { margin-top:1px; }
+  #wtop .wt-kpi .d.w15line .w15 { font-weight:700; font-variant-numeric:tabular-nums; }
+  #wtop .wt-kpi .d .w15.up { color:#ff9f97; }
+  #wtop .wt-kpi .d .w15.dn { color:#6ee7b7; }
+  #wtop .wt-kpi .d .w15.flat { color:#e2e8f0; }
+  #wtop .wt-kpi .d .w15.na { color:#64748b; font-weight:400; }
   #wtop h3 { font-size:13.5px; margin:14px 0 8px; padding:7px 12px; border-radius:8px;
     background:linear-gradient(90deg,rgba(34,211,238,.13),rgba(34,211,238,.02) 62%,transparent);
     border:1px solid rgba(34,211,238,.22); border-left:3px solid #22d3ee; }
@@ -1113,18 +1178,16 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
     <a href="#wtop" data-sec="wtop">🎯 实时盯盘</a>
     <a href="#m6" data-sec="m6" title="⑥ 大盘情绪周期（九维加权 + 情绪仪表盘）">⑥ 情绪周期</a>
     <a href="#jjtop" data-sec="jjtop">🔥 集合竞价</a>
-    <a href="#m7_37" data-sec="m7_37" onclick="return jumpTo('m7_37')" style="color:#f0453a;font-weight:700" title="直达「7.37 竞价定选」绿名单（9:25 后自动出结果）">⏰ 7.37 竞价定选</a>
     <span class="hl-gap" aria-hidden="true"></span>
     <a href="#m3" data-sec="m3" title="③ 昨日涨停池深度分析">③ 昨涨停</a>
     <a href="#m5" data-sec="m5" title="⑤ 涨停复盘">⑤ 涨停复盘</a>
+    <a href="#m5q" data-sec="m5q" style="color:#ff9f97;font-weight:700" title="🚀 强势异动（2026-10-22）：5 分钟涨速达强势档（主板 ≥3% / 20cm ≥4%）· 今日未触及涨停（封板/炸板不列）· 最新价收涨 · 按板块分类 · 当日留存，次个交易日开盘才更换">🚀 强势异动</a>
     <a href="#mrisk" data-sec="mrisk" style="color:#10b981;font-weight:700" title="🩸 风险板块（2026-10-20 新增）：跌停 / 大面 / 核按钮 / 跌幅>7% 深水区，按东财行业分类列表；口径经三轮全网交叉验证，判定线在 MR_RULE">🩸 风险板块</a>
     <a href="#m7" data-sec="m7" title="⑦ 全市场资金与主线分析">⑦ 资金主线</a>
     <a href="#m8" data-sec="m8" title="⑧ 五池明细">⑧ 五池明细</a>
     <span class="hl-gap" aria-hidden="true"></span>
     <a href="#m75" data-sec="m75" title="7.5 板块总表 · 分级 S/A/B/C + 风险否决">7.5 板块分级</a>
     <a href="#m710b" data-sec="m710b" title="7.10B 可买入组合清单">7.10B 可买组合</a>
-    <a href="#m741" data-sec="m741" title="7.41 个股 12 维复盘">7.41 12维复盘</a>
-    <a href="#m7top16" data-sec="m7top16" title="7.16 个人持仓 · 四指标 v3 实时监控">7.16 个人持仓</a>
     <span class="hl-gap" aria-hidden="true"></span>
     <a href="#m7top44" data-sec="m7top44" style="color:#fbbf24;font-weight:700" title="7.44 赚亏钱效应分析工作区 · 赚钱效应 A / 亏钱效应 B 双力净值 + 观测指标边际对照表 + 组合信号矩阵（63 格逻辑关系 · 整行可折叠）+ 失效边界守卫（仓位与 ⑥ 取更严者）">🔗 7.44 赚亏钱效应</a>
     <span class="hl-gap" aria-hidden="true"></span>
@@ -1275,6 +1338,38 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
 </div>
 <div class="subpanel" data-g="m533" data-k="node" style="display:none">
 <div id="m5node"><div class="loading">数据加载中…</div></div>
+</div>
+</section>
+
+<!-- ===== 强势异动工作区（2026-10-22 新增 · 用户要求：仿 ⑤ 涨停复盘，按板块分类）=====
+     逐字需求：「搜索全网，交叉验证3遍，主板、科创板、创业板，5分钟k线强势异动的范围，
+     增加一个工作区，命名强势异动，并在顶部做超链接 #m5，放在涨停复盘工作区后，
+     格式参考涨停复盘工作区，按照板块分类」
+
+     ⚠️ 锚点用 #m5q 而非用户写的 #m5 —— #m5 已被「⑤ 涨停复盘」占用（section id 与顶部
+     data-sec 都是 m5）。若新卡复用同一 id，jumpTo / scrollspy / content-visibility
+     落点会互相抢，顶部高亮也会错位。故新卡独立 id=m5q，导航项指向 #m5q。
+     数据链路与阈值出处见 JS 里的 M5S_RULE / m5sRender 注释块（SKILL §102）。 -->
+<section class="card" id="m5q">
+<h2 style="border-color:#ff9f97;color:#ff9f97">🚀 强势异动<small>5 分钟涨速达强势档（主板 ≥3% · 创业板/科创板 ≥4%）· <b>今日未触及涨停</b>（封板/炸板都不列）· <b>最新价收涨</b> · 按板块分类 · 当日留存，次个交易日开盘才更换</small></h2>
+<div class="tabs" id="m5qtabs">
+<button class="tabbtn on" data-k="core" onclick="return switchSub('m5q','core')">今日强势异动（未触板 · 收涨 · 留存至次日）</button>
+<button class="tabbtn" data-k="now" onclick="return switchSub('m5q','now')">当前仍强（实时）</button>
+</div>
+<div class="subpanel" data-g="m5q" data-k="core">
+<div id="m5qgrp"><div class="loading">等待行情采样（每 12 秒一层，累积满 5 分钟出数）…</div></div>
+</div>
+<div class="subpanel" data-g="m5q" data-k="now" style="display:none">
+<div id="m5qnow"><div class="loading">等待行情采样…</div></div>
+</div>
+<div class="note" id="m5qleg" style="margin-top:8px">
+<b>5 分钟涨速</b>＝（现价 − 5 分钟前价）÷ 5 分钟前价，与通达信 / 东财「涨速」同式；数据与 ⑦ 盘中异动<b>同一份采样</b>（每 12 秒一层，零新增请求），「5 分钟前」取最接近 t−5min 的那一层，真实跨度见悬停。
+<b>档位</b>：极速脉冲 ＞5%（20cm ＞7%）· 强势异动 3~5%（4~7%）；
+<b>三条同时满足才列出</b>：① 盘中 5 分钟涨速达强势档；② <b>今日最高价未触及涨停</b>（已封板与曾涨停炸板的一律不列，即便随后回落）；③ <b>最新价收涨</b>。
+温和走强、小幅异动、走弱回落、跌停同样不列出（剔除数见状态栏）。
+<b>「未触及涨停」用当日最高价与涨停价比对</b>，不靠 12 秒采样 —— 瞬间摸板后立刻炸开的票也能被识别，不会漏掉。
+<b>留存</b>：当日触发过的强势异动全部留档，<b>收盘不清空，次个交易日开盘第一笔行情到货才更换</b>（与 ⑤ 涨停板的涨停池同一口径），因此盘中回落过的票仍在榜上，用「仍强 / 已回落」标注现状。
+<b>覆盖</b>：监控池 ≤400 只（涨停 ∪ 炸板 ∪ 跌停 ∪ 涨跌幅榜前 100 ∪ 涨幅&gt;5%），池外个股不在本卡；<b>北交所 30cm 不收录</b>（未给定阈值，不臆造第三套）。
 </div>
 </section>
 
@@ -29192,6 +29287,40 @@ function wtModsHtml() {
     '<div id="wtGt5Box">' + wtGt5Html() + '</div>';
 }
 var WT_MOD = { fp: '' };
+/* ★ 2026-10-22：涨跌家数 / 成交额这一行单独一条门控签名。
+   起因（真机实测）：它此前只在 wtModFp() 变化时重绘，而指纹里的轮次号 RENDER_SEQ 要等**整轮重渲染**才 ++
+   （实测 25s 内只重渲 1 次）。若某一次渲染恰好撞上 mktBreadth() 三通道瞬断返回 null，
+   「涨跌家数 未取到」就会硬挂到下一次整轮重渲为止；而同一时刻 D.amtToday 明明在涨。
+   修法：给这一行自己的签名（up / dn / 成交额分 / amtR 千分位），指纹没变也照样比对 ——
+   输入变了才重画，输入没变零开销，不会把整块 wtMods 拖着一起重建。 */
+var WT_BREADTH_SIG = '';
+/* ⚠ 名字别叫 wtBreadthRepaint —— 那个名字已被「板块宽度异步补数」占用（重画 #wtMainLines / #wtMainCards
+   / #wtReso9 / 7.5 卡）。函数声明同名会互相覆盖，这里多带 Row 后缀区分。 */
+function wtBreadthRowRepaint() {
+  var bb = $('wtBreadth'); if (!bb) return;
+  var sig = 'err';
+  try {
+    var c = emoCtx();
+    sig = (c.hasMkt === true ? 1 : 0) + '|' + (c.up == null ? '-' : c.up) + '|' + (c.dn == null ? '-' : c.dn) +
+      '|' + (typeof D !== 'undefined' && D && D.amtToday != null && isFinite(D.amtToday) ? Math.round(D.amtToday * 100) : '-') +
+      '|' + (c.amtR == null ? '-' : Math.round(c.amtR * 1000)) +
+      /* 分梯队晋级率 + 炸板率同属这一行的输入：昨池 / 今池任一边换池都要重画，
+         否则第 2 行会挂着上一轮的晋级率（第 1 行在动、第 2 行不动最难察觉） */
+      '|' + (function () {
+        try {
+          var T = ladderPromoStat();
+          var TOP = ladderTopBoardStat();
+          var topSig = TOP ? (TOP.max + ':' + TOP.ok + '/' + TOP.n + '/' + TOP.opened) : 'na';
+          if (!T) return 'na|' + topSig;
+          return T.map(function (t) { return t.ok + '/' + t.n; }).join(',') +
+            '#' + ((typeof D !== 'undefined' && D && D.zb) ? D.zb.length : '-') + '#' + topSig;
+        } catch (e) { return 'err'; }
+      })();
+  } catch (e) { sig = 'err'; }
+  if (sig === WT_BREADTH_SIG) return;
+  WT_BREADTH_SIG = sig;
+  try { bb.outerHTML = wtBreadthHtml(); } catch (e) { }
+}
 /* 数据指纹：只用**廉价字段**（数组长度 / 对象字段 / 轮次号）。
    ⚠️ 绝不能在这里调 emotion() / gradeSectors()：它们内部是"逐板块跑完整判定"（实测一轮 500+ 次调用），
       每秒调一次会把主线程拖死。指纹只在「主刷新刚把 D.* 换掉」时才变 → 那时才重算这三块；
@@ -29213,7 +29342,7 @@ function wtModFp() {
 function wtPaintMods(force) {
   var box = $('wtMods'); if (!box) return;              /* 主卡还没画过 → 交给 wtRender 一起画 */
   var fp = wtModFp();
-  if (!force && fp === WT_MOD.fp) { wtBreadthKick(); return; }   /* 指纹没变也不用重画，但宽度补数要继续 */
+  if (!force && fp === WT_MOD.fp) { wtBreadthRowRepaint(); wtBreadthKick(); return; }   /* 指纹没变也不用重画，但宽度补数要继续 */
   WT_MOD.fp = fp;
   try { box.innerHTML = wtModsHtml(); }
   catch (e) { box.innerHTML = '<div class="wt-modwait">联动结论渲染失败：' + esc((e && e.message) || e) + '</div>'; }
@@ -29232,10 +29361,11 @@ function wtPaintMods(force) {
      上一轮的盘面特征上，故必须随主刷新一起重画；无快照时 wtGradeBar 自身返回空串，安全。 */
   var gb = $('wtGrade');
   if (gb) { try { gb.outerHTML = wtGradeBar() || '<div class="wt-grade" id="wtGrade"></div>'; } catch (eG) { } }
-  /* ★ 2026-10-22：涨跌家数 / 涨跌比同挂这条门控 —— 它读的 up / dn / upRatio 就是 refreshAll
-     每轮换掉的那几个数，只在 wtRender 画一次会永远停在上一次读数。 */
-  var bb = $('wtBreadth');
-  if (bb) { try { bb.outerHTML = wtBreadthHtml(); } catch (eB) { } }
+  /* ★ 2026-10-22：涨跌家数 / 涨跌比 / 成交额同挂这条门控 —— 它读的 up / dn / upRatio / amtR 就是
+     refreshAll 每轮换掉的那几个数，只在 wtRender 画一次会永远停在上一次读数。
+     这里改走 wtBreadthRowRepaint() 的独立签名：整轮重渲很少（实测 25s 才 1 次），
+     若某次撞上广度瞬断，硬等整轮重渲会把这行「未取到」挂住几十秒。 */
+  wtBreadthRowRepaint();
   /* ★ 2026-09-29 补漏：#wtJudge1（📐 大盘判定 · 含「量能水位」）/ #wtJudge3（主线与资金）/
      #jdSixB / #jdRot7 此前**只由 wtRender 画一次** —— 而 wtRender 只在 wtLoad 的 then 里跑，
      与主刷新（refreshAll 换掉 D.amtToday / 涨跌家数 / 涨停池）**不同步**：
@@ -29991,6 +30121,179 @@ function wtGradeDiverge(shPct, zzPct, gemPct) {
        否则会被当成精确的昨日同时刻成交额。
      · 成交额与广度**互不依赖**：广度全挂了照样要显示成交额（反之亦然），
        首版把两者塞进同一个 if 里，广度缺失会连成交额一起吞掉 —— 这里拆成两段各自兜底。 */
+/* ═════════ 分梯队晋级率（2026-10-22，用户《10 点盘中快照晋级率 · 分梯队参考区间》）═════════
+   口径：晋级率 = 昨日 k 连板池家数中、今日仍在涨停池的家数 ÷ 昨日 k 连板池家数。
+   分子分母都取现成池子（D.prev 昨池 / D.zt 今池），**零新增请求**。
+   ★ 绝不跨梯队比百分比：三档阈值天然不同（25 / 35 / 40），20% 在 1进2 是中性、在 2进3 是偏弱。
+     故判定表按梯队分开写，各走各的区间。
+   ★ 样本纪律（用户误区 1）：高位梯队天然只有个位数只票，2/3=67% 不代表「强」——
+     n<5 一律降权（虚线+半透明），标题里点明「样本少，仅作情绪参考，别当胜率」。
+   ★ 10 点口径：区间标定的是 10:00 快照。本行显示的是**实时**值，10 点后晋级率只会继续爬升，
+     故 11 点后拿同一区间判会偏乐观 —— 这条写进 title，不藏在代码里。 */
+var LB_TIER = {
+  1: { name: '1进2', hi: 25, mid: 15, low: 8, hot: '强', midL: '中性', cold: '偏弱', ice: '冰点',
+    hotAct: '早盘接力强，可试错 1 进 2；警惕早盘一致、午后兑现',
+    midAct: '分歧与承接均衡，正常短线环境',
+    coldAct: '接力意愿不足，首板次日多冲高回落，只看主线核心',
+    iceAct: '1 进 2 大面积阵亡，回避低位接力' },
+  2: { name: '2进3', hi: 35, mid: 20, low: 10, hot: '火热', midL: '中性', cold: '偏弱', ice: '崩盘',
+    hotAct: '高位接力火热，主线龙头资金认可度高',
+    midAct: '梯队健康，龙头有分歧承接',
+    coldAct: '高位接力谨慎，容易断板',
+    iceAct: '2 板早盘批量断板，回避 2 进 3' },
+  3: { name: '3进4', hi: 40, mid: 25, low: 12, hot: '强', midL: '中性', cold: '偏弱', ice: '崩塌',
+    hotAct: '主线高度打开，龙头抱团强势',
+    midAct: '中性，高位博弈窗口',
+    coldAct: '高位风险抬升，少做 3 进 4',
+    iceAct: '高位梯队崩塌，规避高位接力' }
+};
+function lbCodeOf(x) {
+  if (x == null) return '';
+  var s = (typeof x === 'string') ? x : (x.c != null ? String(x.c) : '');
+  var m = s.match(/(\d{6})/);
+  return m ? m[1] : '';
+}
+function ladderPromoStat() {
+  var prev = (typeof D !== 'undefined' && D && D.prev) ? D.prev : null;
+  var zt = (typeof D !== 'undefined' && D && D.zt) ? D.zt : null;
+  /* 任一边缺 → 返回 null。分母为 0 或分子不可知时都不猜，绝不印 0% */
+  if (!prev || !prev.length || !zt || !zt.length) return null;
+  var inZt = {}, i, k;
+  for (i = 0; i < zt.length; i++) { var ck = lbCodeOf(zt[i]); if (ck) inZt[ck] = 1; }
+  var out = [];
+  for (k = 1; k <= 3; k++) out.push({ k: k, n: 0, ok: 0 });
+  for (i = 0; i < prev.length; i++) {
+    var x = prev[i]; if (!x) continue;
+    var lb = (x.lbc == null ? 1 : +x.lbc);
+    if (!(lb >= 1 && lb <= 3)) continue;
+    var c = lbCodeOf(x); if (!c) continue;
+    var t = out[lb - 1];
+    t.n++;
+    if (inZt[c]) t.ok++;      /* 今日仍在涨停池 = 晋级（含炸板后回封，按收盘前未开板处理不了，属盘中口径） */
+  }
+  return out;
+}
+/* 昨日最高板（空间板 / 龙头）今日晋级情况 —— 情绪最灵敏的那一根指针：
+   最高板全晋级 = 空间打开；全断板 = 高度被压死，下面梯队再热也只是低位补涨。
+   ★ 分母是「昨日最高连板数」那一档的全部个股，通常只有 1~3 只 → **样本极少，别当概率看**，
+     故 n≤2 时直接把个股名与状态摊在版面上，n≥3 才退回计数，明细放 title。 */
+function ladderTopBoardStat() {
+  var prev = (typeof D !== 'undefined' && D && D.prev) ? D.prev : null;
+  if (!prev || !prev.length) return null;
+  var max = 0, i;
+  for (i = 0; i < prev.length; i++) {
+    var lb = (prev[i] && prev[i].lbc != null) ? +prev[i].lbc : 1;
+    if (lb > max) max = lb;
+  }
+  if (!(max > 0)) return null;
+  var inZt = {}, inZb = {};
+  var scan = function (arr, map) {
+    if (!arr || !arr.length) return;
+    for (var j = 0; j < arr.length; j++) { var k = lbCodeOf(arr[j]); if (k) map[k] = 1; }
+  };
+  scan((typeof D !== 'undefined' && D) ? D.zt : null, inZt);
+  scan((typeof D !== 'undefined' && D) ? D.zb : null, inZb);
+  var items = [], ok = 0, opened = 0;
+  for (i = 0; i < prev.length; i++) {
+    var x = prev[i]; if (!x) continue;
+    var l2 = (x.lbc == null ? 1 : +x.lbc);
+    if (l2 !== max) continue;
+    var c = lbCodeOf(x);
+    var st = inZt[c] ? '晋级' : (inZb[c] ? '炸板' : '断板');
+    if (st === '晋级') ok++;
+    else if (st === '炸板') opened++;      /* 炸板 = 曾封住但已开板，未回封前不算晋级 */
+    items.push({ n: String(x.n || x.c || '—'), c: c, st: st });
+  }
+  if (!items.length) return null;
+  return { max: max, n: items.length, ok: ok, opened: opened, items: items };
+}
+function lbJudge(t) {
+  var b = LB_TIER[t.k];
+  if (!t || !t.n) return null;
+  var pct = t.ok / t.n * 100;
+  if (pct > b.hi) return { pct: pct, lv: 3, label: b.hot, cls: 'hot', act: b.hotAct };
+  if (pct >= b.mid) return { pct: pct, lv: 2, label: b.midL, cls: 'mid', act: b.midAct };
+  if (pct >= b.low) return { pct: pct, lv: 1, label: b.cold, cls: 'cold', act: b.coldAct };
+  return { pct: pct, lv: 0, label: b.ice, cls: 'cold ice', act: b.iceAct };
+}
+function lbBandTxt(k) {
+  var b = LB_TIER[k];
+  return '＞' + b.hi + '% ' + b.hot + '　|　' + b.mid + '~' + b.hi + '% ' + b.midL +
+    '　|　' + b.low + '~' + b.mid + '% ' + b.cold + '　|　＜' + b.low + '% ' + b.ice;
+}
+function wtLadderRowHtml() {
+  var st = null;
+  try { st = ladderPromoStat(); } catch (e) { st = null; }
+  if (!st) {
+    return '<div class="wt-lrow" id="wtLadderRow"><span class="bl na">' +
+      '梯队晋级 未取到（昨池 / 今池缺一边 · 按实留白，不按 0%）</span></div>';
+  }
+  var chips = [], tips = [];
+  /* 昨高板（空间板）放最前：这是"今天还能不能做接力"的第一道闸，
+     比 1进2 更重要 —— 龙头全断，下面梯队再热也只是低位补涨。 */
+  var tb = null;
+  try { tb = ladderTopBoardStat(); } catch (e) { tb = null; }
+  if (tb) {
+    var tbCls = (tb.ok === tb.n) ? 'hot' : (tb.ok > 0 ? 'mid' : 'cold');
+    if (tb.n < 5) tbCls += ' few';
+    var tbTag = (tb.ok === tb.n) ? '全晋级'
+      : (tb.ok > 0 ? '部分晋级' : (tb.opened > 0 ? '全炸板' : '全断板'));
+    /* 样本 ≤4 只时把个股名与状态**摊在版面上**（只放 title 等于没列出——多数人不会去悬停）；
+       >4 只才退回计数，明细留 title。状态用「晋级 / 炸板 / 断板」三档，都是两字，横向可控。 */
+    var nameTxt = (tb.n <= 4) ? tb.items.map(function (it) { return it.n + it.st; }).join(' · ') : '';
+    chips.push('<span class="lt ' + tbCls + '">' +
+      '<span class="ln">昨高板 ' + tb.max + '板</span>' +
+      '<b>' + tb.ok + '/' + tb.n + '</b>' +
+      '<span class="lv">' + tbTag + '</span>' +
+      (nameTxt ? '<span class="ns">' + esc(nameTxt) + '</span>' : '') + '</span>');
+    tips.push('昨日最高板 ' + tb.max + ' 板 · ' + tb.n + ' 只 → 今日晋级 ' + tb.ok + ' 只' +
+      (tb.opened ? '、炸板 ' + tb.opened + ' 只' : '') + '\n' +
+      tb.items.map(function (it) { return '· ' + it.n + '（' + it.c + '）→ ' + it.st; }).join('\n') + '\n' +
+      '读法：' + (tb.ok === tb.n ? '昨高板全晋级 → 空间打开，高位接力可做'
+        : (tb.ok > 0 ? '部分晋级 → 高度还有承接但已分化，只做晋级那只，别去补断板的'
+          : '全断板 → 高度被压死，今日最高只剩低位板，接力整体降一级')) + '\n' +
+      '⚠ 样本只有 ' + tb.n + ' 只：这是龙头指针，不是胜率，别按百分比理解');
+  }
+  st.forEach(function (t) {
+    var j = lbJudge(t), b = LB_TIER[t.k];
+    var few = (t.n > 0 && t.n < 5);
+    if (!j) {
+      chips.push('<span class="lt' + (few ? ' few' : '') + '"><span class="ln">' + b.name + '</span>' +
+        '<b>—</b><span class="lv">无样本</span><span class="ns">0/0</span></span>');
+      tips.push(b.name + '：昨日 ' + t.k + ' 连板池 0 只 → 无样本，不给百分比（0% 会被误读成冰点）\n区间：' + lbBandTxt(t.k));
+      return;
+    }
+    chips.push('<span class="lt ' + j.cls + (few ? ' few' : '') + '">' +
+      '<span class="ln">' + b.name + '</span>' +
+      '<b>' + j.pct.toFixed(1) + '%</b>' +
+      '<span class="lv">' + j.label + '</span>' +
+      '<span class="ns">' + t.ok + '/' + t.n + '</span></span>');
+    tips.push(b.name + ' ' + j.pct.toFixed(1) + '%（' + t.ok + '/' + t.n + '）· ' + j.label + '\n' +
+      '对照区间（10 点快照）：' + lbBandTxt(t.k) + '\n' +
+      '操作含义：' + j.act +
+      (few ? '\n⚠ 样本仅 ' + t.n + ' 只：高位样本天然少，百分比跳动极大，只作情绪参考、不当胜率用' : ''));
+  });
+
+  /* 虚强：1进2 落「强」但炸板率 ≥40% —— 用户点名的场景（早盘抢筹、烂板多、午后易兑现） */
+  var j1 = lbJudge(st[0]);
+  var ztn = (typeof D !== 'undefined' && D && D.zt) ? D.zt.length : 0;
+  var zbn = (typeof D !== 'undefined' && D && D.zb) ? D.zb.length : 0;
+  var burst = (ztn + zbn) > 0 ? (zbn / (ztn + zbn) * 100) : null;
+  var warnTxt = '';
+  if (j1 && j1.lv === 3 && burst != null && burst >= 40) {
+    warnTxt = '⚠ 虚强';
+    chips.push('<span class="lt warn">' + warnTxt + '</span>');
+    tips.push('⚠ 虚强：1进2 已落「强」，但炸板率 ' + burst.toFixed(0) + '%（≥40%）\n' +
+      '含义：早盘抢筹而分歧巨大、大量烂板 → 午后容易集中兑现回落，属虚强，别按强势加码\n' +
+      '（炸板率 = 炸板 ' + zbn + ' ÷（涨停 ' + ztn + ' + 炸板 ' + zbn + '））');
+  }
+
+  return '<div class="wt-lrow" id="wtLadderRow" title="' + esc(tips.join('\n\n') + '\n\n' +
+    '【口径】晋级率 = 昨日 k 连板池中今日仍在涨停池的家数 ÷ 昨日 k 连板池家数（盘中口径，含炸板回封）。\n' +
+    '【重要】括号里的区间标定的是 **10:00 快照**；本行是**实时**值，10 点之后晋级率只会继续爬升，' +
+    '所以 11 点后拿同一区间判会偏乐观 —— 请以 10:00 / 10:30 当时的读数为准，并按你定的规矩在 10:30、11:00 二次复核。') +
+    '"><span class="bl">梯队晋级·实时</span>' + chips.join('') + '</div>';
+}
 function wtBreadthHtml() {
   var c = null;
   try { c = emoCtx(); } catch (e) { c = null; }
@@ -30041,7 +30344,9 @@ function wtBreadthHtml() {
     tips.push('实时成交额：未取到（D.amtToday 为空或 ≤0；盘前无成交时也走这一支，不印 0.00 亿）');
   }
 
-  return '<div class="wt-breadth" id="wtBreadth" title="' + esc(tips.join('\n\n')) + '">' + segs.join('') + '</div>';
+  return '<div class="wt-breadth" id="wtBreadth" title="' + esc(tips.join('\n\n')) + '">' +
+    '<div class="wt-brow">' + segs.join('') + '</div>' +
+    wtLadderRowHtml() + '</div>';
 }
 /* 分级条主体：给「一、大盘与量能」的指数网格补一条结论行。
    只标用户点名的两只（上证 = 主板基准、创业板 = 适配修正），其余六只指数不加，
@@ -30085,6 +30390,169 @@ function wtM73Block() {
   return '<h3 style="font-size:13.5px;border-color:#5b8cff;color:#9fb4ff">一·C 板块五榜（净流入 / 净流出 / 涨幅 / 跌幅 / 涨停家数）<small>原 7.3 · 与「情绪周期」钉钉推送同一内核 secRankCore</small></h3>' +
     '<div class="grid3" id="m7_3">' + m73Safe() + '</div>';
 }
+/* ═════════ 指数「较 15 分钟前」═════════
+   用户要求：「指数较 15 分钟前是持平 / 下跌 / 上涨都请标注，涨用红，跌用绿，平用白」。
+   数据源：新浪分钟线 quotes.sina.cn/cn/api/openapi.php/CN_MinlineService.getMinlineData
+     · **走 script 标签 JSONP（callback=）**，不带 Origin → 不受 WAF 的 501 拦截；
+     · 腾讯 web.ifzq.gtimg.cn 的 minute / fqkline 对带 Origin 的请求一律 501（本轮实测连 8 次后被挡，
+       连累到同日K），故本块**不再请求腾讯**；东财 push2his 在本环境 socket hang up，亦不可达；
+     · 一天只取一次（localStorage 落盘），之后「现在」这一点用快照实时价补 —— 不再发请求。
+   口径：15 分钟涨跌幅 = (最新分钟价 ÷ 15 分钟前那一分钟价 − 1) × 100%；
+     · 用「数据里最后一根分钟」当 now，而不是墙上时钟 —— 避免接口延迟时拿未来/空档比；
+     · 开盘不足 15 分钟 → 返回 null，显示「15分 —」，绝不拿 5 分钟冒充 15 分钟。
+   阈值：|r| < 0.10% 判「持平」。指数 15 分钟的真实波动常在这个量级，不设死区会把噪声染成红绿。 */
+var WT15 = { day: '', map: null, pending: false, at: 0, err: '', src: '' };
+var WT15_BAND = 0.10;
+var WT15_LS = 'wb_idx15_v1';
+function wt15DayKey() { try { return (typeof D !== 'undefined' && D && D.date) || ''; } catch (e) { return ''; } }
+function wt15Mins(s) { var n = +s; return Math.floor(n / 100) * 60 + (n % 100); }
+function wt15Save() { try { localStorage.setItem(WT15_LS, JSON.stringify({ day: WT15.day, map: WT15.map })); } catch (e) { } }
+/* 当日分钟序列：localStorage 命中就直接用（**跨刷新不重复请求**），否则只请求一次。
+   ★ 为什么不每轮拉：腾讯分钟接口对密集请求会回 501（实测连续几轮 8 请求后就被挡），
+     而同主机的日K 也走腾讯 —— 把分钟接口打到被限流会连累日K。故「一天一次 + 本地补点」。 */
+function wt15Load() {
+  var day = wt15DayKey();
+  if (!day) return;
+  if (WT15.day === day && WT15.map) return;
+  try {
+    var raw = localStorage.getItem(WT15_LS);
+    if (raw) {
+      var o = JSON.parse(raw);
+      if (o && o.day === day && o.map && o.map.length !== 0) {
+        WT15.map = o.map; WT15.day = day; WT15.src = 'ls';
+        return;
+      }
+    }
+  } catch (e) { }
+  wt15FetchOnce();
+}
+/* 用实时行情给序列补点：分钟接口只取一次，之后「现在」这一点由快照价格补，
+   不必再请求；同一分钟内重复渲染只更新最后一根，不堆点。 */
+function wt15Append(sym, price) {
+  if (!sym || !(price > 0) || !WT15.map) return;
+  var bars = WT15.map[sym];
+  if (!bars || !bars.length) return;
+  var d = new Date();
+  var hh = ('0' + d.getHours()).slice(-2) + ('0' + d.getMinutes()).slice(-2);
+  var last = bars[bars.length - 1];
+  if (last[0] === hh) { last[1] = price; return; }
+  if (wt15Mins(hh) < wt15Mins(last[0])) return;      /* 时钟回拨 / 跨日 → 不追加，避免序列倒挂 */
+  bars.push([hh, price]);
+  if (bars.length > 320) bars.shift();
+}
+function wt15Jsonp(url, cbName) {
+  return new Promise(function (resolve) {
+    var s = document.createElement('script');
+    var done = false;
+    var to = setTimeout(function () { finish(null); }, 9000);
+    function finish(v) {
+      if (done) return; done = true;
+      clearTimeout(to);
+      try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+      try { s.parentNode && s.parentNode.removeChild(s); } catch (e) { }
+      resolve(v);
+    }
+    window[cbName] = function (j) { finish(j || null); };
+    s.onerror = function () { finish(null); };
+    s.src = url;
+    document.head.appendChild(s);
+  });
+}
+function wt15FetchOnce() {
+  if (WT15.pending) return;
+  var idx = (typeof WT !== 'undefined' && WT.snap && WT.snap.idx) ? WT.snap.idx : null;
+  if (!idx || !idx.length) return;
+  var syms = [];
+  idx.forEach(function (x) { if (x && x.sym) syms.push(x.sym); });
+  if (!syms.length) return;
+  WT15.pending = true;
+  var out = {}, left = syms.length, settled = false;
+  var finish = function () {
+    if (settled) return;
+    settled = true;
+    WT15.pending = false;
+    WT15.at = Date.now();
+    WT15.day = wt15DayKey();
+    WT15.map = out;
+    WT15.src = (out && Object.keys(out).length) ? 'sina' : '';
+    /* 收尾立刻用当前快照价补一根「现在」，否则末根停在接口返回的那一分钟 */
+    try {
+      idx.forEach(function (x) { if (x && x.q && x.q.price) wt15Append(x.sym, x.q.price); });
+    } catch (e) { }
+    if (WT15.src) { try { wt15Save(); } catch (e) { } }
+    try { wt15Paint(); } catch (e) { }
+  };
+  syms.forEach(function (sym) {
+    var cb = '__wt15_' + sym.replace(/[^a-z0-9]/gi, '') + '_' + (Date.now() % 100000);
+    var u = 'https://quotes.sina.cn/cn/api/openapi.php/CN_MinlineService.getMinlineData' +
+      '?symbol=' + sym + '&scale=1&dpc=1&callback=' + cb;
+    wt15Jsonp(u, cb).then(function (j) {
+      var arr = j && j.result && j.result.data;
+      if (arr && arr.length) {
+        var bars = [], i;
+        for (i = 0; i < arr.length; i++) {
+          var t = String(arr[i].m || '').replace(/:/g, '').slice(0, 4);   /* "09:25:00" → "0925" */
+          var p = +arr[i].p;
+          if (t && p > 0) bars.push([t, p]);
+        }
+        if (bars.length) out[sym] = bars;
+      }
+    }).then(function () { left--; if (left <= 0) finish(); });
+  });
+  /* 兜底：任一请求挂住都不让 pending 卡死（10s 后按已到齐的部分先画） */
+  setTimeout(finish, 10000);
+}
+function wt15Stat(sym) {
+  if (!sym || !WT15.map) return null;
+  var bars = WT15.map[sym];
+  if (!bars || bars.length < 2) return null;
+  var last = bars[bars.length - 1];
+  var mLast = wt15Mins(last[0]), pNow = +last[1];
+  if (!(pNow > 0)) return null;
+  var mTarget = mLast - 15;
+  var ref = null, i;
+  for (i = 0; i < bars.length; i++) {
+    if (wt15Mins(bars[i][0]) <= mTarget) ref = bars[i];
+    else break;
+  }
+  if (!ref) return null;
+  var mRef = wt15Mins(ref[0]);
+  var span = mLast - mRef;
+  /* 实际跨度必须≈15 分钟。三种情况一律不判、显示「15分 —」：
+     ① 开盘不足 15 分钟（跨度 <13）；② 中间缺分钟太多（跨度 >18，实时补点后粒度 3 分钟）；
+     ③ 跨午休（13:05 会回退到 11:30，跨度 95 分钟）—— 拿 11:30 冒充「15 分钟前」是最容易骗过眼睛的错。 */
+  if (span < 13 || span > 18) return null;
+  var p0 = +ref[1];
+  if (!(p0 > 0)) return null;
+  var pct = (pNow / p0 - 1) * 100;
+  var dir = (Math.abs(pct) < WT15_BAND) ? 'flat' : (pct > 0 ? 'up' : 'dn');
+  return { pct: pct, dir: dir, from: ref[0], to: last[0], span: span };
+}
+function wt15SpanHtml(sym) {
+  var st = null;
+  try { st = wt15Stat(sym); } catch (e) { st = null; }
+  var attrs = ' data-w15="' + esc(sym) + '"';
+  if (!st) return '<span class="w15 na"' + attrs + '>15分 —</span>';
+  var txt = st.dir === 'flat' ? '15分 持平'
+    : ('15分 ' + (st.dir === 'up' ? '涨 +' : '跌 ') + st.pct.toFixed(2) + '%');
+  var srcTxt = (WT15.src === 'ls') ? '新浪分钟线（当日已落盘，实时价由行情补点）'
+    : '新浪分钟线（当日逐分钟，实时价由行情补点）';
+  var tip = '较 15 分钟前（' + st.from.slice(0, 2) + ':' + st.from.slice(2) + ' → ' +
+    st.to.slice(0, 2) + ':' + st.to.slice(2) + '，实际跨 ' + st.span + ' 分钟）\n' +
+    '15 分钟涨跌幅 ' + (st.pct >= 0 ? '+' : '') + st.pct.toFixed(2) + '%\n' +
+    '判定：' + (st.dir === 'flat' ? '持平' : (st.dir === 'up' ? '上涨' : '下跌')) + '\n' +
+    '持平阈值 ±' + WT15_BAND.toFixed(2) + '%（|15 分钟涨跌幅| 小于此值判「平」，避免把噪声染成红绿）\n' +
+    '数据：' + srcTxt;
+  return '<span class="w15 ' + st.dir + '"' + attrs + ' title="' + esc(tip) + '">' + txt + '</span>';
+}
+/* 只改动这一处 span，不重建整张卡（避免鼠标悬停/滚动跳动） */
+function wt15Paint() {
+  var els = document.querySelectorAll('#wtop .wt-kpi .d .w15[data-w15]');
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i], sym = el.getAttribute('data-w15');
+    try { el.outerHTML = wt15SpanHtml(sym); } catch (e) { }
+  }
+}
 function wtRender() {
   var box = $('wtBody'); if (!box) return;
   var s = WT.snap;
@@ -30110,12 +30578,21 @@ function wtRender() {
   h += '<div class="wt-verdict ' + vc + '">【' + WT.node.name + ' · ' + WT.clk.slice(0, 5) + '】' + wtVerdictText(s) + '</div>';
   /* 一、大盘 */
   h += '<h3>一、大盘与量能</h3><div class="wt-grid">';
+  /* 当日分钟序列：localStorage 命中即用，未命中只请求一次（见 wt15Load 注释） */
+  try { wt15Load(); } catch (e15L) { }
   s.idx.forEach(function (x) {
     var q = x.q;
+    /* 用快照价给序列补「现在」这一点 —— 之后不再请求分钟接口 */
+    try { if (q && q.price) wt15Append(x.sym, q.price); } catch (e15A) { }
     if (!q) { h += '<div class="wt-kpi"><div class="l">' + esc(x.name) + '</div><div class="v">—</div><div class="d">未取到</div></div>'; return; }
     h += '<div class="wt-kpi"><div class="l">' + esc(x.name) + '</div>' +
       '<div class="v ' + (q.chgPct > 0 ? 'wt-up' : (q.chgPct < 0 ? 'wt-dn' : '')) + '">' + (q.price == null ? '—' : q.price.toFixed(2)) + '　' + wtPct(q.chgPct) + '</div>' +
-      '<div class="d">竞价 ' + wtPct(q.auctionChg) + '　成交 ' + ((q.amountWan || 0) / 1e4).toFixed(0) + ' 亿</div></div>';
+      /* ★ 2026-10-22：竞价 / 成交之后补「较 15 分钟前」（涨红 / 跌绿 / 平白），
+         数据来自腾讯分钟线；未就位时先画「15分 —」，由 wt15Paint() 补数，
+         不阻塞整卡渲染、也不拿上一轮的值冒充这一轮。 */
+      '<div class="d">竞价 ' + wtPct(q.auctionChg) + '　成交 ' + ((q.amountWan || 0) / 1e4).toFixed(0) + ' 亿</div>' +
+      /* 15 分钟前单独占一行：并到上一行会因宽度不足折行，8 张卡高度与断行位置都不一致 */
+      '<div class="d w15line">' + wt15SpanHtml(x.sym) + '</div></div>';
   });
   h += '</div>';
   /* ★ 2026-10-22（用户要求「一、大盘与量能 工作区 再增加显示涨跌家数 / 涨跌比」）：
@@ -30187,6 +30664,9 @@ function wtRender() {
     '其中龙头、中军并入一·A，今日领跌下沉为二·C，其余与上游 ⑥ / ⑦ / 7.5 专卡重复。</div>';
   setHtml(box, h);
   wtThermoPosition();
+  /* ★ 2026-10-22：指数「较 15 分钟前」的分钟线取数 —— 放在 setHtml 之后，
+     保证 wt15Paint() 有落点（.w15[data-w15] 已在 DOM 里）。失败只影响这一处小字，不阻塞卡片。 */
+  try { wt15Load(); wt15Paint(); } catch (e15) { }
 }
 function wtPaintToolbar() {
   var d = wtDate(), n = wtNode(d.t);
@@ -30509,12 +30989,19 @@ function anomBeep(k) {
     setTimeout(function () { try { gain.disconnect(); } catch (e) { } }, Math.ceil((t - t0) * 1000) + 80);
   } catch (e) { }
 }
-/* 行情采样点解析（腾讯 a[]：3=现价 32=涨跌幅 47=涨停价 48=跌停价；47/48 缺失=无涨跌幅限制，按 0 处理） */
+/* 行情采样点解析（腾讯 a[]：3=现价 32=涨跌幅 33=今日最高 47=涨停价 48=跌停价；
+   47/48 缺失=无涨跌幅限制，按 0 处理）。
+   ★ 2026-10-22 新增 hi（今日最高价）：判定「盘中是否曾触及涨停」必须用当日最高价，
+     不能用逐帧采样价 —— 12 秒一层会漏掉瞬间触板后立刻炸开的票（那种恰恰是用户要排除的）。 */
 function anomParse(a) {
   if (!a) return null;
   var p = parseFloat(a[3]);
   if (!(p > 0)) return null;
-  return { p: p, pct: parseFloat(a[32]), ztp: parseFloat(a[47]) || 0, dtp: parseFloat(a[48]) || 0 };
+  var hi = parseFloat(a[33]);
+  return {
+    p: p, pct: parseFloat(a[32]), hi: (isFinite(hi) && hi > 0) ? hi : 0,
+    ztp: parseFloat(a[47]) || 0, dtp: parseFloat(a[48]) || 0
+  };
 }
 /* 监控池：涨停 ∪ 炸板 ∪ 跌停 ∪ 涨幅榜 ∪ 跌幅榜 ∪ 涨幅>5% 清单，去重剔非 A 股代码，≤400 只 */
 function anomPoolCodes() {
@@ -30608,6 +31095,9 @@ function anomPoll(tries) {
     if (ref) anomScan(snap, ref, now);       /* 无 60 秒基线（刚启动）→ 本轮只采样不判异动 */
     ANOM.snap = snap; ANOM.t = now;
     ANOM.hist.push({ t: now, q: snap });
+    /* ★ 2026-10-22：把同一份快照顺手喂给「🚀 强势异动」的长历史（13 分钟）——
+       零新增请求；它只存价格，5 分钟涨速由 m5sSpeed 自算。 */
+    try { m5sSample(snap, now); } catch (eM5s) { }
     while (ANOM.hist.length && now - ANOM.hist[0].t > ANOM_RULE.winMs + 30000) ANOM.hist.shift();
     anomSave(); anomRender();
   }).catch(function () { ANOM.busy = false; ANOM.err = '本轮取数异常（下轮自动重试）'; anomRender(); });
@@ -30989,6 +31479,587 @@ if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', anomStart); else anomStart();
 }
 
+
+
+/* =====================================================================
+   🚀 强势异动工作区（#m5q） · 2026-10-22
+   ---------------------------------------------------------------------
+   用户需求（逐字）：「搜索全网，交叉验证3遍，主板、科创板、创业板，5分钟k线强势
+   异动的范围，增加一个工作区，命名强势异动，并在顶部做超链接 #m5，放在涨停复盘
+   工作区后，格式参考涨停复盘工作区，按照板块分类」
+
+   ⚠️ 锚点说明：#m5 已被「⑤ 涨停复盘」占用。若新卡复用 #m5，两个区块的
+   jumpTo / scrollspy / content-visibility 落点会互相打架（顶部导航高亮也会错）。
+   故本卡锚点用 **#m5q**，导航项与跳转一律指向 #m5q。
+
+   ── 阈值（主板 10cm，用户给定；三轮交叉验证见 SKILL §102）──
+     ＞5%        极速脉冲 · 强攻击（无量快速拉升多为诱多 / 对倒）
+     3% ~ 5%     强势异动（半路 / 首板重点观察区）★ 本卡主区
+     1.5% ~ 3%   温和走强（趋势 / 中军，适合低吸，不适合半路打板）
+     0 ~ 1.5%    小幅异动 · 力度偏弱（不作短线选股依据）
+     ＜0%        走弱回落（承接不足、抛压出来）
+   20cm（创业板 300 / 科创板 688）同等强度**上浮一档**：
+     ＞7% / 4%~7% / 2%~4% / 0~2% / ＜0
+
+   ── 展示口径（2026-10-22 三次修订）──
+   ① 用户「下跌的异动不要列出」→ 走弱回落与跌停不出表；
+   ② 用户「只列出强势上涨异动，小幅异动不需要列出。类似涨停板，一直保留到下个交易日
+      开盘再更换」→ **只保留 pulse / strong 两档**（温和、小幅、走弱、跌停、已封板全部
+      不列出，剔除数进状态栏），并把「瞬时快照」改成**当日累积留存**：
+      当天触发过强势异动的票全部留档，盘中回落也不消失（用「仍强 / 已回落」标现状），
+      收盘不清空，次个交易日开盘第一笔行情到货才换场（判定用采样日期，不用日历日）。
+   ③ 用户「现在筛选出来的都是涨停或者涨停炸板的异动，我需要的是盘中出现的 5 分钟涨幅
+      主板 ≥3%（20cm ≥4%）但未触及涨停、收盘价收涨的股票」→ 再加两道闸门：
+      **未触及涨停**（今日最高价 a[33] ＜ 涨停价，封板与炸板一视同仁）+
+      **最新价收涨**（涨幅 ＞ 0，平盘也剔除）。入表、出表各筛一次，见 m5sRows / m5sKeepRows。
+   分档函数 m5sTier 的五档定义**一个都不删**：它靠 tb[最后一项] 兜负数，
+   删 down 会把 −2% 判成「小幅」；删 weak 会把 0.5% 判成「温和」。过滤只发生在出表处。
+
+   ── 数据链路：零新增请求 ──
+   ANOM（⑦ 盘中异动）本来就在每 12 秒用腾讯批量报价采样一次监控池
+   （≤400 只：涨停 ∪ 炸板 ∪ 跌停 ∪ 涨幅榜前100 ∪ 跌幅榜前100 ∪ 涨幅>5%）。
+   本模块在 anomPoll 收尾处顺手把 {code: price} 压入自己的长历史（保留 13 分钟），
+   再用「最接近 t−5min 的那一层」算涨速 —— 与通达信 / 东财「涨速」同一个公式：
+       涨速 = (现价 − 5 分钟前价) / 5 分钟前价 × 100%
+
+   ── 为什么不用现成的「涨速」字段 ──
+   东财 clist 的 f22 就是涨速，但本机 clist 通道是「连上即断」（实测已熔断，
+   CLIST_DOWN_AT 生效），f22 涨速榜取不到；push2ex 盘口异动返回 data:null。
+   故自建滚动基线：口径完全可控、真实跨度可披露，不依赖第三方是否给这个字段。
+   ===================================================================== */
+
+var M5S_RULE = {
+  winMs: 300000,        /* 回看窗口：5 分钟（用户口径） */
+  keepMs: 780000,       /* 历史保留 13 分钟（5 分钟回看 + 8 分钟容错） */
+  spanLo: 240000,       /* 参考层与最新层的实际跨度下限 4 分钟 */
+  spanHi: 420000,       /* 上限 7 分钟（12 秒采样，正常落 5.0~5.2 分钟） */
+  staleMs: 90000,       /* 最新一层超过 90 秒没更新 → 标「截至 HH:MM:SS」 */
+  paintMs: 15000,       /* 重绘节流 15 秒（采样 12 秒一轮，不必每轮重画） */
+  rowsMax: 260,         /* 单卡最多渲染行数 */
+  lsKey: 'wb_m5s_v1'
+};
+var M5S = { hist: [], snapAt: 0, lastPaint: 0, lastSave: 0, timer: null, fp: '', err: '',
+  dropDn: 0, dropLimit: 0, dropNeg: 0, dropUnk: 0 };
+
+/* 10cm 主板分档（用户表）。
+   边界语义极易写错，这里按用户原表的开闭重新对齐：
+     「＞5%」= 严格大于 5    → pulse.gt = true
+     「3%～5%」= 闭区间       → strong 用 >=（3.00 必须算式强势，不能落到温和）
+     「1.5%～3%」= 闭区间     → mild   用 >=
+     「0～1.5%」= 闭区间      → weak   用 >=
+     「＜0%」                → down 兜底
+   写法上 pulse 用严格大于、其余用大于等于，逐条比对过：5.00→强势、3.00→强势、
+   1.50→温和、0.00→小幅、-0.01→走弱。（首版把 strong/mild 也写成严格大于，
+   3.00 会漏到温和档 —— 有测试守这条。）
+
+   ★ 2026-10-22 用户要求「下跌的异动不要列出」：
+   down（走弱回落）与 floor（跌停）不再进本卡 —— 本卡只呈现向上的异动。
+   但 down 档的**定义必须保留**：m5sTier 用 tb[最后一项] 兜住负数，
+   删掉它 -0.01 会被误判成「小幅 0~1.5%」，那是口径错误（有测试守 m5sTier 仍返回 down）。
+   过滤发生在 m5sRows 出表处，不影响分档函数本身。 */
+var M5S_T10 = [
+  { k: 'pulse',  min: 5.0,       gt: true,  label: '极速脉冲', act: '强攻击' },
+  { k: 'strong', min: 3.0,       gt: false, label: '强势异动', act: '半路/首板重点' },
+  { k: 'mild',   min: 1.5,       gt: false, label: '温和走强', act: '低吸思路' },
+  { k: 'weak',   min: 0.0,       gt: false, label: '小幅异动', act: '力度偏弱' },
+  { k: 'down',   min: -Infinity, gt: true,  label: '走弱回落', act: '承接不足' }
+];
+/* 20cm（创业板 / 科创板）同等强度上浮一档（用户表）：＞7 / 4~7 / 2~4 / 0~2 / ＜0 */
+var M5S_T20 = [
+  { k: 'pulse',  min: 7.0,       gt: true,  label: '极速脉冲', act: '强攻击' },
+  { k: 'strong', min: 4.0,       gt: false, label: '强势异动', act: '半路/首板重点' },
+  { k: 'mild',   min: 2.0,       gt: false, label: '温和走强', act: '低吸思路' },
+  { k: 'weak',   min: 0.0,       gt: false, label: '小幅异动', act: '力度偏弱' },
+  { k: 'down',   min: -Infinity, gt: true,  label: '走弱回落', act: '承接不足' }
+];
+
+function m5sTier(spd, lim) {
+  if (spd == null || isNaN(spd)) return null;
+  var tb = (lim === '20cm') ? M5S_T20 : M5S_T10;
+  for (var i = 0; i < tb.length; i++) {
+    var ok = tb[i].gt ? (spd > tb[i].min) : (spd >= tb[i].min);
+    if (ok) return tb[i];
+  }
+  return tb[tb.length - 1];
+}
+/* 5 分钟涨速：返回 null = 基线不足 / 该股不在 5 分钟前那一层 → 显示「累积中」，绝不印 0 */
+function m5sSpeed(code, now) {
+  var H = M5S.hist;
+  if (!H.length) return null;
+  var last = H[H.length - 1];
+  var pNow = last.p[code];
+  if (!(pNow > 0)) return null;
+  /* 基准用**最后一层的时间**而不是 now：收盘后 now 早已越过所有样本，
+     若用 now−5min 会找不到参考层 → 全卡变空。用 last.t−5min 则盘后读到的
+     就是「最后时刻的 5 分钟涨速」，配合 stale 标注「截至 HH:MM:SS」如实说明。 */
+  var target = last.t - M5S_RULE.winMs, ref = null, i;
+  for (i = H.length - 1; i >= 0; i--) { if (H[i].t <= target) { ref = H[i]; break; } }
+  if (!ref) return null;
+  var p0 = ref.p[code];
+  if (!(p0 > 0)) return null;
+  var span = last.t - ref.t;
+  if (span < M5S_RULE.spanLo || span > M5S_RULE.spanHi) return null;
+  return { pct: (pNow / p0 - 1) * 100, from: ref.t, to: last.t, span: span };
+}
+/* 被 anomPoll 调用：每 12 秒一层，只存价格（不存整个 snap，省内存） */
+function m5sSample(snap, now) {
+  if (!snap) return;
+  var layer = {}, k;
+  for (k in snap) { if (snap[k] && snap[k].p > 0) layer[k] = snap[k].p; }
+  if (!layer || !Object.keys(layer).length) return;
+  M5S.hist.push({ t: now, p: layer });
+  var cut = now - M5S_RULE.keepMs;
+  while (M5S.hist.length && M5S.hist[0].t < cut) M5S.hist.shift();
+  M5S.snapAt = now;
+  if (now - M5S.lastSave > 60000) { M5S.lastSave = now; m5sSave(); }
+}
+/* 当日键：跨日必须丢弃 —— 昨天的价格拿来算今天的涨速是彻底的错 */
+function m5sDayKey() {
+  var d = new Date();
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+/* 落盘只存最近 7 分钟（够 5 分钟回看 + 容错），每 60 秒一次 —— 刷新页面不丢基线 */
+function m5sSave() {
+  try {
+    var now = Date.now(), keep = [], i;
+    for (i = 0; i < M5S.hist.length; i++) {
+      if (now - M5S.hist[i].t <= 420000 && now - M5S.hist[i].t >= -5000) keep.push(M5S.hist[i]);
+    }
+    if (keep.length < 2) return;
+    localStorage.setItem(M5S_RULE.lsKey, JSON.stringify({ d: m5sDayKey(), h: keep }));
+  } catch (e) { }
+}
+function m5sLoad() {
+  try {
+    var raw = localStorage.getItem(M5S_RULE.lsKey);
+    if (!raw) return false;
+    var o = JSON.parse(raw);
+    if (!o || o.d !== m5sDayKey() || !o.h || !o.h.length) return false;
+    var now = Date.now(), h = [];
+    o.h.forEach(function (x) {
+      if (x && x.t && x.p && now - x.t <= M5S_RULE.keepMs && now - x.t >= -5000) h.push(x);
+    });
+    if (h.length < 2) return false;
+    h.sort(function (a, b) { return a.t - b.t; });
+    M5S.hist = h;
+    return true;
+  } catch (e) { return false; }
+}
+function m5sHm(t) {
+  var d = new Date(t);
+  return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+}
+/* 距涨停：已封板返回 0 以下；无涨停价（无涨跌幅限制）返回 null */
+function m5sDistZt(r) {
+  if (!(r.ztp > 0) || !(r.p > 0)) return null;
+  return (r.ztp / r.p - 1) * 100;
+}
+/* 取行：从 ANOM.snap（当前快照，与采样同源）遍历监控池 */
+function m5sRows() {
+  var snap = (typeof ANOM !== 'undefined' && ANOM && ANOM.snap) ? ANOM.snap : null;
+  if (!snap) return null;
+  var now = Date.now();
+  var secM = {}, nameM = {};
+  try { secM = anomSecMap(); } catch (e1) { }
+  try { nameM = anomNameMap(); } catch (e2) { }
+  var out = [], c;
+  M5S.dropDn = 0; M5S.dropLimit = 0; M5S.dropNeg = 0; M5S.dropUnk = 0;
+  for (c in snap) {
+    var s = snap[c];
+    if (!s || !(s.p > 0)) continue;
+    var lim = ztLimitOf(c, nameM[c] || '');
+    /* 北交所 30cm 不收录：用户只给了 10cm 与 20cm 两套阈值，不按比例臆造第三套 */
+    if (lim === '30cm') continue;
+    var sp = m5sSpeed(c, now);
+    if (!sp) continue;
+    var pctOk = (s.pct != null && !isNaN(s.pct));
+    var sealed = (s.ztp > 0 && s.p >= s.ztp - 0.001);
+    var floor_ = (s.dtp > 0 && s.p <= s.dtp + 0.001);
+    /* 今日最高价（a[33]）：缺字段时退化为现价 —— 宁可用价代高，也不能凭空判成「没触板」 */
+    var hi = (s.hi > 0) ? s.hi : s.p;
+    /* 「曾触及涨停」= 当日最高价摸到涨停价。封板与炸板都算，一次摸到就算，不做时点区分 */
+    var touched = (s.ztp > 0 && hi >= s.ztp - 0.001);
+    var tier = sealed ? { k: 'sealed', label: '已封板', act: '涨停' }
+      : floor_ ? { k: 'floor', label: '跌停', act: '跌停' }
+        : m5sTier(sp.pct, lim);
+    if (!tier) continue;
+    /* 用户 2026-10-22：「下跌的异动不要列出」→ 走弱回落与跌停一律不进本卡。
+       放在这里过滤，m5sTier 的五档定义保持完整（否则负数会被兜底成「小幅」）。 */
+    if (tier.k === 'down' || tier.k === 'floor') { M5S.dropDn++; continue; }
+    /* ★ 用户 2026-10-22 第三次收窄（本条为核心）：
+         「筛出来的都是涨停或者涨停炸板的异动，我需要的是盘中出现的 5 分钟涨幅达强势档、
+           但未触及涨停、收盘价收涨的股票」→
+       ① 曾触及涨停（封板 / 炸板）→ 剔除，且**不看当前是否还封着**；
+       ② 最新涨幅 ≤ 0（收跌或平盘）→ 剔除。 */
+    if (touched) {
+      M5S.dropLimit++;
+      /* 只有「确实达过强势档」或「已封板」的才记台账；触板后暴跌到 −5% 的票不算被口径挡的强势异动 */
+      if (sealed || m5sIsStrongTier(tier.k)) m5sBlkMark('limit', c);
+      continue;
+    }
+    if (pctOk && !(s.pct > 0)) {
+      M5S.dropNeg++;
+      if (m5sIsStrongTier(tier.k)) m5sBlkMark('neg', c);
+      continue;
+    }
+    if (!pctOk) M5S.dropUnk++;   /* 涨幅字段缺失：不臆断，保留但计数披露 */
+    out.push({
+      c: c, n: nameM[c] || c, sec: secM[c] || '未分类',
+      spd: (sealed || floor_) ? 0 : sp.pct,
+      span: sp.span, at: sp.to, stale: now - sp.to,
+      pct: pctOk ? s.pct : null,
+      p: s.p, hi: hi, ztp: s.ztp || 0, lim: lim, tier: tier,
+      sealed: sealed, floor: floor_, touched: touched
+    });
+  }
+  return out;
+}
+function m5sSpdCls(v) {
+  if (v == null || isNaN(v)) return 'flat';
+  if (v > 0.005) return 'up';
+  if (v < -0.005) return 'dn';
+  return 'flat';
+}
+function m5sPctCell(v) {
+  if (v == null || isNaN(v)) return '<span class="flat">—</span>';
+  var cls = m5sSpdCls(v);
+  return '<span class="' + (cls === 'flat' ? 'flat' : cls) + '">' + (v >= 0 ? '+' : '') + v.toFixed(2) + '%</span>';
+}
+/* ===== 当日留存（2026-10-22）：像涨停板池一样，收盘不清空，次日开盘首笔行情才更换 =====
+   用户原话：「类似涨停板，一直保留到下个交易日开盘再更换」。
+   原先本卡读的是「瞬时 5 分钟涨速」—— 票一旦回落就从榜上消失，收盘后整卡清空。
+   现在改成：当日**触发过**强势异动（极速 / 强势）的股票全部并入保留表，
+   与 ⑤ 涨停复盘的涨停池同一种存在方式；换场不用 Date.now() 的日历日，
+   而用**最后一层采样的日期** —— 周末 / 节假日没有采样，日期键不变，
+   上一交易日的存档就原样留着；次日开盘第一笔行情到货、日期键变了，才清空重建。
+   ★ 2026-10-22 第三次收窄后，入表与出表各加一道「未触板 + 收涨」闸门：
+     入表处（m5sRows）挡住当轮就不合规的；出表处（m5sKeepRows）挡住入表后才摸板 / 转跌的。
+     两道闸门都靠「今日最高价 vs 涨停价」判触板，不靠逐帧采样。 */
+/* ver：存档格式版本。
+   v2（2026-10-22 第三次收窄）起每条记录带 hi=今日最高价，用于判「是否曾触及涨停」。
+   v1 存档没有 hi，无法区分「炸板回落的票」与「从未摸板的票」—— 用现价顶替会把炸板的
+   重新放回榜里，正好是用户这次要修的问题。因此 v1 一律丢弃，等次日开盘按新口径重建；
+   宁可空着，也不给一份判断不了的结果。 */
+var M5S_KEEP_RULE = { lsKey: 'wb_m5s_keep_v1', saveMs: 60000, ver: 2 };
+var M5S_KEEP = { d: '', first: 0, map: {}, at: 0, blk: { limit: {}, neg: {} } };
+/* 当日「被口径挡掉」台账（code → 1，去重）。为什么不直接数 M5S.dropLimit：
+   那个计数每轮重置、且含封板这类从未达强势档的票，读出来会失真。
+   这里只记**5 分钟涨速确实达过强势档**、却因触板 / 收跌被挡的票 —— 这才是用户关心的那批。 */
+function m5sBlkMark(kind, code) {
+  if (!code) return;
+  if (!M5S_KEEP.blk) M5S_KEEP.blk = { limit: {}, neg: {} };
+  if (!M5S_KEEP.blk[kind]) M5S_KEEP.blk[kind] = {};
+  M5S_KEEP.blk[kind][code] = 1;
+}
+function m5sBlkN(kind) {
+  var m = (M5S_KEEP.blk && M5S_KEEP.blk[kind]) || {};
+  return Object.keys(m).length;
+}
+function m5sDayKeyOf(t) {
+  var d = new Date(t);
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+/* 强势档下界：10cm 3.0 / 20cm 4.0（从分档表取，不硬编码） */
+function m5sStrongFloor(lim) {
+  var tb = (lim === '20cm') ? M5S_T20 : M5S_T10;
+  return tb[1].min;
+}
+/* 只认两档：极速脉冲 / 强势异动。
+   ★ 2026-10-22 第三次收窄：已封板不再进榜 —— 用户要的是「未触及涨停」的异动，
+     封板与炸板（都摸过涨停价）已在 m5sRows 里按今日最高价剔除，这里同步收紧语义。 */
+function m5sIsStrongTier(k) { return k === 'pulse' || k === 'strong'; }
+function m5sKeepLoad() {
+  try {
+    var raw = localStorage.getItem(M5S_KEEP_RULE.lsKey);
+    if (!raw) return false;
+    var o = JSON.parse(raw);
+    if (!o || !o.d || !o.map || !Object.keys(o.map).length) return false;
+    if (o.v !== M5S_KEEP_RULE.ver) {
+      /* 旧格式（无 hi）→ 丢弃重建，不做「用现价冒充最高价」的猜测 */
+      try { localStorage.removeItem(M5S_KEEP_RULE.lsKey); } catch (eV) { }
+      return false;
+    }
+    M5S_KEEP.d = o.d; M5S_KEEP.first = o.first || 0; M5S_KEEP.map = o.map; M5S_KEEP.at = o.at || 0;
+    M5S_KEEP.blk = (o.blk && o.blk.limit && o.blk.neg) ? o.blk : { limit: {}, neg: {} };
+    return true;
+  } catch (e) { return false; }
+}
+function m5sKeepSave() {
+  try {
+    localStorage.setItem(M5S_KEEP_RULE.lsKey,
+      JSON.stringify({ v: M5S_KEEP_RULE.ver, d: M5S_KEEP.d, first: M5S_KEEP.first, map: M5S_KEEP.map, at: M5S_KEEP.at, blk: M5S_KEEP.blk }));
+  } catch (e) { }
+}
+function m5sKeepClear() {
+  M5S_KEEP.map = {}; M5S_KEEP.first = 0; M5S_KEEP.at = 0;
+  M5S_KEEP.blk = { limit: {}, neg: {} };   /* 换场必须连台账一起清，否则昨日剔除数会算进今天 */
+}
+/* 把当轮达标行并入留存表。没有实时采样（H 为空）就完全不动存档。 */
+function m5sKeepUpdate(rows, now) {
+  var H = M5S.hist;
+  if (!H.length || !rows || !rows.length) return 0;
+  var d = m5sDayKeyOf(H[H.length - 1].t), i;
+  if (!M5S_KEEP.d) { M5S_KEEP.d = d; }
+  else if (M5S_KEEP.d !== d) { m5sKeepClear(); M5S_KEEP.d = d; }   /* ★ 新交易日首笔 → 换场 */
+  var add = 0;
+  for (i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    if (!m5sIsStrongTier(r.tier.k)) continue;
+    var rec = M5S_KEEP.map[r.c];
+    if (!rec) {
+      rec = M5S_KEEP.map[r.c] = {
+        c: r.c, n: r.n, sec: r.sec, lim: r.lim,
+        best: r.spd, sealed: !!r.sealed, tk: r.tier.k,
+        first: now, last: now, pct: r.pct, p: r.p, hi: r.hi || 0, ztp: r.ztp
+      };
+      if (!M5S_KEEP.first) M5S_KEEP.first = now;
+      add++;
+    } else {
+      if (r.spd > rec.best) { rec.best = r.spd; rec.tk = r.tier.k; }
+      rec.sealed = !!r.sealed;
+      rec.last = now; rec.pct = r.pct; rec.p = r.p; rec.ztp = r.ztp;
+      /* 今日最高价只增不减：留存跨刷新仍在时，用它守住「是否曾触板」的判定 */
+      if (r.hi > (rec.hi || 0)) rec.hi = r.hi;
+      if (r.n && r.n !== rec.n) rec.n = r.n;
+      /* 行业后补：从「未分类 / 其他」升到真实板块后就固定下来，不再回退 */
+      if (r.sec && rec.sec !== r.sec && (rec.sec === '未分类' || rec.sec === '其他')) rec.sec = r.sec;
+    }
+  }
+  M5S_KEEP.at = now;
+  if (add || now - (M5S.lastKeepSave || 0) > M5S_KEEP_RULE.saveMs) { M5S.lastKeepSave = now; m5sKeepSave(); }
+  return add;
+}
+/* 留存表 → 展示行。价格 / 涨跌幅 / 是否封板 用**当前快照**补（票掉出达标线后仍要看它现在怎么样），
+   当前 5 分钟涨速现算 → 决定「仍强 / 已回落」。无实时采样时 still=null，绝不冒充。 */
+function m5sKeepRows(now) {
+  var snap = (typeof ANOM !== 'undefined' && ANOM && ANOM.snap) ? ANOM.snap : null;
+  var secM = {};
+  try { secM = anomSecMap(); } catch (e1) { }
+  var out = [], c;
+  M5S.keepDropLimit = 0; M5S.keepDropNeg = 0; M5S.keepUnk = 0;
+  for (c in M5S_KEEP.map) {
+    var r = M5S_KEEP.map[c];
+    if (!r || !r.c) continue;
+    var s = snap ? snap[c] : null;
+    var p = r.p, pct = r.pct, ztp = r.ztp;
+    /* 今日最高价：留存值 ∪ 当前快照 a[33] ∪ 现价，取最大 —— 只增不减 */
+    var hi = r.hi || 0;
+    if (s && s.p > 0) {
+      p = s.p;
+      if (s.pct != null && !isNaN(s.pct)) pct = s.pct;
+      if (s.ztp > 0) ztp = s.ztp;
+      if (s.hi > hi) hi = s.hi;
+    }
+    if (p > hi) hi = p;
+    r.hi = hi;   /* 回写：跨轮、跨刷新都把「曾摸到多高」守住 */
+    /* ★ 出口复筛（用户 2026-10-22 第三次收窄）：
+       ① 曾触及涨停 → 剔除。含「先触发 3% 涨速、之后再封板/炸板」的票 ——
+          用户要的是**从未触板**的异动，进场后封板的不算；
+       ② 最新涨幅 ≤ 0（收跌 / 平盘）→ 剔除，对应「收盘价收涨」这条。 */
+    if (ztp > 0 && hi >= ztp - 0.001) { M5S.keepDropLimit++; m5sBlkMark('limit', c); continue; }
+    if (pct != null && isFinite(pct) && !(pct > 0)) { M5S.keepDropNeg++; m5sBlkMark('neg', c); continue; }
+    if (pct == null || !isFinite(pct)) M5S.keepUnk++;
+    var sealedNow = (ztp > 0 && p > 0 && p >= ztp - 0.001);
+    var sp = null;
+    try { sp = m5sSpeed(c, now); } catch (e2) { }
+    var nowSpd = sp ? sp.pct : null;
+    var still;
+    if (sealedNow) still = true;
+    else if (nowSpd == null) still = null;
+    else still = (nowSpd >= m5sStrongFloor(r.lim));
+    var sec = r.sec;
+    if ((!sec || sec === '未分类' || sec === '其他') && secM[c]) sec = secM[c];
+    out.push({
+      c: c, n: r.n, sec: sec || '未分类', lim: r.lim,
+      best: r.best, nowSpd: nowSpd, still: still, sealed: sealedNow, tk: r.tk,
+      first: r.first, last: r.last, pct: pct, p: p, hi: hi, ztp: ztp,
+      span: sp ? sp.span : null, at: sp ? sp.to : null
+    });
+  }
+  return out;
+}
+var M5S_TIER_TXT = { pulse: '极速脉冲', strong: '强势异动', sealed: '已封板' };
+function m5sRowHtml(r) {
+  var tk = r.tk || (r.tier && r.tier.k) || (r.sealed ? 'sealed' : 'strong');
+  var lbl = M5S_TIER_TXT[tk] || '强势异动';
+  var best = (r.best != null && isFinite(r.best)) ? r.best : (r.spd != null ? r.spd : null);
+  var nowSpd = (r.nowSpd !== undefined) ? r.nowSpd : (r.spd != null ? r.spd : null);
+  var still = (r.still === undefined) ? true : r.still;
+  /* 「当前仍强」页读现算涨速；「今日留存」页读历史最佳 —— 两者共用这一套行 */
+  var show = (r.mode === 'now') ? nowSpd : best;
+  if (tk === 'sealed' && !(show > 0)) show = null;
+  var spTxt = (show == null) ? '<span class="flat">—</span>'
+    : '<span class="' + m5sSpdCls(show) + '">' + (show >= 0 ? '+' : '') + show.toFixed(2) + '%</span>';
+  var dz = m5sDistZt(r);
+  var dzTxt;
+  if (dz == null) dzTxt = '<span class="flat">—</span>';
+  else if (dz <= 0.001) dzTxt = '<span class="up" style="font-weight:700">已封板</span>';
+  else dzTxt = '<span class="flat">距板 ' + dz.toFixed(2) + '%</span>';
+  var stTxt;
+  if (r.sealed) stTxt = '<span class="m5s-st on">封板</span>';
+  else if (still === true) stTxt = '<span class="m5s-st on">仍强</span>';
+  else if (still === false) stTxt = '<span class="m5s-st off">已回落</span>';
+  else stTxt = '<span class="m5s-st">—</span>';
+  var limTag = (r.lim === '20cm') ? '<span class="badge b-r">20cm</span>'
+    : (r.lim === '5cm') ? '<span class="badge b-b">ST5</span>' : '';
+  var tip = r.n + (r.lim === '20cm' ? '（20cm 档）' : (r.lim === '5cm' ? '（ST 5cm，沿用 10cm 档）' : '（10cm 档）')) + '\n' +
+    '今日最佳 5 分钟涨速 ' + (best == null ? '—' : ((best >= 0 ? '+' : '') + best.toFixed(2) + '%')) +
+    (r.span != null ? '（实际跨 ' + (r.span / 60000).toFixed(1) + ' 分钟）' : '') + '\n' +
+    '当前 5 分钟涨速 ' + (nowSpd == null ? '—（无实时采样）' : ((nowSpd >= 0 ? '+' : '') + nowSpd.toFixed(2) + '%')) + '\n' +
+    '首次触发 ' + (r.first ? m5sHm(r.first) : '—') + ' · 最近达标 ' + (r.last ? m5sHm(r.last) : '—') + '\n' +
+    '今日涨幅 ' + (r.pct == null ? '—' : ((r.pct >= 0 ? '+' : '') + r.pct.toFixed(2) + '%')) + '\n' +
+    '板块：' + r.sec;
+  return '<div class="g-row" data-wbbcode="' + esc(r.c) + '">' +
+    '<span class="m5t ' + esc(tk) + '" title="' + esc(tip) + '">' + esc(lbl) + '</span>' +
+    '<span class="mono">' + esc(r.c) + '</span>' +
+    '<span><b class="nm" data-wbbjump="' + esc(r.c) + '" style="cursor:pointer" title="点击打开生命周期工作台诊断该股">' + esc(r.n) + '</b>' + limTag + '</span>' +
+    '<span class="spd">' + spTxt + '</span>' +
+    '<span style="min-width:48px;display:inline-block">' + stTxt + '</span>' +
+    '<span style="min-width:56px;display:inline-block">' + m5sPctCell(r.pct) + '</span>' +
+    '<span style="min-width:82px;display:inline-block">' + dzTxt + '</span>' +
+    '</div>';
+}
+function m5sCountBy(rows) {
+  var c = { pulse: 0, strong: 0, sealed: 0, mild: 0, weak: 0, down: 0, floor: 0 };
+  rows.forEach(function (r) { var k = r.tk || (r.tier && r.tier.k); if (c[k] != null) c[k]++; });
+  return c;
+}
+/* 分组表：板块键用 anomSecMap → secIndOf（= ⑤ 涨停复盘 / 7.5 板块总表同一把尺） */
+function m5sGroupHtml(rows) {
+  if (!rows.length) return '<div class="m5-empty">当前没有落在该口径内的个股。口径三条同时满足：① 盘中 5 分钟涨速达强势档（10cm ≥3% / 20cm ≥4%）；② 今日最高价<b>未触及涨停</b>（封板、炸板都不列）；③ 最新价<b>收涨</b>。若刚开盘，也可能是基线尚在累积。</div>';
+  var g = {}, order = [];
+  rows.forEach(function (r) {
+    var k = r.sec || '未分类';
+    if (!g[k]) { g[k] = []; order.push(k); }
+    g[k].push(r);
+  });
+  function m5sIsOther(n) { return n === '其他' || n === '未分类' || n === '—'; }
+  function bestOf(rs) { var m = 0; rs.forEach(function (x) { var v = (x.best != null ? x.best : x.spd); if (v > m) m = v; }); return m; }
+  order.sort(function (a, b) {
+    var oa = m5sIsOther(a) ? 1 : 0, ob = m5sIsOther(b) ? 1 : 0;
+    if (oa !== ob) return oa - ob;
+    if (g[b].length !== g[a].length) return g[b].length - g[a].length;
+    return bestOf(g[b]) - bestOf(g[a]);
+  });
+  var html = order.map(function (name) {
+    var gs = g[name].slice().sort(function (a, b) {
+      var va = (a.best != null ? a.best : a.spd), vb = (b.best != null ? b.best : b.spd);
+      return (vb || 0) - (va || 0);
+    });
+    var cn = m5sCountBy(gs);
+    var top = bestOf(gs);
+    var chips = '';
+    if (cn.pulse) chips += '<span class="tag tag-r">极速 ' + cn.pulse + '</span>';
+    if (cn.strong) chips += '<span class="tag tag-y">强势 ' + cn.strong + '</span>';
+    return '<div class="grp"><div class="grp-h"><span class="gn">' + esc(name) + '</span>' +
+      chips +
+      '<span class="flat">' + gs.length + '只</span>' +
+      (top > 0 ? '<span class="up mono">最强 +' + top.toFixed(2) + '%</span>' : '') +
+      '</div><div class="grp-b">' + gs.slice(0, M5S_RULE.rowsMax).map(m5sRowHtml).join('') + '</div></div>';
+  }).join('');
+  var n = rows.length;
+  if (n > M5S_RULE.rowsMax * 4) {
+    html += '<div class="note" style="margin:6px 0">仅渲染按板块归并的前 ' + (M5S_RULE.rowsMax * 4) + ' 行（当前 ' + n + ' 只）。</div>';
+  }
+  return html;
+}
+function m5sBarHtml(rows, layers, need, mode) {
+  var cn = m5sCountBy(rows);
+  var segs = [];
+  var mon = 0;
+  try { mon = anomPoolCodes().length; } catch (e) { mon = 0; }
+  if (mode === 'now') {
+    segs.push('<span class="cell">当前仍强 <b>' + rows.length + '</b> 只</span>');
+  } else {
+    segs.push('<span class="cell">今日强势 <b>' + rows.length + '</b> 只（留存）</span>');
+  }
+  segs.push('<span class="cell">极速 <b>' + cn.pulse + '</b> · 强势及以上 <b>' + (cn.pulse + cn.strong) + '</b></span>');
+  segs.push('<span class="cell">监控池 <b>' + mon + '</b> 只</span>');
+  if (mode !== 'now') {
+    segs.push('<span class="cell">基线 <b>' + layers + '</b>/' + need + ' 层</span>');
+    if (M5S_KEEP.first) segs.push('<span class="cell">自 ' + esc(m5sHm(M5S_KEEP.first)) + ' 起累积</span>');
+  }
+  /* 剔除披露（不静默）：口径把两类票挡在外面 —— 曾触板、收跌。
+     留存页读**当日去重台账**（m5sBlkN），实时页读当轮计数（drop*）。 */
+  var dl = (mode === 'now') ? (M5S.dropLimit || 0) : m5sBlkN('limit');
+  var dg = (mode === 'now') ? (M5S.dropNeg || 0) : m5sBlkN('neg');
+  if (dl || dg) {
+    var ds = [];
+    if (dl) ds.push('触板 ' + dl);
+    if (dg) ds.push('收跌 ' + dg);
+    segs.push('<span class="cell flat" title="本卡口径：5 分钟涨速达强势档（10cm ≥3% / 20cm ≥4%）· 今日最高价未触及涨停 · 最新价收涨。此处为当日被该口径挡掉的去重只数（含涨停封板与涨停炸板），不是行情缺失">已剔除 ' + ds.join(' · ') + ' 只' + (mode === 'now' ? '（当轮）' : '（当日累计）') + '</span>');
+  }
+  if (M5S.snapAt) segs.push('<span class="cell">采样 ' + esc(m5sHm(M5S.snapAt)) + '</span>');
+  if (mode !== 'now' && layers > 0 && layers < need) {
+    var leftMin = Math.ceil((need - layers) * 12 / 60);
+    segs.push('<span class="cell" style="color:#fbbf24">基线累积中 · 还需约 ' + leftMin + ' 分钟</span>');
+  }
+  return '<div class="m5-bar" id="m5sBar">' + segs.join('') + '</div>';
+}
+function m5sRender() {
+  var boxS = $('m5qgrp'), boxN = $('m5qnow');
+  if (!boxS && !boxN) return;
+  var now = Date.now();
+  var need = Math.ceil(M5S_RULE.winMs / 12000) + 1;
+  var layers = M5S.hist.length;
+  var rows = null;
+  try { rows = m5sRows(); } catch (eR) { M5S.err = String(eR && eR.message || eR); rows = null; }
+  /* 先把当轮达标行并入当日留存，再统一从留存表出表 —— 掉出达标线的票不会消失 */
+  if (rows) { try { m5sKeepUpdate(rows, now); } catch (eK) { } }
+  var keep = [];
+  try { keep = m5sKeepRows(now); } catch (eK2) { keep = []; }
+
+  /* 行业补查：复用 ⑤ / 7.5 同一条 F10 批量链路（gt5LoadIndustries + wb_gt5_indmap 7 天缓存 +
+     全站去重表 ZTI_REQ）。用留存行去补（实时行已先并入留存，覆盖更全）。 */
+  if (keep.length) { try { ztIndEnsure(keep); } catch (eInd) { } }
+
+  var head = '';
+  if (M5S.err) head += '<div class="note" style="margin:6px 0;color:#fbbf24">计算异常：' + esc(M5S.err) + '</div>';
+  var lastT = M5S.hist.length ? M5S.hist[M5S.hist.length - 1].t : 0;
+  var stale = (lastT && (now - lastT > M5S_RULE.staleMs)) ? lastT : 0;
+  if (!lastT && keep.length) {
+    head += '<div class="note" style="margin:6px 0">当前无实时行情（非交易时段 / 通道未起）—— 下方为 <b>' +
+      esc(M5S_KEEP.d || '—') + '</b> 的强势异动存档，收盘后保留，<b>次日开盘首笔行情到货才更换</b>。</div>';
+  } else if (stale) {
+    head += '<div class="note" style="margin:6px 0">行情采样停在 <b>' + esc(m5sHm(stale)) +
+      '</b>（非交易时段或通道暂时中断）—— 「仍强 / 已回落」按该时刻的 5 分钟涨速判定。</div>';
+  }
+
+  if (rows == null && !keep.length) {
+    var msg = (typeof ANOM !== 'undefined' && ANOM && ANOM.snap)
+      ? '<div class="loading">正在计算 5 分钟涨速…</div>'
+      : '<div class="loading">等待行情首轮采样（与 ⑦ 盘中异动共用一份腾讯批量报价）…</div>';
+    /* 非交易时段没有采样，说清楚「为什么空」—— 不要让「等待采样」看起来像卡住了 */
+    if (typeof isTradingHours === 'function' && !isTradingHours()) {
+      msg = '<div class="loading">当前非交易时段，无实时行情。留存按「5 分钟涨速达强势档 + 今日未触及涨停 + 最新价收涨」三条口径，在次个交易日开盘后重建。</div>';
+    }
+    if (boxS) setHtml(boxS, head + msg);
+    if (boxN) setHtml(boxN, head + msg);
+    return;
+  }
+  /* 留存页：今日全部强势异动；实时页：当前仍在强势档（或封板）的那些 */
+  var allKeep = keep.slice().sort(function (a, b) { return (b.best || 0) - (a.best || 0); });
+  var nowKeep = allKeep.filter(function (r) { return r.still === true; }).map(function (r) {
+    var o = {}; for (var k in r) o[k] = r[k]; o.mode = 'now'; return o;
+  });
+  if (boxS) setHtml(boxS, head + m5sBarHtml(allKeep, layers, need, 'keep') + m5sGroupHtml(allKeep));
+  if (boxN) setHtml(boxN, head + m5sBarHtml(nowKeep, layers, need, 'now') + m5sGroupHtml(nowKeep));
+}
+function m5sPaint(force) {
+  var now = Date.now();
+  if (!force && now - M5S.lastPaint < M5S_RULE.paintMs) return;
+  M5S.lastPaint = now;
+  try { m5sRender(); } catch (e) { }
+}
+function m5sBoot() {
+  m5sLoad();        /* 刷新 / 重开页面先接上当日已落盘的基线，不必再等 5 分钟 */
+  m5sKeepLoad();    /* 再读当日留存：收盘后 / 隔天开盘前打开也有东西看 */
+  if (!M5S.timer) M5S.timer = setInterval(function () { try { m5sPaint(); } catch (e) { } }, 12000);
+  setTimeout(function () { try { m5sPaint(true); } catch (e) { } }, 4500);
+}
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', m5sBoot); else m5sBoot();
+}
 
 /* ===== JJ-TOP 竞价顶部工作区（移植自个股生命周期工作台 · 2026-09-22） ===== */
 /* 本块整体移植自「A股板块全景 · 个股生命周期判断工作台」的 集合竞价 工作区（7.33 模块）。

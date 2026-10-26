@@ -841,7 +841,38 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
   #wtop .wt-breadth .wt-lrow .as-more { font-size:10.5px; color:#64748b; padding:1px 7px; border-radius:999px;
     border:1px dashed rgba(148,163,184,.3); cursor:help; white-space:nowrap; }
   #wtop .wt-breadth .wt-lrow .as-none { font-size:11px; color:#64748b; }
+  /* 「K 线核对中 · 还有 N 只待核」：橙色 = 数据还在补（与 §214 的橙框同一档语义）。
+     为什么必须有这一格：新开页面时 M5K.cache 是空的，要 4~5 分钟才覆盖完池子，
+     这段时间「>3 家的板块」会从 0 个慢慢爬到五六个 —— 不写出来就会被当成功能没生效。 */
+  #wtop .wt-breadth .wt-lrow .as-wait { font-size:10.5px; color:#fdba74; padding:1px 8px; border-radius:999px;
+    border:1px solid rgba(251,146,60,.32); background:rgba(251,146,60,.07); white-space:nowrap; cursor:help; }
   #wtop .wt-breadth .wt-lrow .as-sep { color:#334155; margin:0 2px; }
+  /* ★ 2026-10-26 §216：板块五榜（涨停家数 / 板块涨幅 / 板块跌幅 / 主力净流入 / 主力净流出 各 Top5）。
+     为什么是「五列小榜」而不是把 25 个胶囊平铺在一行里：
+       ① 25 个胶囊在 1520 宽会折成 3 行、980 宽折成 5 行；更麻烦的是 flex 折行**不保证口径头跟着自己的胶囊走** ——
+          头被甩到上一行末尾，"哪 5 个属于哪个榜"就废了（§215 那行每组只有 4 个才敢平铺）；
+       ② 用户要的是「前 5」，名次必须可读：列内序号左对齐成一竖、数值右对齐成一竖，
+          第 1 名在哪一眼可指，且不受折行位置影响（网格列高对齐）。
+     形状上刻意与 .sg（读数胶囊）/ .as（板块胶囊）/ .lt（档位胶囊）都不同族 —— 这一族是**榜**：
+     它是排名的陈列，不是读数，也不参与任何打分与信号（与 一·C 板块五榜同源同口径，只差列数与排名宽度）。 */
+  #wtop .wt-breadth .sb { display:grid; grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:2px 14px; margin-top:7px; max-width:1180px; }
+  #wtop .wt-breadth .sb-col { min-width:0; }
+  #wtop .wt-breadth .sb-cap { grid-column:1/-1; font-size:10.5px; color:#64748b; line-height:1.5;
+    letter-spacing:.2px; margin-bottom:1px; }
+  #wtop .wt-breadth .sb-col + .sb-col { border-left:1px solid rgba(148,163,184,.12); padding-left:12px; }
+  #wtop .wt-breadth .sb-hd { font-size:10.5px; font-weight:700; color:#7dd3fc; letter-spacing:.2px;
+    line-height:1.55; padding-bottom:2px; margin-bottom:2px; border-bottom:1px solid rgba(56,189,248,.16);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #wtop .wt-breadth .sb-it { display:flex; align-items:baseline; gap:6px; line-height:1.55; }
+  #wtop .wt-breadth .sb-it .r { flex:0 0 11px; font-size:10px; color:#5b6b82; font-variant-numeric:tabular-nums; }
+  #wtop .wt-breadth .sb-it .n { flex:1 1 auto; min-width:0; font-size:10.5px; color:#cbd5e1;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #wtop .wt-breadth .sb-it .v { flex:0 0 auto; font-size:10.5px; font-weight:800; color:#e2e8f0;
+    font-variant-numeric:tabular-nums; }
+  #wtop .wt-breadth .sb-it .v.up { color:#ff9f97; }
+  #wtop .wt-breadth .sb-it .v.dn { color:#6ee7b7; }
+  #wtop .wt-breadth .sb-none { font-size:10.5px; color:#64748b; line-height:1.75; }
   /* 指数「较 15 分钟前」（2026-10-22 追加）：涨红 / 跌绿 / 平白 —— 用户明确指定，
      与全站涨红跌绿一致；「平」用近白（#e2e8f0）而非灰色，否则在深底上会被当成"没数据" */
   #wtop .wt-kpi .d.w15line { margin-top:1px; }
@@ -32631,6 +32662,15 @@ function wtBreadthRowRepaint() {
          长度变了才会重画，不会漏掉新出现的板块。 */
       '|' + ((typeof M5S_KEEP !== 'undefined' && M5S_KEEP)
         ? ((M5S_KEEP.d || '-') + ':' + Object.keys(M5S_KEEP.map || {}).length)
+        : '-') +
+      /* ★ 2026-10-26 §216：板块五榜也挂这条签名。
+         它的输入是 D.secUp / D.secDn / D.secAll / D.secAmt（四榜）+ D.ztGroup（涨停家数榜）。
+         为什么还要单独补长度：这三条 fetchSecList 是**三条独立请求**，可能只有一条回来 ——
+         那时 RENDER_SEQ 已在整轮开头 ++ 过了，只靠它就会漏画半天，出现「涨幅榜空了、跌幅榜有数」。
+         值本身（f3 / f62）在长度不变时也会变，这个由 RENDER_SEQ 兜底，不必拼进签名（拼了要全表遍历）。 */
+      '|' + ((typeof D !== 'undefined' && D)
+        ? ((D.secUp || []).length + '/' + (D.secDn || []).length + '/' +
+          (D.secAll || []).length + '/' + (D.secAmt || []).length)
         : '-');
   } catch (e) { sig = 'err'; }
   if (sig === WT_BREADTH_SIG) return;
@@ -33824,8 +33864,33 @@ function wtAnomSecAgg(rows, mode, min) {
       return (b.top == null ? 0 : b.top) - (a.top == null ? 0 : a.top);   /* 同家数比最强那只 */
     });
 }
+/* 还有多少只「监控池内 · 未封板 · 非北交所」的票没核到当日 5 分钟 K 线。
+   ★ 2026-10-26 §215 真机实测的刚需：新开页面时 M5K.cache 是空的，K 线每 12 秒核 12 只，
+     池内 256 只 → 覆盖一遍约 4~5 分钟。这段时间里「>3 家的板块」从 0 个缓慢爬到 5~6 个，
+     用户先看到「无（无板块 >3 家）」会直接判定「功能没生效」。
+     ⇒ 必须把「还在核对」这件事写在版面上，而不是等人 2 分钟后自己发现数字变了。
+   ⚠ 不能用 m5kProgress().wait：那个函数的 tot 只数**收涨**的票（旧口径），会严重低估待核数。
+      这里与 m5sRows 的 dropUnk 同一口径：非 30cm、非当前封板、没有当日 mg 即待核。 */
+function wtAnomSecWait() {
+  try {
+    var snap = (typeof ANOM !== 'undefined' && ANOM && ANOM.snap) ? ANOM.snap : null;
+    if (!snap) return 0;
+    var nameM = {};
+    try { nameM = anomNameMap(); } catch (e0) { nameM = {}; }
+    var today = m5sDayKey(), n = 0, c;
+    for (c in snap) {
+      var s = snap[c];
+      if (!s || !(s.p > 0)) continue;
+      if (ztLimitOf(c, nameM[c] || '') === '30cm') continue;
+      if (s.ztp > 0 && s.p >= s.ztp - 0.001) continue;   /* 当前封板不进本卡，不算待核 */
+      var e = m5kCacheOf(c);
+      if (!(e && e.mg && e.mg.date === today)) n++;
+    }
+    return n;
+  } catch (e) { return 0; }
+}
 function wtAnomSecStat() {
-  var out = { ok: false, why: '', day: '', at: 0, rowsN: 0, firstN: 0, first: [], all: [] };
+  var out = { ok: false, why: '', day: '', at: 0, rowsN: 0, firstN: 0, wait: 0, first: [], all: [] };
   try {
     if (typeof M5S_KEEP === 'undefined' || !M5S_KEEP || !M5S_KEEP.map) { out.why = 'noKeep'; return out; }
     if (!M5S_KEEP.d) { out.why = 'noDay'; return out; }
@@ -33835,6 +33900,7 @@ function wtAnomSecStat() {
     out.day = M5S_KEEP.d;
     out.at = M5S_KEEP.at || 0;
     out.rowsN = (rows || []).length;
+    out.wait = wtAnomSecWait();
     out.firstN = (rows || []).filter(function (r) {
       var n = wtHmNum(r && r.firstHm); return n >= 0 && n <= WT_ASEC.firstHmMax;
     }).length;
@@ -33868,12 +33934,20 @@ function wtAnomSecRowHtml() {
     return '<div class="wt-lrow" id="wtAnomSecRow" title="' + esc(base + '\n\n【当前】' + whyTxt) + '">' +
       '<span class="bl na">强势异动·板块 ' + esc(whyTxt) + '</span></div>';
   }
+  /* 「还在核对」的提示：新开页面时 K 线要 4~5 分钟才覆盖完，这段时间家数只会偏少。
+     不写出来 = 用户先看到「无 >3 家」就判定功能坏了，2 分钟后数字自己冒出来更困惑。 */
+  var waitTxt = (s.wait > 0)
+    ? '<span class="as-wait" title="' + esc('当日 5 分钟 K 线还有 ' + s.wait + ' 只没核到（每 12 秒核 12 只，池内覆盖一遍约 4~5 分钟）。\n' +
+        '未核到的票**不会**被当成「没有异动」，只是还没进统计 —— 所以此刻的家数只会偏少、不会偏多。\n' +
+        '这一格会随核对进度自动上升，不需要刷新页面。') + '">K线核对中 · 还有 ' + s.wait + ' 只待核</span>'
+    : '';
   if (!s.rowsN) {
     return '<div class="wt-lrow" id="wtAnomSecRow" title="' + esc(base +
       '\n\n【当前】当日留存表为空：今天还没有任何一只股票走出「单根 5 分钟 ≥3% 且当前未封板」。\n' +
-      '注意这与「没取到」不同 —— 是确实一只都没有。') + '">' +
+      '注意这与「没取到」不同 —— 是确实一只都没有。' +
+      (s.wait > 0 ? '\n\n（另有 ' + s.wait + ' 只 5 分钟 K 线尚未核对，它们的结果还没进来）' : '')) + '">' +
       '<span class="bl">强势异动·板块</span>' + hd('同日') +
-      '<span class="as-none">当日无强势异动个股</span></div>';
+      '<span class="as-none">当日无强势异动个股</span>' + waitTxt + '</div>';
   }
   function chip(x, mode) {
     var top = (x.top != null && isFinite(x.top)) ? ('<span class="at">+' + x.top.toFixed(2) + '%</span>') : '';
@@ -33898,10 +33972,136 @@ function wtAnomSecRowHtml() {
     '\n\n【当日累计 · 全部】' +
     (s.all.length ? s.all.map(function (x) { return x.sec + ' ' + x.n + ' 家（最强 +' + (x.top == null ? '—' : x.top.toFixed(2)) + '%）'; }).join('\n') : '无') +
     '\n\n【样本】当日强势异动 ' + s.rowsN + ' 只，其中 ' + s.firstN + ' 只的首根落在 ≤09:35；' +
+    (s.wait > 0 ? '另有 ' + s.wait + ' 只 K 线待核（家数只会偏少）；' : '') +
     (s.day ? '存档交易日 ' + s.day : '');
   return '<div class="wt-lrow" id="wtAnomSecRow" title="' + esc(base + full) + '">' +
     '<span class="bl">强势异动·板块</span>' +
-    grp(s.first, '9:35', 'first') + '<span class="as-sep">｜</span>' + grp(s.all, '当日', 'all') + '</div>';
+    grp(s.first, '9:35', 'first') + '<span class="as-sep">｜</span>' + grp(s.all, '当日', 'all') + waitTxt + '</div>';
+}
+/* ================= 板块五榜 · Top5（§216） =================
+   ★ 2026-10-26：接在「强势异动·板块」之后，补上用户要的五个榜 —— 涨停家数 / 板块涨幅 / 板块跌幅 /
+     主力净流入 / 主力净流出 各前 5。
+   ⚠ 三条硬纪律：
+     ① **排序一步都不许在这里写**。一·C 板块五榜与 ⑥「情绪周期」钉钉推送走的是同一个 secRankCore
+        （§177 抽取时写死的理由：排序键多一个 num()、少一个 slice 都不会报错，只会静默分叉，
+        变成「这里净流入第一是 A、钉钉说是 B」）。本行只做「取 5 个 + 排版」。
+     ② **零新增请求**。全部读本机 D.secUp / D.secDn / D.secAll / D.ztGroup（主刷新已经取过）。
+     ③ **两个数据源必须分开报空**。前四榜走东财板块榜，涨停家数走本地涨停池聚类 ——
+        板块接口断了涨停家数照样有，所以不能共用一句「暂无数据」（§177 注释里同一条）。
+   形状：五列小榜（.sb 家族），与 .sg 读数胶囊 / .as 板块胶囊 / .lt 档位胶囊都不同族 —— 这种是**榜**。
+   本行只陈列排名，不参与打分、不发信号（信号仍只认四指标）。 */
+var WT_SEC5 = { n: 5, callN: 8 };
+
+/* 只做取数 + 分栏，不排序（排序全在 secRankCore 里） */
+function wtSec5Stat() {
+  var out = { ok: false, why: '', zt: [], up: [], dn: [], inflow: [], outflow: [],
+    zc: {}, secOk: false, ztOk: false, secWhy: '暂无数据' };
+  try {
+    /* 首屏 / 主刷新跑到一半时这三样可能还没就绪：D 未赋值、secUp 被清空、ztGroup 未建成。
+       secRankCore 会在 `D.secUp.slice()` 或 `Object.keys(D.ztGroup)` 上抛 —— 兜在这里，
+       让版面写「尚未取到」而不是把一句 "Cannot convert undefined or null to object" 糊到用户脸上。 */
+    if (typeof D === 'undefined' || !D) { out.why = '行情数据尚未取到（D 未初始化，等首轮刷新）'; return out; }
+    if (!D.secUp || !D.secDn || !D.ztGroup) { out.why = '板块 / 涨停数据尚未取到（随主刷新到来）'; return out; }
+    if (typeof secRankCore !== 'function') { out.why = '排序内核 secRankCore 未加载'; return out; }
+    var rk = secRankCore(WT_SEC5.callN) || {};
+    out.ok = true;
+    out.zc = rk.zc || {};
+    var cut = function (a) { return (a || []).slice(0, WT_SEC5.n); };
+    out.up = cut(rk.up); out.dn = cut(rk.dn);
+    out.inflow = cut(rk.in); out.outflow = cut(rk.out);
+    /* 涨停家数榜的键来自涨停池 hybk（4 字缩写 / 主题名）→「未分类 / 其他 / —」不是行业板块，不入榜。
+       多取 3 个（callN = 8）正是为了过滤后仍能凑满 5 个；先砍到 5 再过滤会只剩 3~4 个。 */
+    out.zt = (rk.zt || []).filter(function (k) {
+      return !!k && k !== '未分类' && k !== '其他' && k !== '—' && k !== '-';
+    }).slice(0, WT_SEC5.n);
+    out.secOk = (out.up.length + out.dn.length + out.inflow.length + out.outflow.length) > 0;
+    out.ztOk = out.zt.length > 0;
+    try { out.secWhy = secEmptyWhy(); } catch (eW) { out.secWhy = '暂无数据'; }
+  } catch (e) {
+    out.ok = false; out.why = '渲染异常：' + ((e && e.message) || e);
+  }
+  return out;
+}
+/* 数值格式：缺数一律返回「—」+ 空类名（不印 0 —— 0.00% 与「没取到」在盘面上是两回事） */
+function wtSec5Pct(v) {
+  var n = num(v);
+  if (n == null || !isFinite(n)) return { t: '—', c: '' };
+  return { t: (n > 0 ? '+' : '') + n.toFixed(2) + '%', c: n > 0 ? 'up' : (n < 0 ? 'dn' : '') };
+}
+function wtSec5Yi(v) {
+  var n = num(v);
+  if (n == null || !isFinite(n)) return { t: '—', c: '' };
+  var x = n / 1e8;
+  return { t: (x > 0 ? '+' : '') + x.toFixed(2), c: x > 0 ? 'up' : (x < 0 ? 'dn' : '') };
+}
+function wtSecRankRowHtml() {
+  var s = null;
+  try { s = wtSec5Stat(); } catch (e) { return ''; }
+  if (!s) return '';
+  var base = [
+    '【口径】五个榜与「一·C 板块五榜」「⑥ 情绪周期」钉钉推送**同一个排序内核**（secRankCore），本行只把 n 从 10 收到 5。',
+    '  · 主力净流入 = 涨幅榜(secUp) 按 f62 降序',
+    '  · 主力净流出 = 全板块并集按 f62 升序（最负在前）—— 只取涨幅榜会漏掉，跌的板块多数不在里面',
+    '  · 板块涨幅 / 跌幅 = 接口原序前 5（接口已排好序，此处不二次排序）',
+    '  · 涨停家数 = 本地聚类 D.ztGroup 按家数降序（数据源与上面四榜不同）',
+    '【数据源】涨幅 / 跌幅 / 净流入 / 净流出 ← 东财板块榜 SEC_F（f3 涨幅 · f62 主力净流入）；涨停家数 ← 涨停池 hybk 聚类。',
+    '【留白】接口没回 / 涨停池没取回一律印「未取到 · 暂无涨停」，不印 0 —— 0 家只是「没有」，不代表「没取到」。',
+    '【用途】只陈列排名，不参与打分、不发信号（买卖信号仍只认四指标）。'
+  ].join('\n');
+  if (!s.ok) {
+    return '<div class="sb" id="wtSecRankRow" title="' + esc(base + '\n\n【当前】' + s.why) + '">' +
+      '<div class="sb-cap">板块五榜 · TOP5</div>' +
+      '<div class="sb-none">' + esc(s.why) + '</div></div>';
+  }
+  /* 归一化家数表：涨停家数榜的键是 hybk 缩写 / 主题名，板块四榜的 f14 是东财二级行业全称，
+     两边靠 ind2Canon 归到同一个键 —— 不归的话「这个板块今天涨停几家」会永远查成 0。 */
+  var zcN = {};
+  Object.keys(s.zc || {}).forEach(function (k) {
+    var kn = (typeof ind2Canon === 'function') ? ind2Canon(k) : k;
+    if (!kn || kn === '其他' || kn === '未分类' || kn === '—' || kn === '-') return;
+    if (zcN[kn] == null || s.zc[k] > zcN[kn]) zcN[kn] = s.zc[k];
+  });
+  var nmOf = function (k) { return (typeof ind2Canon === 'function') ? ind2Canon(k) : k; };
+  var ztOf = function (f14) { var v = zcN[nmOf(f14)]; return (v == null) ? null : v; };
+  function item(rank, name, val, tip) {
+    return '<div class="sb-it"><span class="r">' + rank + '</span>' +
+      '<span class="n" title="' + esc(tip || name) + '">' + esc(name) + '</span>' +
+      '<span class="v ' + val.c + '">' + esc(val.t) + '</span></div>';
+  }
+  function col(title, inner, none) {
+    return '<div class="sb-col"><div class="sb-hd">' + title + '</div>' +
+      (inner || '<span class="sb-none">' + none + '</span>') + '</div>';
+  }
+  /* 板块四榜共用一套列（名 = f14 · 值 = 该榜的度量） */
+  function boardCol(title, rows, fmt) {
+    var h = (rows || []).map(function (x, i) {
+      var z = ztOf(x.f14);
+      var tip = x.f14 + '\n涨幅 ' + wtSec5Pct(x.f3).t + '\n主力净流入 ' + wtSec5Yi(x.f62).t + ' 亿' +
+        '\n今日涨停 ' + (z == null ? '—' : z + ' 家') +
+        '\n\n（第 ' + (i + 1) + ' 名 · 与 一·C 板块五榜同源）';
+      return item(i + 1, x.f14, fmt(x), tip);
+    }).join('');
+    return col(title, h, s.secOk ? '暂无数据' : '未取到');
+  }
+  var cZt = (s.zt || []).map(function (k, i) {
+    var n = s.zc[k];
+    return item(i + 1, nmOf(k), { t: (n == null ? '—' : n + '家'), c: 'up' },
+      nmOf(k) + '\n今日涨停 ' + (n == null ? '—' : n + ' 家') +
+      '\n\n（第 ' + (i + 1) + ' 名 · 本地聚类 D.ztGroup，与上面四榜不同源）');
+  }).join('');
+  var ztNone = !s.ztOk && (typeof D !== 'undefined' && D && (D.zt || []).length)
+    ? '无（涨停票未分类不计）' : '尚未取到涨停池';
+  var cur = '板块四榜 ' + (s.secOk ? '已取回' : '未取回 —— ' + s.secWhy) +
+    '\n涨停家数榜 ' + (s.ztOk ? '已取回' : '无数据') +
+    '\n（数据随主刷新换 D.* 时同步更新，与 一·C 同一次取数）';
+  return '<div class="sb" id="wtSecRankRow" title="' + esc(base + '\n\n【当前】' + cur) + '">' +
+    '<div class="sb-cap">板块五榜 · TOP5</div>' +
+    col('涨停家数', cZt, ztNone) +
+    boardCol('板块涨幅', s.up, function (x) { return wtSec5Pct(x.f3); }) +
+    boardCol('板块跌幅', s.dn, function (x) { return wtSec5Pct(x.f3); }) +
+    boardCol('主力净流入(亿)', s.inflow, function (x) { return wtSec5Yi(x.f62); }) +
+    boardCol('主力净流出(亿)', s.outflow, function (x) { return wtSec5Yi(x.f62); }) +
+    '</div>';
 }
 function wtBreadthHtml() {
   var c = null;
@@ -33961,7 +34161,9 @@ function wtBreadthHtml() {
     wtSurgeRowHtml() +
     wtLadderRowHtml() +
     /* ★ 2026-10-26 §215：强势异动 >3 家的行业板块（两个口径：9:35 首根 / 当日累计） */
-    wtAnomSecRowHtml() + '</div>';
+    wtAnomSecRowHtml() +
+    /* ★ 2026-10-26 §216：板块五榜 Top5（涨停家数 / 涨幅 / 跌幅 / 净流入 / 净流出） */
+    wtSecRankRowHtml() + '</div>';
 }
 /* 分级条主体：给「一、大盘与量能」的指数网格补一条结论行。
    只标用户点名的两只（上证 = 主板基准、创业板 = 适配修正），其余六只指数不加，

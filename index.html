@@ -3858,6 +3858,8 @@ function refreshAll(manual){
     return loadTxQuotes(codes);
   }).then(function(q){
     D.prevQ = {};
+    /* ★ §217：昨日涨停池这一批行情同样带股票名 —— 「🩸 风险板块」核按钮行的名称兜底靠它 */
+    try { nmqAbsorb(q, D.prev.map(function (x) { return x.c; })); } catch (eNQ) { }
     D.prev.forEach(function(x){
       var tc = txCode(x.c), a = tc ? q[tc] : null;
       if(a){
@@ -13542,8 +13544,11 @@ function mrUniverse(){
   function slot(code, name){
     var c = String(code == null ? '' : code).replace(/^(sh|sz|bj)/i, '').replace(/\D/g, '');
     if(!/^\d{6}$/.test(c)) return null;                 /* 脏行（空串 / 带前缀 / 非数字）直接丢 */
-    if(map[c]) return map[c];
-    var r = { c: c, n: String(name == null ? '' : name), zdp: null, amt: null, ind: '',
+    var nm = nmqValid(name, c) ? String(name).trim() : '';
+    /* ★ §217：仍然是「先到先得」，但**空名不占位** —— 先到的源若名称为空，后到的源有名字就补进去。
+       旧写法在这里直接 `return map[c]`，于是「先到的空名」把后面所有源的名字都挡在门外。 */
+    if(map[c]){ var e = map[c]; if(!e.n && nm) e.n = nm; return e; }
+    var r = { c: c, n: nm || nmqOf(c), zdp: null, amt: null, ind: '',
       dtDays: 0, lbt: null, inPool: false, ytdZT: false, openPrem: null, high: null, price: null };
     map[c] = r; list.push(r);
     return r;
@@ -13584,6 +13589,9 @@ function mrUniverse(){
     r.high = num(q.high); r.price = num(q.price);
   });
   /* 口径判定 + 板块键 */
+  /* ★ §217：名表兜底 —— 四个来源都没给出名字的行，用「行情吸上来的名字」补（零新增请求）。
+     放在口径判定之前：mrLimitPct_ / mrFaceLine_ 都拿名字判 ST，名字对了才不会误判板别。 */
+  list.forEach(function(r){ if(!r.n) r.n = nmqOf(r.c); });
   var dtSet = {};
   (D.dt || []).forEach(function(x){ dtSet[String(x.c || '').replace(/^(sh|sz|bj)/i, '')] = 1; });
   var rows = [];
@@ -13630,7 +13638,7 @@ function mrUniverse(){
     }
     if(r.isNuke){ stat.nuke++; if(r.nukeX) stat.nukeX++; if(r.isDt) stat.nukeDt++; }
     if(r.isDeep) stat.deep++;
-    if(r.zdp != null && (stat.minZdp == null || r.zdp < stat.minZdp)){ stat.minZdp = r.zdp; stat.minName = r.n; }
+    if(r.zdp != null && (stat.minZdp == null || r.zdp < stat.minZdp)){ stat.minZdp = r.zdp; stat.minName = nmId(r.c, r.n); }
     if(!secs[r.sec]) secs[r.sec] = [];
     secs[r.sec].push(r);
   });
@@ -13721,7 +13729,10 @@ function mrRowHtml(r){
   return '<div class="g-row" data-wbbcode="' + esc(r.c) + '">' +
     '<span>' + (tags || '<span class="flat">—</span>') + '</span>' +
     '<span class="mono">' + esc(r.c) + '</span>' +
-    '<span><b data-wbbjump="' + esc(r.c) + '" style="cursor:pointer" title="点击打开生命周期工作台诊断该股">' + esc(r.n) + '</b>' +
+    '<span><b data-wbbjump="' + esc(r.c) + '" style="cursor:pointer" title="点击打开生命周期工作台诊断该股">' +
+      (nmqValid(r.n, r.c) ? esc(String(r.n).trim())
+        : '<span class="flat" title="名称未取到（东财榜单 / 腾讯行情恢复后自动补齐）—— 此处如实留白，不拿代码当名字">—</span>') +
+      '</b>' +
       ztLimitTag(r) + ddTag + '</span>' +
     '<span>' + pcts(r.zdp) + '</span>' +
     '<span class="flat" style="color:#94a3b8">' + esc(r.sec) + '</span>' +
@@ -13789,7 +13800,7 @@ function mrSecBoardHtml(rows, pv){
       if(r.zdp != null && (mn == null || r.zdp < mn)) mn = r.zdp;
     });
     var cmp = mrPrevCmp(pv, k, g.length, dtn);
-    var reps = g.slice(0, 3).map(function(r){ return esc(r.n); }).join(' / ') + (g.length > 3 ? ' 等' : '');
+    var reps = g.slice(0, 3).map(function(r){ return esc(nmId(r.c, r.n)); }).join(' / ') + (g.length > 3 ? ' 等' : '');
     return '<tr><td class="mono">' + (i + 1) + '</td>' +
       '<td><b>' + esc(mrSecLabel(k)) + '</b></td>' +
       '<td class="mono">' + g.length + '</td>' +
@@ -35443,10 +35454,81 @@ function anomSecMap() {
   D.top100.concat(D.bot100 || [], D.amtTop || [], D.up5 || []).forEach(function (x) { if (x && x.f12) put(x.f12, x.f100); });
   return m;
 }
+/* ===== 股票名补齐（§217 · 2026-10-26）=====
+   用户报障：「🚀 强势异动、🩸 风险板块，有些股票只有代码，没有股票名字」。
+   查下来是**四个各自独立的缺口**，只堵一个照样会露：
+     ① 池分支原先写 `m[x.c] = x.n` —— 同一只票同时在两个池里、后一行名称为空时，
+        **空名会把已有的好名字覆盖掉**（对象属性赋值不看旧值有没有内容）；
+     ② 「🚀 强势异动」遍历的是**行情快照**（ANOM.snap / 留存表），名表却按**当前榜单**建。
+        一只票从涨幅榜 / bot100 掉出去之后仍在快照与留存里，名表里已经没有它 →
+        旧的 `nameM[c] || c` 就把**代码原样印进名称列**（这正是「只有代码」的观感来源）；
+     ③ 留存表（M5S_KEEP，落 localStorage）只认自己那份 rec.n：入表那一刻要是兜底成了代码，
+        往后就算名表有名字也不会被改写 —— 存档里钉死了；
+     ④ mrUniverse 的 slot() 是「先到先得」：先到的源若名称为空，后到的源有名字也写不进去。
+   修法（**零新增请求**）：腾讯批量行情 `v_sh600000="1~浦发银行~..."` 的**第 1 个字段就是股票名**，
+   loadTxQuotes 早就把它取回来了，只是 anomParse 丢掉没接。这里把每一次「已知是股票」的批量结果
+   收进内存名表，再让名表只增不减、只写有效值；名称列缺名时**如实显示「—」**，不再拿代码冒充名字。
+   ⚠️ 名表**不落盘**：名字是静态元数据，但错码 / 改名一旦落盘就再也纠不回来，每次开页重新吸一遍更老实。 */
+var NMQ = { map: {}, hit: 0 };
+function nmqCode(c) {
+  var s = String(c == null ? '' : c).replace(/^(sh|sz|bj)/i, '').replace(/\D/g, '');
+  return /^\d{6}$/.test(s) ? s : '';
+}
+/* 名字有效性：非空 / 不是占位符 / 不是代码本身或纯数字 / 不像 HTML / 长度合理 */
+function nmqValid(n, c) {
+  var s = String(n == null ? '' : n).trim();
+  if (!s || s === '-' || s === '—' || s === '--') return false;
+  if (s === String(c == null ? '' : c).trim()) return false;
+  if (/^[0-9]+$/.test(s)) return false;
+  if (s.length > 12 || /[<>]/.test(s)) return false;
+  return true;
+}
+function nmqPut(c, n) {
+  var k = nmqCode(c);
+  if (!k || !nmqValid(n, k)) return false;
+  var v = String(n).trim();
+  if (NMQ.map[k] === v) return false;
+  NMQ.map[k] = v; NMQ.hit++;
+  return true;
+}
+/* 把一次腾讯批量行情的第 1 个字段收进名表。
+   ⚠️ 只喂**已知是股票**的批量：指数（sh000001 / sz399001）与个股同码段，混进来会污染名表
+   —— 所以不在 loadTxQuotes 里做，而是由三个确定的股票调用点显式调用。 */
+function nmqAbsorb(q, codes) {
+  if (!q || !codes || !codes.length) return 0;
+  var hit = 0;
+  for (var i = 0; i < codes.length; i++) {
+    var c = codes[i], a = q[(typeof txCode === 'function') ? txCode(c) : c];
+    if (!a || !a[1]) continue;
+    if (nmqPut(c, a[1])) hit++;
+  }
+  return hit;
+}
+function nmqOf(c) { var k = nmqCode(c); return (k && NMQ.map[k]) || ''; }
+/* 展示用标识：有名用名，没名用代码。
+   ⚠️ 只给 tooltip / 代表股 / 自选池落库这类「必须能认出这只票」的地方用；
+      **名称列不走它** —— 名称列缺名要显示「—」，不拿代码冒充名字。 */
+function nmId(c, n) {
+  var s = String(n == null ? '' : n).trim();
+  if (nmqValid(s, c)) return s;
+  return String(c == null ? '' : c);
+}
 function anomNameMap() {
-  var m = {};
-  D.zt.concat(D.zb || [], D.dt || []).forEach(function (x) { if (x && x.c) m[x.c] = x.n; });
-  D.top100.concat(D.bot100 || [], D.up5 || []).forEach(function (x) { if (x && x.f12) m[x.f12] = x.f14 || m[x.f12]; });
+  var m = {}, k;
+  /* ① 池分支：**有名字才写**（旧写法会用空名覆盖已有的好名字） */
+  D.zt.concat(D.zb || [], D.dt || []).forEach(function (x) {
+    if (!x || !x.c) return;
+    if (!nmqValid(x.n, x.c)) return;
+    var v = String(x.n).trim();
+    m[x.c] = v;
+    var b = nmqCode(x.c); if (b && b !== x.c) m[b] = v;   /* 带前缀的 c 同时存裸码键 */
+  });
+  D.top100.concat(D.bot100 || [], D.up5 || []).forEach(function (x) {
+    if (!x || !x.f12 || !nmqValid(x.f14, x.f12)) return;
+    if (!m[x.f12]) m[x.f12] = String(x.f14).trim();
+  });
+  /* ② 行情吸上来的名字垫底：已掉榜 / 只在快照与留存里的票靠这一层兜住 */
+  for (k in NMQ.map) { if (!m[k]) m[k] = NMQ.map[k]; }
   return m;
 }
 function anomAddEv(k, code, name, sec, pt, delta, now) {
@@ -35503,6 +35585,9 @@ function anomPoll(tries) {
   loadTxQuotes(codes.map(function (c) { return txCode(c); }).filter(Boolean), 9000).then(function (q) {
     var now = Date.now(), snap = {}, n = 0;
     codes.forEach(function (c) { var v = anomParse(q[txCode(c)]); if (v) { snap[c] = v; n++; } });
+    /* ★ §217：监控池这一批腾讯行情里就带着股票名（a[1]），顺手收进名表 —— 零新增请求。
+       这是「🚀 强势异动」名称列的主力来源：快照里的票必然在这一批里，不会再出现「名表没有 → 印代码」。 */
+    try { nmqAbsorb(q, codes); } catch (eNQ) { }
     /* ★ 整轮空（n=0）→ 原地 2.5 秒后重试一次：页面启动加载期 refreshAll 并发抢占腾讯通道时，
        实测会出现「连续整轮 0 行」的间歇失败（诊断探针单发同 URL 是好的）。
        重试仍空才如实记错 —— 与全站「间歇失败重试 + 失败披露」纪律一致。 */
@@ -36657,7 +36742,9 @@ function m5sRows() {
        过滤放在出表处，m5sTier 的五档定义保持完整（否则负数会被兜底成「小幅」）。 */
     if (!m5sIsStrongTier(tier.k)) { M5S.dropWeak++; continue; }
     out.push({
-      c: c, n: nameM[c] || c, sec: secM[c] || '未分类',
+      /* ★ §217：名称取不到时留**空串**，不再拿代码冒充名字（渲染层会显示「—」并说明）。
+         旧写法 `nameM[c] || c` 正是「只有代码没有名字」的直接来源。 */
+      c: c, n: nameM[c] || nmqOf(c) || '', sec: secM[c] || '未分类',
       spd: mg.max, max: mg.max, barAt: mg.at, barHm: mg.atHm, barsN: mg.n, mgDay: mg.day,
       lastG: (mg.last ? mg.last.g : null), lastAt: (mg.last ? mg.last.t : ''),
       lastHm: (mg.last ? m5kHm(mg.last.t) : ''),
@@ -36781,6 +36868,19 @@ function m5sDayKeyOf(t) {
   var d = new Date(t);
   return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
 }
+/* ★ §217：交易日归一键。'YYYYMMDDHHMM'（K 线原始码）与 'YYYY-MM-DD'（已经格式化过的）都收，
+   认不出 → 返回空串（调用方据此**不动存档**，绝不写一个脏日期进去）。
+   起因：m5sKeepUpdate 在「还没有当日采样」时写 `m5kDate(rows[0].mgDay)`，
+   而 mgDay 取自 m5kMaxOf 的 day 字段 —— 它**本来就是 'YYYY-MM-DD'**。
+   再套一层 m5kDate 会把 '2026-10-26' 切成 '2026--1-0-'，存档日期当场被写坏；
+   下一句「跨日闸门」`m5kDate(r.barAt) !== M5S_KEEP.d` 于是对**所有**留存行成立 →
+   今日留存整页被清空。开盘前 / 收盘后打开页面（此时 M5S.hist 为空）就会走到这条路。 */
+function m5sDayNorm(v) {
+  var s = String(v == null ? '' : v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  var d = m5kDate(s);
+  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : '';
+}
 /* 强势档下界：**统一 3.0**（10cm 与 20cm 同门槛，2026-10-23 用户「20cm 的门槛改为 3%」；从分档表取，不硬编码） */
 function m5sStrongFloor(lim) {
   var tb = (lim === '20cm') ? M5S_T20 : M5S_T10;
@@ -36796,6 +36896,10 @@ function m5sKeepLoad() {
     if (!raw) return false;
     var o = JSON.parse(raw);
     if (!o || !o.d || !o.map || !Object.keys(o.map).length) return false;
+    /* ★ §217：旧逻辑可能把存档日期写成 '2026--1-0-'（m5kDate 套在已格式化的日期上，见 m5sDayNorm）。
+       认不出的日期一律**置空**、不照抄：置空后「跨日闸门」自动放行，当日记录得以保留，
+       下一轮 m5sKeepUpdate 会把它写成正确日期。照抄的后果是整页留存被当成「跨日」全丢。 */
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(o.d))) o.d = '';
     /* ★ 2026-10-22 第四轮迁移（v2 → v3）：
        v2 的 best 是「滚动 5 分钟涨速」，与现在的「真实 K 线单根涨幅」不是同一把尺。
        两种处理都错：直接丢 → 收盘后打开页面整卡变空（用户要看的正是当天这份）；
@@ -36907,6 +37011,9 @@ function m5sKeepQuote(now) {
   M5S.qAt = now;
   loadTxQuotes(syms, 8000).then(function (res) {
     var t = Date.now(), i, v;
+    /* ★ §217：掉池票（补快照这一批）同样带着股票名 → 顺手收进名表。
+       「🚀 强势异动」名称列印代码的元凶就是这批票 —— 掉榜后名表里已经没有它们了。 */
+    try { nmqAbsorb(res, take); } catch (eNQ) { }
     for (i = 0; i < take.length; i++) {
       c = take[i];
       v = anomParse(res && res[txCode(c)]);
@@ -36947,7 +37054,7 @@ function m5sKeepQuote(now) {
 function m5sKeepUpdate(rows, now) {
   if (!rows || !rows.length) return 0;
   var H = M5S.hist;
-  var d = H.length ? m5sDayKeyOf(H[H.length - 1].t) : m5kDate(rows[0].mgDay || '');
+  var d = H.length ? m5sDayKeyOf(H[H.length - 1].t) : m5sDayNorm(rows[0].mgDay);
   if (!d) return 0;
   if (!M5S_KEEP.d) { M5S_KEEP.d = d; }
   else if (M5S_KEEP.d !== d) { m5sKeepClear(); M5S_KEEP.d = d; }   /* ★ 新交易日首笔 → 换场 */
@@ -36958,7 +37065,7 @@ function m5sKeepUpdate(rows, now) {
     var rec = M5S_KEEP.map[r.c];
     if (!rec) {
       rec = M5S_KEEP.map[r.c] = {
-        c: r.c, n: r.n, sec: r.sec, lim: r.lim,
+        c: r.c, n: (nmqValid(r.n, r.c) ? String(r.n).trim() : (nmqOf(r.c) || '')), sec: r.sec, lim: r.lim,
         best: r.max, barAt: r.barAt, tk: r.tier.k, src: 'm5',
         sealed: !!r.sealed, gapNA: r.gapNA, firstG: r.firstG, gapAt: r.gapAt,
         firstSelf: r.firstSelf, firstMode: r.firstMode, gapPct: r.gapPct, firstHm: r.firstHm,
@@ -36977,7 +37084,13 @@ function m5sKeepUpdate(rows, now) {
       rec.last = now; rec.pct = r.pct; rec.p = r.p; rec.ztp = r.ztp;
       /* 今日最高价只增不减：留存跨刷新仍在时，用它守住「是否曾触板」的判定 */
       if (r.hi > (rec.hi || 0)) rec.hi = r.hi;
-      if (r.n && r.n !== rec.n) rec.n = r.n;
+      /* ★ §217：名称自愈 —— 存档里被钉成「代码」或空串的，这里用名表 / 行情名改写掉。
+         旧写法 `if (r.n && r.n !== rec.n) rec.n = r.n;` 有个死角：存档里 rec.n 已经是代码时，
+         本次 r.n 也退化成同一个代码 → 两者「相等」→ 永远不改，名字就被钉死到存档过期为止。 */
+      /* ⚠️ 代码变量是 **r.c**，不是 c：本函数里没有 c（c 是 m5sKeepRows 的局部变量）。
+         写成 c 会去读顶层那个同名全局变量 → 静默取到别的代码 → 自愈永远不生效（探针 F 抓到的）。 */
+      var nmLive = nmqValid(r.n, r.c) ? String(r.n).trim() : (nmqOf(r.c) || '');
+      if (nmLive && nmLive !== rec.n) rec.n = nmLive;
       /* 行业后补：从「未分类 / 其他」升到真实板块后就固定下来，不再回退 */
       if (r.sec && rec.sec !== r.sec && (rec.sec === '未分类' || rec.sec === '其他')) rec.sec = r.sec;
     }
@@ -37119,7 +37232,9 @@ function m5sKeepRows(now, opt) {
     var sec = r.sec;
     if ((!sec || sec === '未分类' || sec === '其他') && secM[c]) sec = secM[c];
     out.push({
-      c: c, n: r.n, sec: sec || '未分类', lim: r.lim,
+      /* ★ §217：存档名同样过一遍有效性判定 —— 存档里可能躺着上一版兜底写进去的代码。
+         这里只读不写（quiet 模式合规）：真正的回写发生在 m5sKeepUpdate，那里才动 localStorage。 */
+      c: c, n: (nmqValid(r.n, c) ? String(r.n).trim() : (nmqOf(c) || '')), sec: sec || '未分类', lim: r.lim,
       best: bestK, barAt: barAtK || '', barHm: barAtK ? m5kHm(barAtK) : '',
       lastG: lastG, lastHm: lastHm, barsN: (mgOk ? mg.n : 0),
       gapNA: (mgOk ? mg.gapNA : (r.gapNA || 0)),
@@ -37185,7 +37300,7 @@ function m5sRowHtml(r) {
   var limTxt = (r.lim === '20cm') ? ('（20cm 档 · 门槛 ' + floorTxt + '%）')
     : (r.lim === '5cm') ? ('（ST 5cm，沿用 10cm 档 · 门槛 ' + floorTxt + '%）')
       : ('（10cm 档 · 门槛 ' + floorTxt + '%）');
-  var tip = r.n + limTxt + '\n' +
+  var tip = nmId(r.c, r.n) + limTxt + '\n' +
     '当日最大单根 5 分钟涨幅 ' + (best == null ? '—' : ((best >= 0 ? '+' : '') + best.toFixed(2) + '%')) +
     (bt ? '（' + bt + ' 那根）' : '') + '\n' +
     '口径 首根 max(收÷昨收, 收÷开)· 其余根 收÷开 · 9:30 起每 5 分钟一根 · 当日 ' + (r.barsN ? r.barsN + ' 根' : '—') + '\n' +
@@ -37213,10 +37328,14 @@ function m5sRowHtml(r) {
   return '<div class="g-row" data-wbbcode="' + esc(r.c) + '" data-wbbjump="' + esc(r.c) + '" title="点击打开生命周期工作台诊断该股（' + esc(r.c) + '）">' +
     /* ★ 2026-10-26 §212：行首自选池勾选框。⚠️ 本行整行挂 data-wbbjump（点击即跳诊断），
        勾选框的点击由 WBB 全局委托里的 .wl-cbw 早退守卫拦掉，不会顺带弹诊断页。 */
-    wlCb('m5q', r.c, r.n) +
+    wlCb('m5q', r.c, nmId(r.c, r.n)) +
     '<span class="m5t ' + esc(tk) + '" title="' + esc(tip) + '">' + esc(lbl) + '</span>' +
     '<span class="mono">' + esc(r.c) + '</span>' +
-    '<span><b class="nm" data-wbbjump="' + esc(r.c) + '" style="cursor:pointer" title="点击打开生命周期工作台诊断该股">' + esc(r.n) + '</b>' + limTag + rollTag + '</span>' +
+    /* ★ §217：名称列只印真名字。缺名 → 「—」+ 说明（**不拿代码冒充名字**，那样看起来像"名字就是这个"）。 */
+    '<span><b class="nm" data-wbbjump="' + esc(r.c) + '" style="cursor:pointer" title="点击打开生命周期工作台诊断该股">' +
+      (nmqValid(r.n, r.c) ? esc(String(r.n).trim())
+        : '<span class="flat" title="名称未取到（东财榜单 / 腾讯行情恢复后自动补齐）—— 此处如实留白，不拿代码当名字">—</span>') +
+      '</b>' + limTag + rollTag + '</span>' +
     '<span class="spd">' + spTxt + '</span>' +
     btTxt +
     '<span style="min-width:48px;display:inline-block">' + stTxt + '</span>' +

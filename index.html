@@ -807,6 +807,24 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
   #wtop .wt-breadth .wt-lrow .lt.few { border-style:dashed; opacity:.78; }
   /* 虚强（1进2 强但炸板率 ≥40%）→ 橙红警示 */
   #wtop .wt-breadth .wt-lrow .lt.warn { border-color:rgba(251,146,60,.5); background:rgba(251,146,60,.1); color:#fdba74; font-weight:700; }
+  /* ★ 2026-10-26 §214：盘面强度行（涨停 / 跌停 / 炸板率 / 大面 / 核按钮）。
+     刻意**不复用** .lt（.lt 是「强度档位」胶囊，色义是 热红/中黄/弱绿）；
+     这一行是**读数**行，色义沿用上一行「涨跌家数」的数值色：涨红 / 跌绿 / 风险橙。
+     结构与 .ba/.br 同族（pill + 数值 + 小字注解），保证一屏两行读起来是一套东西。 */
+  #wtop .wt-breadth .wt-lrow .sg { display:inline-flex; align-items:baseline; gap:5px; padding:2px 10px; border-radius:999px;
+    border:1px solid rgba(148,163,184,.28); background:rgba(148,163,184,.05); color:#cbd5e1; }
+  #wtop .wt-breadth .wt-lrow .sg .k { font-size:10.5px; color:#8fa0b8; letter-spacing:.2px; }
+  #wtop .wt-breadth .wt-lrow .sg .v { font-weight:800; font-variant-numeric:tabular-nums; color:#e2e8f0; }
+  #wtop .wt-breadth .wt-lrow .sg .v.up { color:#ff9f97; }
+  #wtop .wt-breadth .wt-lrow .sg .v.dn { color:#6ee7b7; }
+  #wtop .wt-breadth .wt-lrow .sg .v.warn { color:#fdba74; }
+  #wtop .wt-breadth .wt-lrow .sg .u { font-size:10px; color:#64748b; font-variant-numeric:tabular-nums; }
+  /* 触线（大面成潮 / 炸板率 ≥40%）→ 绿框（风险侧） */
+  #wtop .wt-breadth .wt-lrow .sg.risk { border-color:rgba(16,185,129,.42); background:rgba(16,185,129,.07); }
+  /* 一票否决级（炸板率 ≥40% / 核按钮 ≥3 家）→ 橙框 */
+  #wtop .wt-breadth .wt-lrow .sg.alert { border-color:rgba(251,146,60,.5); background:rgba(251,146,60,.1); }
+  /* 池未取回 → 虚线降权，与 .lt.few 同一套「别当读数用」的视觉约定 */
+  #wtop .wt-breadth .wt-lrow .sg.na { border-style:dashed; opacity:.7; }
   /* 指数「较 15 分钟前」（2026-10-22 追加）：涨红 / 跌绿 / 平白 —— 用户明确指定，
      与全站涨红跌绿一致；「平」用近白（#e2e8f0）而非灰色，否则在深底上会被当成"没数据" */
   #wtop .wt-kpi .d.w15line { margin-top:1px; }
@@ -29346,8 +29364,205 @@ function wlClearAll(){
   wlToast('已清空自选池（<b>' + n + '</b> 只）—— 7.16 个人持仓未动');
 }
 
-/* ---- 自选池实时行情（腾讯批量报价，与 ⑦ / 🌱 同一条通道）----
-   自选池不在任何实时榜单里，必须自己补一次报价，否则「今日涨跌幅 / 最新价」永远空。
+/* ==== 2026-10-26 §213：自选池「量比 / 换手率 / 四指标得分」的数据层 ====
+   用户原话：「自选池没有数据，增加股票量比、换手率，四指标得分信息」。
+   上一轮只接了腾讯 qt.gtimg.cn 一条通道 —— 它一旦被静默丢弃（本机实测就是
+   ERR_FAILED），三列全空，用户看到的就是「没有数据」。本轮补两件事：
+     ① 取数改成**三级**：本机快照（零请求）→ 东财 ulist 批量 → 腾讯兜底，
+        并新增「量比 / 换手率」两个字段（东财 f10 / f8，腾讯 a[49] / a[38]）；
+     ② 新增「四指标得分」列，直接吃本台 s4kScore 内核（与 7.12 / 7.16 / 7.30 同一把尺、
+        同一段 s4kCellLogic 文案），日K 走 klineBarsL（200 根 · 30 分钟缓存）。
+   铁律不变：取不到就留「—」，**不印 0、不冒充**；每格都带 title 说明来源与时点。 */
+
+/* ---- 本机快照（零请求）：把散在五处内存里的同一只票拼成一行行情 ----
+   为什么需要它：自选池的票大多是当天从 ⑤ / 🚀 / 🌱 勾进来的，本机已经有它们的
+   涨跌幅 / 换手（涨停池自带 hs）/ 量比（10 日榜 f10），接口挂掉时这些数据不该跟着一起空。
+   合并规则：**逐字段**取第一个有值的来源，不是整行覆盖（各池口径互为补位）。 */
+function wlLocalQ(code){
+  var c = wlNormCode(code), o = {}, used = '';
+  function put(k, v, src){
+    if (o[k] != null) return;
+    var n = (typeof v === 'number') ? v : parseFloat(v);
+    if (v == null || !isFinite(n)) return;
+    o[k] = n;
+    if (!used && src) used = src;
+  }
+  var j, i, x, arr;
+  /* ① 今日涨停 / 炸板 / 跌停池：p 是 ×1000 的整数价，hs 是换手率 % */
+  var pools = [['涨停池', D.zt], ['炸板池', D.zb], ['跌停池', D.dt]];
+  for (j = 0; j < pools.length; j++){
+    arr = pools[j][1] || [];
+    for (i = 0; i < arr.length; i++){
+      x = arr[i];
+      if (!x || wlNormCode(x.c) !== c) continue;
+      put('pct', x.zdp, pools[j][0]);
+      put('price', x.p == null ? null : (+x.p / 1000), pools[j][0]);
+      put('tor', x.hs, pools[j][0]);
+      break;
+    }
+  }
+  /* ② 涨幅 / 跌幅前 100（东财 clist 行：f2 价 f3 涨幅 f8 换手 f10 量比 f15 最高） */
+  var t2 = [['涨幅前100', D.top100], ['跌幅前100', D.bot100]];
+  for (j = 0; j < t2.length; j++){
+    arr = t2[j][1] || [];
+    for (i = 0; i < arr.length; i++){
+      x = arr[i];
+      if (!x || wlNormCode(x.f12) !== c) continue;
+      put('price', x.f2, t2[j][0]); put('pct', x.f3, t2[j][0]); put('tor', x.f8, t2[j][0]);
+      put('vr', x.f10, t2[j][0]); put('hi', x.f15, t2[j][0]);
+      break;
+    }
+  }
+  /* ③ 10 日涨幅榜（行里 lb = 东财 f10 量比） */
+  arr = D.k10 || [];
+  for (i = 0; i < arr.length; i++){
+    x = arr[i];
+    if (!x || wlNormCode(x.code) !== c) continue;
+    put('price', x.price, '10日榜'); put('pct', x.zdp, '10日榜'); put('vr', x.lb, '10日榜');
+    break;
+  }
+  /* ④ 昨日涨停池行情快照（D.prevQ：pct / price / high） */
+  var pq = (D.prevQ && D.prevQ[c]) || null;
+  if (pq){ put('pct', pq.pct, '昨日涨停'); put('price', pq.price, '昨日涨停'); put('hi', pq.high, '昨日涨停'); }
+  /* ⑤ 低位启动池当日快照（vr 量比 / tor 换手 / p 价 / pct / hi） */
+  try{
+    var lk = (typeof LOW !== 'undefined' && LOW && LOW.keep && LOW.keep.map) ? LOW.keep.map[c] : null;
+    if (lk){
+      put('vr', lk.vr, '低位启动'); put('tor', lk.tor, '低位启动');
+      put('price', lk.p, '低位启动'); put('pct', lk.pct, '低位启动'); put('hi', lk.hi, '低位启动');
+    }
+  }catch(eL){ }
+  o.src = used;
+  return o;
+}
+/* 合并视图：接口值优先，本机快照补缺。net=true 表示「至少有一格来自接口」。 */
+function wlQOf(code){
+  var c = wlNormCode(code), q = WLQ[c] || null, l = wlLocalQ(c), o = {}, net = false;
+  ['price', 'pct', 'hi', 'vr', 'tor'].forEach(function(k){
+    var v = (q && q[k] != null) ? q[k] : (l[k] != null ? l[k] : null);
+    if (q && q[k] != null) net = true;
+    o[k] = v;
+  });
+  o.net = net;
+  o.at = (q && q.at) || 0;
+  o.src = net ? '实时接口' : (l.src || '');
+  return o;
+}
+/* ---- 东财 ulist 批量行情（本台主力通道）----
+   与涨停池 / 板块榜同一批域名，可用性和 qt.gtimg.cn **完全不同**（后者在很多网络环境被静默丢弃）。
+   字段：f2 最新价 · f3 涨跌幅 · f8 换手率 · f10 量比 · f15 今日最高 · f12 代码。
+   ⚠ 一次最多 50 个 secid（与 holdStocks 同口径），超了自动切片。 */
+function wlQuoteEM(codes){
+  var ids = [], rev = {}, i, s;
+  for (i = 0; i < codes.length; i++){
+    try{ s = emSecid(codes[i]); }catch(eS){ s = null; }
+    if (s && !rev[s]){ rev[s] = codes[i]; ids.push(s); }
+  }
+  if (!ids.length) return Promise.resolve({});
+  var parts = [], j;
+  for (j = 0; j < ids.length; j += 50) parts.push(ids.slice(j, j + 50));
+  var out = {};
+  function mk(host, p){
+    return host + '/api/qt/ulist.np/get?fltt=2&invt=2&secids=' + p.join(',') +
+      '&fields=f2,f3,f8,f10,f12,f14,f15,f18';
+  }
+  var tasks = parts.map(function(p){
+    return jsonp(mk('https://push2delay.eastmoney.com', p), 'cb', 8000).catch(function(){
+      return jsonp(mk('https://push2.eastmoney.com', p), 'cb', 8000);
+    }).then(function(r){
+      var d = r && r.data && r.data.diff; if (!d) return;
+      Object.keys(d).forEach(function(k){ var x = d[k]; if (x && x.f12) out[x.f12] = x; });
+    }).catch(function(){});
+  });
+  return Promise.all(tasks).then(function(){ return out; });
+}
+/* 量比 / 换手率单元格：≥3 放量标红（与 🌱 低位启动同一档阈值），≥10% 高换手标黄 */
+function wlVrCell(v){
+  if (v == null || !isFinite(v)) return '—';
+  var cls = v >= 3 ? 'up' : (v < 1 ? 'flat' : '');
+  return '<span class="' + cls + '">' + v.toFixed(2) + '</span>';
+}
+function wlTorCell(v){
+  if (v == null || !isFinite(v)) return '—';
+  var cls = v >= 10 ? 'yel' : '';
+  return '<span class="' + cls + '">' + v.toFixed(2) + '%</span>';
+}
+/* 行业（与 ⑤ / 7.5 / 🚀 / 🌱 同一张 F10 缓存表）；取不到返回 '' —— 不给 s4k 编造板块上下文 */
+function wlIndOf(code){
+  try{
+    var im = secIndMapC() || {}, e = im[wlNormCode(code)];
+    if (e && e.ind && e.ind !== '—') return e.ind;
+  }catch(eI){ }
+  return '';
+}
+/* ---- 四指标 v3 得分（自选池版）----
+   与 7.12 / 7.16 / 7.30 **同一个内核（s4kScore）、同一段文案（s4kCellLogic）** ——
+   同一只票在四处显示不同结论会被读成「系统自己打脸」，这是页内既有纪律。
+   为什么要排队：一只票 = 一次 200 根日K 请求，自选池没有数量上限，
+   直接 Promise.all 会把 NET_MAX=10 的全局槽位一次占满、饿死同轮的涨停池刷新。
+   故：并发 2、逐只落地即重绘（150ms 合并），缓存 30 分钟（与 KCACHEL_TTL 同频）。
+   ⚠ 缓存**不落盘**：打分是时点值，落到 localStorage 会变成隔日的假分数。 */
+var WLS4K = {};        /* code -> { ok, sk, why, at } */
+var WLS4K_DK = '';     /* 缓存所属交易日键（跨日清空，绝不把昨天的分数当今天） */
+var WLS4K_PEND = false;
+var WL_RP_T = null;
+function wlRepaintPool(){
+  if (typeof curTab === 'undefined' || curTab !== 'wl') return;
+  if (WL_RP_T) return;
+  WL_RP_T = setTimeout(function(){ WL_RP_T = null; try{ renderPool(); }catch(eR){ } }, 150);
+}
+function wlS4KNeed(){
+  var dk = '';
+  try{ dk = D.date || ''; }catch(eD){ dk = ''; }
+  if (!dk){ try{ dk = lowLocalDay(); }catch(eD2){ dk = ''; } }
+  if (dk && WLS4K_DK !== dk){ WLS4K = {}; WLS4K_DK = dk; }
+  var now = Date.now(), out = [];
+  wlList().forEach(function(x){
+    var c = wlNormCode(x.code), e = WLS4K[c];
+    if (!e || (now - (e.at || 0)) > 1800000) out.push({ code: c, name: x.name });
+  });
+  return out;
+}
+function wlS4KEnsure(){
+  if (WLS4K_PEND) return;
+  if (typeof klineBarsL !== 'function' || typeof s4kScore !== 'function') return;
+  var need = wlS4KNeed();
+  if (!need.length) return;
+  WLS4K_PEND = true;
+  var i = 0, running = 2, LANES = 2;
+  function nxt(){
+    if (i >= need.length){ if (--running === 0) WLS4K_PEND = false; return; }
+    var it = need[i++], q = wlQOf(it.code), ind = wlIndOf(it.code);
+    klineBarsL(it.code).then(function(bars){
+      if (!bars || !bars.length){
+        WLS4K[it.code] = { ok: false, why: '日K 未取到（腾讯 / 新浪 / 东财三通道均失败）', at: Date.now() };
+      }else{
+        var sk = null;
+        try{ sk = s4kScore(bars, (q.price == null ? null : q.price), it.code, ind ? { sectorName: ind } : null); }catch(eS){ sk = null; }
+        WLS4K[it.code] = sk
+          ? { ok: !!sk.ok, sk: sk, why: sk.ok ? '' : (sk.why || '四指标未算出'), at: Date.now() }
+          : { ok: false, why: '打分内核异常', at: Date.now() };
+      }
+      wlRepaintPool();
+      setTimeout(nxt, 0);
+    }).catch(function(){
+      WLS4K[it.code] = { ok: false, why: '日K 请求异常', at: Date.now() };
+      wlRepaintPool();
+      setTimeout(nxt, 0);
+    });
+  }
+  for (var k = 0; k < LANES; k++) setTimeout(nxt, 0);
+}
+/* 四指标得分单元格：未算完 / 算不出都如实标（不拿 0 分冒充「回避档」） */
+function wlS4KCell(code){
+  var e = WLS4K[wlNormCode(code)];
+  if (!e) return '<span class="flat" style="font-size:11px">排队中…</span>';
+  if (!e.ok) return '<span class="flat" title="' + esc(e.why || '') + '">—</span>';
+  return '<div style="min-width:190px">' + s4kCellLogic(e.sk) + '</div>';
+}
+
+/* ---- 自选池实时行情（东财 ulist 主 · 腾讯兜底 · 本机快照保底）----
+   自选池不在任何实时榜单里，必须自己补一次报价，否则「今日涨跌幅 / 最新价 / 量比 / 换手率」永远空。
    取不到就留白（—），**不印 0、不冒充**；异步回来后只在用户还停在自选池 Tab 时重绘
    （同 k10TjEnsure 的写法：同步重绘会被外层 setHtml 覆盖）。 */
 function wlQuoteNeed(){
@@ -29362,38 +29577,49 @@ function wlQuoteNeed(){
 function wlQuoteEnsure(){
   var need = wlQuoteNeed();
   if (!need.length || WLQ_PEND) return;
-  if (typeof loadTxQuotes !== 'function') return;
   WLQ_PEND = true;
   WLQ_AT = Date.now();
-  try{
-    loadTxQuotes(need, 9000).then(function(res){
-      WLQ_PEND = false;
-      var at = Date.now();
+  /* 逐字段合并：本轮拿到的覆盖旧值，没拿到的保留上一轮 ——
+     东财给价、腾讯给量比的互补场景不该互相抹掉（各自字段表不同）。 */
+  function put(code, o){
+    var c = wlNormCode(code), cur = WLQ[c] || {};
+    function pick(k){
+      var v = o[k];
+      if (v != null && isFinite(v)) return v;
+      return (cur[k] != null && isFinite(cur[k])) ? cur[k] : null;
+    }
+    WLQ[c] = { price: pick('price'), pct: pick('pct'), hi: pick('hi'), vr: pick('vr'), tor: pick('tor'), at: Date.now() };
+  }
+  wlQuoteEM(need).then(function(em){
+    Object.keys(em || {}).forEach(function(code){
+      var x = em[code] || {};
+      put(code, { price: parseFloat(x.f2), pct: parseFloat(x.f3), hi: parseFloat(x.f15),
+                  vr: parseFloat(x.f10), tor: parseFloat(x.f8) });
+    });
+    /* 东财没覆盖到、或只给了价没给量比 / 换手的 → 腾讯再补一次（两条通道各取所长） */
+    if (typeof loadTxQuotes !== 'function') return null;
+    var miss = need.filter(function(c){ var q = WLQ[c]; return !q || q.price == null || q.vr == null || q.tor == null; });
+    if (!miss.length) return null;
+    return loadTxQuotes(miss, 8000).then(function(res){
       Object.keys(res || {}).forEach(function(c){
         var a = res[c];
         if (!a || a.length < 40) return;
-        var p = parseFloat(a[3]), pct = parseFloat(a[32]), hi = parseFloat(a[33]);
-        WLQ[wlNormCode(c)] = {
-          price: isFinite(p) ? p : null,
-          pct: isFinite(pct) ? pct : null,
-          hi: isFinite(hi) ? hi : null,
-          at: at
-        };
+        put(c, { price: parseFloat(a[3]), pct: parseFloat(a[32]), hi: parseFloat(a[33]),
+                 tor: parseFloat(a[38]), vr: parseFloat(a[49]) });
       });
-      /* ★ 关键：**没取到的也要记一条空值 + 时间戳**。
-         否则 wlQuoteNeed() 永远判定「这几个还缺」，⑧ 每刷新一次就再打一轮请求，
-         通道整体不通时会变成对同一批代码的无限重试（本机实测 qt.gtimg.cn ERR_FAILED 就是这样）。
-         记空值只影响读感（继续显示「—」），但把重试节流到 60 秒一次 —— 且绝不冒充 0。 */
-      need.forEach(function(c){
-        if (!WLQ[c]) WLQ[c] = { price: null, pct: null, hi: null, at: at };
-      });
-      if (typeof curTab !== 'undefined' && curTab === 'wl'){ try{ renderPool(); }catch(eR){ } }
-    }).catch(function(){
-      WLQ_PEND = false;
-      var at = Date.now();
-      need.forEach(function(c){ if (!WLQ[c]) WLQ[c] = { price: null, pct: null, hi: null, at: at }; });
+    }).catch(function(){ return null; });
+  }).catch(function(){ return null; }).then(function(){
+    WLQ_PEND = false;
+    var at = Date.now();
+    /* ★ 关键：**没取到的也要记一条空值 + 时间戳**。
+       否则 wlQuoteNeed() 永远判定「这几个还缺」，⑧ 每刷新一次就再打一轮请求，
+       通道整体不通时会变成对同一批代码的无限重试（本机实测 qt.gtimg.cn ERR_FAILED 就是这样）。
+       记空值只影响读感（继续显示「—」），但把重试节流到 60 秒一次 —— 且绝不冒充 0。 */
+    need.forEach(function(c){
+      if (!WLQ[c]) WLQ[c] = { price: null, pct: null, hi: null, vr: null, tor: null, at: at };
     });
-  }catch(e){ WLQ_PEND = false; }
+    if (typeof curTab !== 'undefined' && curTab === 'wl'){ try{ renderPool(); }catch(eR){ } }
+  });
 }
 
 /* ---- 事件委托：绑在不会被 setHtml 替换的 section 上，幂等 ---- */
@@ -29613,17 +29839,28 @@ function renderPool(){
       var p2 = function(v){ return (v < 10 ? '0' : '') + v; };
       return p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
     };
-    head = '<tr><th>代码</th><th>名称</th><th>来源</th><th>加入时间</th><th>今日涨跌幅</th><th>最新价</th><th>今日最高</th><th>所属行业</th><th>生命周期阶段</th><th>操作</th></tr>';
+    head = '<tr>' +
+      '<th>代码</th><th>名称</th><th>来源 · 加入时间</th>' +
+      '<th>今日涨跌幅</th><th>最新价</th>' +
+      '<th title="量比 = 当日每分钟均量 ÷ 过去 5 个交易日每分钟均量；≥3 标红（与 🌱 低位启动同一档）。来源：东财 f10 / 腾讯 a[49] / 本机榜单快照，取不到留「—」">量比</th>' +
+      '<th title="换手率 = 当日成交量 ÷ 流通股本；≥10% 标黄。来源：东财 f8 / 腾讯 a[38] / 涨停池自带 hs，取不到留「—」">换手率</th>' +
+      '<th>今日最高</th>' +
+      '<th title="四指标 v3 打分（MA5 + KDJ(9,3,3) + VOL + 冲高回吐 + BIAS · 满分 100，含 S5 板块高度修正 / 一票否决 / 破位闸）—— 与 7.12 中军、7.16 持仓、7.30 三部曲同一内核、同一段文案；日K 200 根 · 30 分钟缓存">四指标得分</th>' +
+      '<th>所属行业</th><th>生命周期阶段</th><th>操作</th></tr>';
     rows = view.map(function(x){
-      var q = WLQ[x.code] || {};
+      var q = wlQOf(x.code);
+      var qtip = q.src ? ('行情来源：' + q.src + (q.at ? '（' + wlDayTxt(q.at) + '）' : '')) : '行情未取到（接口与本机快照都没有这只票）';
       return '<tr>' +
         '<td class="mono">' + esc(x.code) + '</td>' +
         '<td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td>' +
-        '<td><span class="tag tag-b" style="font-size:10px">' + esc(x.from) + '</span></td>' +
-        '<td class="mono" style="color:#94a3b8">' + esc(wlDayTxt(x.addedAt)) + '</td>' +
-        '<td>' + pcts(q.pct == null ? null : q.pct) + '</td>' +
-        '<td class="mono">' + (q.price == null ? '—' : q.price.toFixed(2)) + '</td>' +
-        '<td class="mono">' + (q.hi == null ? '—' : q.hi.toFixed(2)) + '</td>' +
+        '<td><span class="tag tag-b" style="font-size:10px">' + esc(x.from) + '</span>' +
+          '<div class="mono" style="font-size:10px;color:#94a3b8;margin-top:1px">' + esc(wlDayTxt(x.addedAt)) + '</div></td>' +
+        '<td title="' + esc(qtip) + '">' + pcts(q.pct) + '</td>' +
+        '<td class="mono" title="' + esc(qtip) + '">' + (q.price == null ? '—' : q.price.toFixed(2)) + '</td>' +
+        '<td class="mono" title="' + esc(qtip) + '">' + wlVrCell(q.vr) + '</td>' +
+        '<td class="mono" title="' + esc(qtip) + '">' + wlTorCell(q.tor) + '</td>' +
+        '<td class="mono" title="' + esc(qtip) + '">' + (q.hi == null ? '—' : q.hi.toFixed(2)) + '</td>' +
+        '<td>' + wlS4KCell(x.code) + '</td>' +
         '<td>' + esc(x.ind) + '</td>' +
         lifeCell(lifeBarsOf(x.code), lifeCtxOf(x.code, x.name, x.ind, (q.price == null ? null : q.price), {})) +
         '<td><button class="btn b3" type="button" style="min-height:20px;font-size:11px;padding:1px 7px" onclick="wlDelOne(\'' + esc(x.code) + '\');return false" title="从自选池移出（不影响 7.16 个人持仓）">移出</button></td>' +
@@ -29631,8 +29868,10 @@ function renderPool(){
     }).join('');
     /* 行业补查：复用 ⑤ / 7.5 / 🚀 / 🌱 同一条 F10 批量链路（ztIndEnsure + 7 天缓存），首次进入时补一次 */
     try{ ztIndEnsure(wlList().map(function(x){ return { c: x.code }; })); }catch(eWI){ }
-    /* 实时报价：自选池不在任何实时榜单里，不自己补就永远空 */
+    /* 实时报价：自选池不在任何实时榜单里，不自己补就永远空（东财主 + 腾讯备） */
     try{ wlQuoteEnsure(); }catch(eWQ){ }
+    /* 四指标得分：一只一请求，排队算（并发 2），算完一只就地重绘一次 */
+    try{ wlS4KEnsure(); }catch(eS4){ }
   } else {
     head = '<tr><th>代码</th><th>名称</th><th>昨日连板数</th><th>今日涨跌幅</th><th>今日最高</th><th>开盘溢价</th><th>所属行业</th><th>生命周期阶段</th></tr>';
     rows = view.map(function(x){
@@ -29670,10 +29909,38 @@ function renderPool(){
      自选池不在任何实时榜单里，没有别的来源。通道不通时**如实说明并继续留白**，绝不印 0。 */
   var wlNote = '';
   if (t === 'wl'){
-    var qHit = 0, qTot = wlList().length;
-    Object.keys(WLQ).forEach(function(c){ if (WLQ[c] && WLQ[c].price != null) qHit++; });
-    if (!qHit) wlNote = '<div class="note" style="margin:6px 0;color:#fbbf24">⚠ 实时行情暂未取到 —— 「今日涨跌幅 / 最新价 / 今日最高」三列留白（<b>不印 0、不冒充</b>）。自选池不在任何实时榜单里，靠腾讯批量报价单独补（60 秒重试一次）；通道恢复后自动填上，<b>不影响自选池本身的增删</b>。</div>';
-    else if (qHit < qTot) wlNote = '<div class="note" style="margin:6px 0;color:#94a3b8">实时行情已取到 ' + qHit + ' / ' + qTot + ' 只，其余留白（下次刷新自动补齐）。</div>';
+    var qTot = 0, qNet = 0, qLocal = 0, qNone = 0, s4Tot = 0, s4Done = 0, s4Ok = 0;
+    wlList().forEach(function(x){
+      qTot++;
+      var q = wlQOf(x.code);
+      if (q.net) qNet++;
+      else if (q.price != null || q.pct != null || q.vr != null || q.tor != null) qLocal++;
+      else qNone++;
+      var e = WLS4K[wlNormCode(x.code)];
+      s4Tot++;
+      if (e){ s4Done++; if (e.ok) s4Ok++; }
+    });
+    var qTxt;
+    if (!qNet && !qLocal){
+      qTxt = '⚠ 行情尚未返回 —— 涨跌幅 / 最新价 / 量比 / 换手率 / 今日最高 全部留白（<b>不印 0、不冒充</b>）。' +
+        '自选池不在任何实时榜单里，只能单独补报价：<b>东财 ulist（主）→ 腾讯（备）→ 本机当日榜单快照（保底）</b>，60 秒重试一次，' +
+        '三路任一恢复即自动填上，<b>不影响自选池本身的增删</b>。';
+    } else if (!qNet){
+      qTxt = '⚠ 实时接口未回 —— 已用<b>本机当日榜单快照</b>补上 ' + qLocal + ' 只（涨跌幅 / 量比 / 换手取内存里的涨停池 · 涨幅榜 · 低位启动快照，悬停单元格看来源与时点）' +
+        (qNone ? '，另 <b>' + qNone + '</b> 只无任何来源、留白' : '') + '。';
+    } else if (qNet < qTot){
+      qTxt = '实时行情已取到 <b>' + qNet + ' / ' + qTot + '</b> 只' +
+        (qLocal ? '，另 ' + qLocal + ' 只用本机快照顶上' : '') + (qNone ? '，' + qNone + ' 只留白' : '') + '。';
+    } else qTxt = '行情已取到 <b>' + qNet + ' / ' + qTot + '</b> 只（实时接口：东财 ulist 为主，腾讯兜底）';
+    var s4Txt = s4Ok
+      ? ('四指标得分已算出 <b>' + s4Ok + '</b> / ' + s4Tot + ' 只（与 7.12 / 7.16 同一内核、同一段文案）')
+      : (s4Done
+        ? ('四指标得分：<b>' + s4Done + ' / ' + s4Tot + '</b> 只已尝试但均未算出（日K 三通道失败或不足 26 根，悬停「—」看原因）')
+        : '四指标得分正在排队计算（每只一次 200 根日K，并发 2，日K 缓存 30 分钟）…');
+    var nt = [];
+    if (qTxt) nt.push(qTxt);
+    nt.push(s4Txt);
+    wlNote = '<div class="note" style="margin:6px 0;color:' + ((!qNet && !qLocal) ? '#fbbf24' : '#94a3b8') + '">' + nt.join(' ｜ ') + '</div>';
   }
   setHtml($('m8body'), '<div class="filterbar"><span class="flat">按行业筛选：</span><select onchange="poolFilter[\'' + t + '\']=this.value;renderPool()">' +
   indArr.map(function(n){ return '<option' + (n === f ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select>' +
@@ -32331,7 +32598,15 @@ function wtBreadthRowRepaint() {
           return T.map(function (t) { return t.ok + '/' + t.n; }).join(',') +
             '#' + ((typeof D !== 'undefined' && D && D.zb) ? D.zb.length : '-') + '#' + topSig;
         } catch (e) { return 'err'; }
-      })();
+      })() +
+      /* ★ 2026-10-26 §214：盘面强度五读数（涨停 / 跌停 / 炸板率 / 大面 / 核按钮）也挂这条签名。
+         为什么必须带 RENDER_SEQ：大面 / 核按钮的**家数**会随 prevQ 的涨跌幅变（池长度不变、值在变），
+         只比长度会漏重画 → 一屏上「涨停数在动、核按钮数不动」最难察觉。
+         RENDER_SEQ 每轮主刷新 ++（实测 25s+ 一次），等于给这行一个"随主刷新兴"的兜底节拍。 */
+      '|' + (typeof RENDER_SEQ === 'number' ? RENDER_SEQ : '?') +
+      '|' + ((typeof D !== 'undefined' && D) ? ((D.zt || []).length + '/' + (D.dt || []).length + '/' + (D.zb || []).length +
+        '/' + (D.abyss || []).length + '/' + (D.bot100 || []).length + '/' + (D.prev || []).length) : '-') +
+      '|' + ((typeof D !== 'undefined' && D && D.poolOk) ? ((D.poolOk.zt ? 1 : 0) + '' + (D.poolOk.dt ? 1 : 0) + (D.poolOk.zb ? 1 : 0)) : '-');
   } catch (e) { sig = 'err'; }
   if (sig === WT_BREADTH_SIG) return;
   WT_BREADTH_SIG = sig;
@@ -33315,6 +33590,147 @@ function wtLadderRowHtml() {
     '所以 11 点后拿同一区间判会偏乐观 —— 请以 10:00 / 10:30 当时的读数为准，并按你定的规矩在 10:30、11:00 二次复核。') +
     '"><span class="bl">梯队晋级·实时</span>' + chips.join('') + '</div>';
 }
+/* ★ 2026-10-26 §214（用户原话：「一、大盘与量能，实时金价(AU9999)，增加实时涨停 家数 / 跌停 家 /
+   炸板率/大面家数/核按钮家数」）—— 盘面强度五读数。
+   ⚠ 金价（AU9999）**不是**这一行的一部分：它早在 2026-10-23 就作为 IDX_EXT 第 5 张 KPI 卡进了
+   指数网格（IDX_EXT_SECID['xfAU9999'] = 118.AU9999，上金所现货，单位 元/克），本轮只做回归验证。
+
+   五个读数**全部读本台既有同一份源**，零新增请求、零新口径：
+     · 涨停 / 跌停 / 炸板 → D.zt / D.dt / D.zb（东财 push2ex 三池，与 ⑤ 涨停复盘、🩸 风险板块同池）
+     · 大面 / 核按钮      → mrUniverse().stat.face / .nuke（🩸 风险板块的**唯一**判定内核：
+       大面 = 10cm ≤−10% / 20cm ≤−15% / 30cm ≤−20%；核按钮 = 昨涨停今日竞价低开 ≤−5% 或跌停）
+   ⇒ 这里印的数字与 🩸 卡片上的同名 KPI **必然相等**。绝不在这里自己数 D.prevQ：
+     另写一份判定线 = 同页两套口径，迟早互相打脸。
+
+   诚实边界（本台既有纪律）：
+     ① 池本轮没取回、也没有上一轮可用值 → 印「—」+ title 写原因，**绝不印 0**（0 家会被读成冰点）；
+     ② D 里的池是 keepGood 保底的（取数失败会沿用上一轮成功值）→ 沿用旧值时 title 点名「本轮未刷新」；
+     ③ 大面 / 核按钮 只有在「风险侧样本真的到过」时才给数，否则留白（缺失 ≠ 0）。 */
+function wtSurgeStat() {
+  var out = { zt: null, dt: null, zb: null, zbc: null, face: null, nuke: null,
+    ztOk: false, dtOk: false, zbOk: false, faceOk: false, nukeOk: false, stale: false, prevN: 0 };
+  try {
+    if (typeof D === 'undefined' || !D) return out;
+    var pok = D.poolOk || {};
+    var ln = function (a) { return (a && a.length) ? a.length : 0; };
+    var zn = ln(D.zt), dn = ln(D.dt), bn = ln(D.zb);
+    /* 「有没有数」的判据：本轮 poolOk 为真，或者数组里有值（keepGood 沿用的上一轮成功值） */
+    out.ztOk = (pok.zt === true) || zn > 0;
+    out.dtOk = (pok.dt === true) || dn > 0;
+    out.zbOk = (pok.zb === true) || bn > 0;
+    out.stale = (pok.zt === false || pok.dt === false || pok.zb === false);
+    if (out.ztOk) out.zt = zn;
+    if (out.dtOk) out.dt = dn;
+    if (out.zbOk) out.zb = bn;
+    /* 炸板率 = 炸板 ÷（涨停 + 炸板）。分母为 0 → null（不印 0%，0% 会被读成"封板完美"） */
+    if (out.ztOk && out.zbOk && (zn + bn) > 0) out.zbc = bn / (zn + bn) * 100;
+    out.prevN = ln(D.prev);
+    /* 风险侧：只有样本确实到过才给数 */
+    var faceSrc = (pok.dt === true) || (ln(D.abyss) > 0) || (ln(D.bot100) > 0);
+    var nukeSrc = ln(D.prev) > 0 && D.prevQ && Object.keys(D.prevQ).length > 0;
+    try {
+      var o = mrUniverse();
+      if (o && o.stat) {
+        if (faceSrc) { out.face = o.stat.face; out.faceOk = true; }
+        if (nukeSrc) { out.nuke = o.stat.nuke; out.nukeOk = true; }
+      }
+    } catch (eMR) { }
+  } catch (e) { }
+  return out;
+}
+/* 档位口径（全部取自本台已披露的原文，写死在注释里供对照；不新造阈值）：
+     涨停家数：≥40 偏强 ｜ 20~39 中性 ｜ <20 偏弱   ← 盯盘卡「情绪三档」原文（本卡上方 details 里逐字写着）
+     跌停家数：<5 少 ｜ 5~15 正常 ｜ >15 偏多        ← 同上
+     炸板率：  <20% 低 ｜ 20~39.9% 中 ｜ ≥40% 高    ← 「虚强」「退潮期炸板潮」同一把尺（≥40% 一票否决）
+     大面：    0 无 ｜ 1~9 零星 ｜ ≥10 成潮          ← 本台自定（便于一眼分档），非外部标准
+     核按钮：  0 无 ｜ 1~2 个别 ｜ ≥3 偏多            ← 本台自定；同时给出「占昨涨停 N%」供与 7.44 对齐 */
+function wtSurgeRowHtml() {
+  var s = null;
+  try { s = wtSurgeStat(); } catch (e) { return ''; }
+  if (!s) return '';
+  var fN = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+  var chips = [], tips = [];
+  var NA = '<span class="v">—</span>';
+  function sg(cls, key, valHtml, tail) {
+    return '<span class="sg' + (cls ? ' ' + cls : '') + '"><span class="k">' + key + '</span>' + valHtml +
+      (tail ? '<span class="u">' + tail + '</span>' : '') + '</span>';
+  }
+
+  /* ① 涨停家数 */
+  if (s.zt == null) {
+    chips.push(sg('na', '涨停', NA, '未取到'));
+    tips.push('涨停家数：涨停池本轮未取回、且没有上一轮可用值 → 留白（不印 0）');
+  } else {
+    var ztLv = s.zt >= 40 ? '偏强' : (s.zt >= 20 ? '中性' : '偏弱');
+    chips.push(sg('', '涨停', '<span class="v up">' + fN(s.zt) + '</span>', '家 · ' + ztLv));
+    tips.push('涨停 ' + s.zt + ' 家\n' +
+      '来源：东财涨停池 D.zt（与 ⑤ 涨停复盘 / 🩸 风险板块同一份，已剔 ST / 退市）\n' +
+      '档位：≥40 偏强 ｜ 20~39 中性 ｜ <20 偏弱（盯盘卡「情绪三档」原文）\n' +
+      '当前判：' + ztLv);
+  }
+
+  /* ② 跌停家数 */
+  if (s.dt == null) {
+    chips.push(sg('na', '跌停', NA, '未取到'));
+    tips.push('跌停家数：跌停池本轮未取回、且没有上一轮可用值 → 留白（不印 0）');
+  } else {
+    var dtLv = s.dt > 15 ? '偏多' : (s.dt >= 5 ? '正常' : '少');
+    chips.push(sg(s.dt > 15 ? 'risk' : '', '跌停', '<span class="v dn">' + fN(s.dt) + '</span>', '家 · ' + dtLv));
+    tips.push('跌停 ' + s.dt + ' 家（东财跌停池 D.dt，lbt:asc 排序）\n' +
+      '档位：<5 少 ｜ 5~15 正常 ｜ >15 偏多\n' +
+      '⚠ 与 🩸 风险板块的「跌停」KPI 可能差 1~3 家：那边是「跌停池 ∪ 跌幅已达板别上限」的并集（含 20cm −19.x 这类未封死也算），' +
+      '本行只数**池内**家数。两个数都真，口径不同，这里取池口径与 ⑤ 涨停复盘对称。');
+  }
+
+  /* ③ 炸板率 */
+  if (s.zbc == null) {
+    chips.push(sg('na', '炸板率', NA, '未取到'));
+    tips.push('炸板率：涨停池或炸板池缺一边 → 留白（不印 0%，0% 会被读成"封板完美"）');
+  } else {
+    var zbLv = s.zbc >= 40 ? '高' : (s.zbc >= 20 ? '中' : '低');
+    var zbCls = s.zbc >= 40 ? 'alert' : '';
+    var zbVc = s.zbc >= 40 ? 'warn' : '';
+    chips.push(sg(zbCls, '炸板率', '<span class="v ' + zbVc + '">' + s.zbc.toFixed(1) + '%</span>',
+      s.zb + '炸 / ' + (s.zt + s.zb) + ' · ' + zbLv));
+    tips.push('炸板率 = 炸板 ' + s.zb + ' ÷（涨停 ' + s.zt + ' + 炸板 ' + s.zb + '）= ' + s.zbc.toFixed(1) + '%\n' +
+      '档位：<20% 低 ｜ 20~39.9% 中 ｜ ≥40% 高\n' +
+      '≥40% 在本台是**一票否决线**（虚强 / 退潮期炸板潮 / 7.10B 封板质量否决，三处同一把尺）→ 本行转橙框。\n' +
+      '注意：这是「炸板 ÷ 已触及涨停的全部个股」，不含全程没碰到涨停的票。');
+  }
+
+  /* ④ 大面家数 */
+  if (!s.faceOk || s.face == null) {
+    chips.push(sg('na', '大面', NA, '样本缺失'));
+    tips.push('大面：跌幅榜 / 跌停池 / 昨涨停池三路样本都没到 → 留白（缺失 ≠ 0）');
+  } else {
+    var fcLv = s.face >= 10 ? '成潮' : (s.face > 0 ? '零星' : '无');
+    chips.push(sg(s.face >= 10 ? 'risk' : '', '大面', '<span class="v dn">' + fN(s.face) + '</span>', '家 · ' + fcLv));
+    tips.push('大面 ' + s.face + ' 家｜口径 = 🩸 风险板块**同一内核**（mrUniverse）：\n' +
+      '10cm ≤−10% ｜ 20cm ≤−15% ｜ 30cm ≤−20%（含跌停，已剔 ST / 退市）\n' +
+      '档位（本台自定）：0 无 ｜ 1~9 零星 ｜ ≥10 成潮');
+  }
+
+  /* ⑤ 核按钮家数 */
+  if (!s.nukeOk || s.nuke == null) {
+    chips.push(sg('na', '核按钮', NA, '样本缺失'));
+    tips.push('核按钮：昨日涨停池 / 今日报价没到 → 留白（缺失 ≠ 0）');
+  } else {
+    var nkRate = s.prevN > 0 ? (s.nuke / s.prevN * 100) : null;
+    var nkLv = s.nuke >= 3 ? '偏多' : (s.nuke > 0 ? '个别' : '无');
+    chips.push(sg(s.nuke >= 3 ? 'alert' : '', '核按钮', '<span class="v warn">' + fN(s.nuke) + '</span>',
+      '家 · ' + nkLv + (nkRate == null ? '' : ' · 占昨停 ' + nkRate.toFixed(1) + '%')));
+    tips.push('核按钮 ' + s.nuke + ' 家｜口径 = 🩸 风险板块**同一判定**：昨日涨停 → 今日竞价低开 ≤−5% 或直接跌停\n' +
+      (nkRate == null ? '' : '占昨涨停池比 = ' + s.nuke + ' ÷ ' + s.prevN + ' 只 = ' + nkRate.toFixed(1) + '%（7.44 亏钱效应 B 侧同源）\n') +
+      '档位（本台自定）：0 无 ｜ 1~2 个别 ｜ ≥3 偏多 → 本行转橙框');
+  }
+
+  if (!chips.length) return '';
+  var staleTxt = s.stale ? '<span class="u" style="margin-left:2px">（部分池沿用上一轮 · 本轮未刷新）</span>' : '';
+  return '<div class="wt-lrow" id="wtSurgeRow" title="' +
+    esc(tips.join('\n\n') + '\n\n【更新节奏】与 ⑤ / 🩸 同一条主刷新链（盘中约 25~180 秒一拍，收盘口径下按当前接口实取当日值）。\n' +
+      '【为什么不印 0】0 家是"今天真没跌停 / 真没核按钮"，缺失是"没取到"——两者混成一档，冰点与正常就分不出来了。') +
+    '"><span class="bl">盘面强度·实时</span>' + staleTxt + chips.join('') + '</div>';
+}
 function wtBreadthHtml() {
   var c = null;
   try { c = emoCtx(); } catch (e) { c = null; }
@@ -33365,8 +33781,12 @@ function wtBreadthHtml() {
     tips.push('实时成交额：未取到（D.amtToday 为空或 ≤0；盘前无成交时也走这一支，不印 0.00 亿）');
   }
 
+  /* ★ 2026-10-26 §214：涨跌家数（广度）之后 = 盘面强度（涨停 / 跌停 / 炸板率 / 大面 / 核按钮），
+     再之后才是梯队晋级（高度）。一眼读下来的顺序就是「广度 → 强度 → 高度」，
+     与 ⑥ 情绪周期里「涨跌家数 → 涨跌停比 → 连板梯队」的核对顺序一致。 */
   return '<div class="wt-breadth" id="wtBreadth" title="' + esc(tips.join('\n\n')) + '">' +
     '<div class="wt-brow">' + segs.join('') + '</div>' +
+    wtSurgeRowHtml() +
     wtLadderRowHtml() + '</div>';
 }
 /* 分级条主体：给「一、大盘与量能」的指数网格补一条结论行。
@@ -34191,7 +34611,12 @@ function wtRender() {
       h += '<div class="wt-kpi wt-kpi-ext" title="' + esc(IDX_EXT_TIP[x.sym] || '') + '"><div class="l">' + esc(x.name) +
         '<span class="ext-tag">外</span></div>' +
         '<div class="v ' + (q.chgPct > 0 ? 'wt-up' : (q.chgPct < 0 ? 'wt-dn' : '')) + '">' +
-        (q.price == null ? '—' : q.price.toFixed(2) + (IDX_EXT_UNIT[x.sym] || '')) + '　' + wtPct(q.chgPct) + '</div>' +
+        /* ★ 2026-10-26 §214：单位（元/克）单独包一层 white-space:nowrap ——
+           980px 视口下卡宽只剩 ~142px，「862.35 元/克 -0.19%」必折行，
+           而浏览器会在「元/」和「克」之间断，读出来就是「862.35 元 / 克 -0.19%」。
+           加 nowrap 后折行点被推到单位之后：「862.35 元/克」/「-0.19%」，单位不再被劈开。
+           只影响这一张卡（A股 8 只没有单位后缀），不动 .v 的任何既有样式。 */
+        (q.price == null ? '—' : q.price.toFixed(2) + (IDX_EXT_UNIT[x.sym] ? '<span style="white-space:nowrap">' + esc(IDX_EXT_UNIT[x.sym]) + '</span>' : '')) + '　' + wtPct(q.chgPct) + '</div>' +
         '<div class="d">' + (IDX_EXT_NOTE[x.sym] || '外盘实时') + '</div>' +
         '<div class="d w15line" data-w15line="' + esc(x.sym) + '" data-ext="1">' + wt15SpanHtml(x.sym, true) + '</div></div>';
       return;

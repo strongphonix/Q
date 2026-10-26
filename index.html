@@ -825,6 +825,23 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
   #wtop .wt-breadth .wt-lrow .sg.alert { border-color:rgba(251,146,60,.5); background:rgba(251,146,60,.1); }
   /* 池未取回 → 虚线降权，与 .lt.few 同一套「别当读数用」的视觉约定 */
   #wtop .wt-breadth .wt-lrow .sg.na { border-style:dashed; opacity:.7; }
+  /* ★ 2026-10-26 §215：强势异动·板块行（「9:35」首根 / 「当日」累计 两个口径）。
+     视觉上刻意与上两行分开：青蓝小标签当口径头（与 🚀 卡组头 #38bdf8 呼应），板块用红系胶囊
+     （强势异动 = 进攻，与本台涨红同义）。不复用 .sg（读数行，灰边）也不复用 .lt（档位胶囊）——
+     一行里三套语义各用各的形状，才不会看串。 */
+  #wtop .wt-breadth .wt-lrow .as-hd { font-size:10.5px; font-weight:700; color:#7dd3fc; letter-spacing:.2px;
+    padding:1px 7px; border-radius:5px; border:1px solid rgba(56,189,248,.28); background:rgba(56,189,248,.1);
+    font-variant-numeric:tabular-nums; white-space:nowrap; }
+  #wtop .wt-breadth .wt-lrow .as { display:inline-flex; align-items:baseline; gap:5px; padding:1px 9px; border-radius:999px;
+    border:1px solid rgba(240,69,58,.3); background:rgba(240,69,58,.06); color:#cbd5e1; cursor:help; }
+  #wtop .wt-breadth .wt-lrow .as .an { font-size:10.5px; color:#e2e8f0; max-width:132px; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+  #wtop .wt-breadth .wt-lrow .as b { font-weight:800; color:#ff9f97; font-variant-numeric:tabular-nums; }
+  #wtop .wt-breadth .wt-lrow .as .at { font-size:10px; color:#fca5a5; font-variant-numeric:tabular-nums; }
+  #wtop .wt-breadth .wt-lrow .as-more { font-size:10.5px; color:#64748b; padding:1px 7px; border-radius:999px;
+    border:1px dashed rgba(148,163,184,.3); cursor:help; white-space:nowrap; }
+  #wtop .wt-breadth .wt-lrow .as-none { font-size:11px; color:#64748b; }
+  #wtop .wt-breadth .wt-lrow .as-sep { color:#334155; margin:0 2px; }
   /* 指数「较 15 分钟前」（2026-10-22 追加）：涨红 / 跌绿 / 平白 —— 用户明确指定，
      与全站涨红跌绿一致；「平」用近白（#e2e8f0）而非灰色，否则在深底上会被当成"没数据" */
   #wtop .wt-kpi .d.w15line { margin-top:1px; }
@@ -32606,7 +32623,15 @@ function wtBreadthRowRepaint() {
       '|' + (typeof RENDER_SEQ === 'number' ? RENDER_SEQ : '?') +
       '|' + ((typeof D !== 'undefined' && D) ? ((D.zt || []).length + '/' + (D.dt || []).length + '/' + (D.zb || []).length +
         '/' + (D.abyss || []).length + '/' + (D.bot100 || []).length + '/' + (D.prev || []).length) : '-') +
-      '|' + ((typeof D !== 'undefined' && D && D.poolOk) ? ((D.poolOk.zt ? 1 : 0) + '' + (D.poolOk.dt ? 1 : 0) + (D.poolOk.zb ? 1 : 0)) : '-');
+      '|' + ((typeof D !== 'undefined' && D && D.poolOk) ? ((D.poolOk.zt ? 1 : 0) + '' + (D.poolOk.dt ? 1 : 0) + (D.poolOk.zb ? 1 : 0)) : '-') +
+      /* ★ 2026-10-26 §215：强势异动板块行也挂这条签名。
+         它的输入是 M5S_KEEP（当日留存表）—— 换场 / 新增一只达标票都会改 map 长度或 d。
+         为什么不把「各板块家数」也拼进签名：那需要跑一遍 m5sKeepRows（虽然只读但仍是全表遍历），
+         而 RENDER_SEQ 已经是每轮主刷新 ++，逐轮兜底足够；家数在同一天内「只增不减」，
+         长度变了才会重画，不会漏掉新出现的板块。 */
+      '|' + ((typeof M5S_KEEP !== 'undefined' && M5S_KEEP)
+        ? ((M5S_KEEP.d || '-') + ':' + Object.keys(M5S_KEEP.map || {}).length)
+        : '-');
   } catch (e) { sig = 'err'; }
   if (sig === WT_BREADTH_SIG) return;
   WT_BREADTH_SIG = sig;
@@ -33731,6 +33756,153 @@ function wtSurgeRowHtml() {
       '【为什么不印 0】0 家是"今天真没跌停 / 真没核按钮"，缺失是"没取到"——两者混成一档，冰点与正常就分不出来了。') +
     '"><span class="bl">盘面强度·实时</span>' + staleTxt + chips.join('') + '</div>';
 }
+/* ===== ★ 2026-10-26 §215：强势异动「>3 家的行业板块」=====
+   用户原话：「一、大盘与量能，梯队晋级·实时 …（昨高板 / 1进2 / 2进3 / 3进4）…后，
+   增加强势异动模块中，9点35 强势异动大于3家的行业板块」
+
+   ① 为什么取数必须走 m5sKeepRows()，而不是 m5sRows()：
+      m5sRows()    = 本轮实时达标（票一旦掉出监控池就没有行情，也就从结果里消失）；
+      m5sKeepRows()= 当日留存表的**出口复验**（换场 / 待核 / 门槛三道闸门 + 当前封板剔除），
+      **它才是 🚀 卡真正显示的那批票**。从 m5sRows() 取会漏掉所有「盘中冲高、随后掉出涨幅榜」
+      的票 —— 而那恰恰是强势异动最该被记住的那一批。
+      调用时必须带 { quiet: true }（§215 同时给 m5sKeepRows 加了只读模式）：
+      这个函数默认会归零/累加 M5S.keepDrop* 七个计数器、标封板黑名单、回写存档、必要时落盘；
+      在渲染横幅时顺手调它 = 一次渲染冲掉 🚀 卡状态栏的计数，还会多打一次 localStorage。
+
+   ② 两个口径都印（用户字面只点了「9点35」，只印一个会让人以为另一个是错的）：
+      「9:35」   只算 09:30→09:35 这一根（当日首根）单根涨幅 ≥ 强势档门槛的票 —— 开盘 5 分钟谁在抢筹；
+      「当日」   9:35 起任意一根 ≥ 门槛（= 🚀 卡当前的全部行）—— 今天谁曾经强过。
+      两者不是同义词：前者是「开盘就动手」，后者含「盘中才发力」，对照着看才知道是抢筹还是跟风。
+
+   ③ 家数门槛按用户原话「大于 3 家」→ **≥4 家**才列出（严格大于；3 家不列）。
+   ④ 板块口径 = r.sec = secIndOf(code, hybk)，与 ⑤ 涨停复盘 / 7.5 板块总表 / 🚀 分组**同一把尺**；
+      「未分类 / 其他 / —」不是行业板块，一律不入统计（否则一个「其他 8 家」就能挤掉真正的板块）。
+   ⑤ 首根口径沿用既有规矩 max(收÷昨收, 收÷开)：高开吃满缺口、低开不被压低。
+      拿不到昨收的票退化为「收÷开」（未含跳空），这类票的首根家数会偏少 —— 已在 title 里披露，不悄悄补偿。 */
+var WT_ASEC = {
+  min: 3,        /* 家数必须 **> 3** 才列出（用户原话「大于3家」） */
+  show: 4,       /* 每个口径在版面上最多列 4 个板块，其余折成「+N 个板块」，全清单进 title */
+  firstHmMax: 935 /* 首根必须 ≤ 09:35（09:30 与 09:35 两种时间戳都算首根；10:30 才出首根的不算「9点35」） */
+};
+/* 'HH:MM' → 935 这样的整数（用于比较时段）；格式不对返回 -1 */
+function wtHmNum(hm) {
+  var m = String(hm == null ? '' : hm).match(/^(\d{1,2}):(\d{2})$/);
+  return m ? (parseInt(m[1], 10) * 100 + parseInt(m[2], 10)) : -1;
+}
+/* 纯函数：按板块聚合。rows = m5sKeepRows 的输出；mode='first' 只算「首根 9:35 那根达标」的票。
+   ⚠ 纯函数（不读写任何全局状态），单测直接喂夹具即可，不必起浏览器。 */
+function wtAnomSecAgg(rows, mode, min) {
+  var g = {}, ord = [];
+  (rows || []).forEach(function (r) {
+    if (!r || !r.c) return;
+    var sec = String(r.sec == null ? '' : r.sec);
+    if (!sec || sec === '未分类' || sec === '其他' || sec === '—') return;
+    var v = null;
+    if (mode === 'first') {
+      /* 首根闸门：① 必须是当日首根且首根时间 ≤ 09:35；② 首根涨幅必须真的过强势档门槛 */
+      var hmN = wtHmNum(r.firstHm);
+      if (hmN < 0 || hmN > WT_ASEC.firstHmMax) return;
+      var fl = null;
+      try { fl = m5sStrongFloor(r.lim); } catch (eF) { fl = null; }
+      if (fl == null || !isFinite(fl)) fl = 3;
+      var f = r.firstG;
+      if (f == null || !isFinite(f) || f < fl - 1e-9) return;
+      v = f;
+    } else {
+      v = (r.best != null && isFinite(r.best)) ? r.best : null;
+    }
+    if (!g[sec]) { g[sec] = { sec: sec, n: 0, top: null, names: [] }; ord.push(sec); }
+    var o = g[sec];
+    o.n++;
+    if (o.names.length < 8) o.names.push(String(r.n || r.c));
+    if (v != null && (o.top == null || v > o.top)) o.top = v;
+  });
+  return ord.map(function (k) { return g[k]; })
+    .filter(function (x) { return x.n > min; })
+    .sort(function (a, b) {
+      if (b.n !== a.n) return b.n - a.n;                 /* 家数多的在前 */
+      return (b.top == null ? 0 : b.top) - (a.top == null ? 0 : a.top);   /* 同家数比最强那只 */
+    });
+}
+function wtAnomSecStat() {
+  var out = { ok: false, why: '', day: '', at: 0, rowsN: 0, firstN: 0, first: [], all: [] };
+  try {
+    if (typeof M5S_KEEP === 'undefined' || !M5S_KEEP || !M5S_KEEP.map) { out.why = 'noKeep'; return out; }
+    if (!M5S_KEEP.d) { out.why = 'noDay'; return out; }
+    if (typeof m5sKeepRows !== 'function') { out.why = 'noFn'; return out; }
+    var rows = m5sKeepRows(Date.now(), { quiet: true });
+    out.ok = true;
+    out.day = M5S_KEEP.d;
+    out.at = M5S_KEEP.at || 0;
+    out.rowsN = (rows || []).length;
+    out.firstN = (rows || []).filter(function (r) {
+      var n = wtHmNum(r && r.firstHm); return n >= 0 && n <= WT_ASEC.firstHmMax;
+    }).length;
+    out.first = wtAnomSecAgg(rows, 'first', WT_ASEC.min);
+    out.all = wtAnomSecAgg(rows, 'all', WT_ASEC.min);
+  } catch (e) { out.ok = false; out.why = 'err:' + ((e && e.message) || e); }
+  return out;
+}
+function wtAnomSecRowHtml() {
+  var s = null;
+  try { s = wtAnomSecStat(); } catch (e) { return ''; }
+  if (!s) return '';
+  var hd = function (t) { return '<span class="as-hd">' + t + '</span>'; };
+  var tips = [];
+  var base = '【口径】板块 = secIndOf(code, hybk)，与 ⑤ 涨停复盘 / 7.5 板块总表 / 🚀 分组同一把尺；' +
+    '「未分类 / 其他」不算行业板块，不入统计。\n' +
+    '【门槛】家数 **> 3**（即 ≥4 家）才列出 —— 按你原话「大于3家」，3 家不列。\n' +
+    '【两个口径】\n' +
+    '  · 9:35 = 当日首根（09:30→09:35）那一根单根涨幅 ≥ 强势档门槛（主板/创业板/科创板同为 3%）。\n' +
+    '    首根取 max(收÷昨收, 收÷开)：高开吃满缺口、低开不被压低。拿不到昨收的票退化为 收÷开（未含跳空），\n' +
+    '    这类票的首根家数会偏少 —— 不补偿、不猜。\n' +
+    '  · 当日 = 9:35 起任意一根 5 分钟 K 线 ≥ 门槛（= 🚀 强势异动当前的全部行）。\n' +
+    '  · 两者不是同义词：前者「开盘就动手」，后者含「盘中才发力」。对照看才分得清抢筹与跟风。\n' +
+    '【覆盖】只统计当日 5 分钟 K 线**已核对**的票（K 线每 12 秒核 12 只、池内 ≤5 分钟覆盖一遍）；\n' +
+    '  未核到的票不会被当成「没异动」，只是还没进统计 —— 刚开盘时家数偏少属正常。';
+
+  if (!s.ok) {
+    var whyTxt = (s.why === 'noKeep' || s.why === 'noDay')
+      ? '🚀 当日还没跑过强势异动扫描（无留存）'
+      : (s.why === 'noFn' ? '强势异动模块未加载' : '统计异常：' + esc(s.why));
+    return '<div class="wt-lrow" id="wtAnomSecRow" title="' + esc(base + '\n\n【当前】' + whyTxt) + '">' +
+      '<span class="bl na">强势异动·板块 ' + esc(whyTxt) + '</span></div>';
+  }
+  if (!s.rowsN) {
+    return '<div class="wt-lrow" id="wtAnomSecRow" title="' + esc(base +
+      '\n\n【当前】当日留存表为空：今天还没有任何一只股票走出「单根 5 分钟 ≥3% 且当前未封板」。\n' +
+      '注意这与「没取到」不同 —— 是确实一只都没有。') + '">' +
+      '<span class="bl">强势异动·板块</span>' + hd('同日') +
+      '<span class="as-none">当日无强势异动个股</span></div>';
+  }
+  function chip(x, mode) {
+    var top = (x.top != null && isFinite(x.top)) ? ('<span class="at">+' + x.top.toFixed(2) + '%</span>') : '';
+    var t = x.sec + ' · ' + x.n + ' 家（' + (mode === 'first' ? '9:35 首根' : '当日任意一根') + ' ≥3%）\n' +
+      '最强 ' + (x.top == null ? '—' : '+' + x.top.toFixed(2) + '%') + '\n' +
+      x.names.join('、') + (x.n > x.names.length ? ' …' : '');
+    return '<span class="as" title="' + esc(t) + '">' +
+      '<span class="an">' + esc(x.sec) + '</span><b>' + x.n + '</b>' + top + '</span>';
+  }
+  function grp(arr, tag, mode) {
+    if (!arr.length) return hd(tag) + '<span class="as-none">无（无板块 >3 家）</span>';
+    var shown = arr.slice(0, WT_ASEC.show);
+    var rest = arr.slice(WT_ASEC.show);
+    var more = rest.length
+      ? '<span class="as-more" title="' + esc(rest.map(function (x) { return x.sec + ' ' + x.n + ' 家'; }).join(' · ')) + '">+' + rest.length + ' 个板块</span>'
+      : '';
+    return hd(tag) + shown.map(function (x) { return chip(x, mode); }).join('') + more;
+  }
+  /* 全清单进 title：版面只列 4 个，但「哪几个板块够格」是判断题，不能只靠悬停才发现 */
+  var full = '\n\n【9:35 首根 · 全部】' +
+    (s.first.length ? s.first.map(function (x) { return x.sec + ' ' + x.n + ' 家（最强 +' + (x.top == null ? '—' : x.top.toFixed(2)) + '%）'; }).join('\n') : '无') +
+    '\n\n【当日累计 · 全部】' +
+    (s.all.length ? s.all.map(function (x) { return x.sec + ' ' + x.n + ' 家（最强 +' + (x.top == null ? '—' : x.top.toFixed(2)) + '%）'; }).join('\n') : '无') +
+    '\n\n【样本】当日强势异动 ' + s.rowsN + ' 只，其中 ' + s.firstN + ' 只的首根落在 ≤09:35；' +
+    (s.day ? '存档交易日 ' + s.day : '');
+  return '<div class="wt-lrow" id="wtAnomSecRow" title="' + esc(base + full) + '">' +
+    '<span class="bl">强势异动·板块</span>' +
+    grp(s.first, '9:35', 'first') + '<span class="as-sep">｜</span>' + grp(s.all, '当日', 'all') + '</div>';
+}
 function wtBreadthHtml() {
   var c = null;
   try { c = emoCtx(); } catch (e) { c = null; }
@@ -33787,7 +33959,9 @@ function wtBreadthHtml() {
   return '<div class="wt-breadth" id="wtBreadth" title="' + esc(tips.join('\n\n')) + '">' +
     '<div class="wt-brow">' + segs.join('') + '</div>' +
     wtSurgeRowHtml() +
-    wtLadderRowHtml() + '</div>';
+    wtLadderRowHtml() +
+    /* ★ 2026-10-26 §215：强势异动 >3 家的行业板块（两个口径：9:35 首根 / 当日累计） */
+    wtAnomSecRowHtml() + '</div>';
 }
 /* 分级条主体：给「一、大盘与量能」的指数网格补一条结论行。
    只标用户点名的两只（上证 = 主板基准、创业板 = 适配修正），其余六只指数不加，
@@ -36613,13 +36787,25 @@ function m5sKeepUpdate(rows, now) {
 /* 留存表 → 展示行。价格 / 涨跌幅 / 是否封板 用**当前快照**补（票掉出达标线后仍要看它现在怎么样）。
    ★ 第四轮：「仍强 / 已回落」= **最后一根 5 分钟 K 线**的单根涨幅 vs 强势档门槛（与上榜同一口径）；
      无当日 K 线（未核到 / 停牌）→ still=null，显示「—」，绝不冒充「已回落」。 */
-function m5sKeepRows(now) {
+function m5sKeepRows(now, opt) {
+  /* ★ 2026-10-26 §215：新增**只读模式** `opt.quiet`。
+     起因：「一、大盘与量能」要在梯队晋级下面显示「强势异动 >3 家的行业板块」，
+     唯一的正确数据源就是本函数（它才是 🚀 卡实际显示的那批票，且带着当日 K 线的复验结论）。
+     但本函数**每一步都在写状态**：归零并累加 M5S.keepDrop* 七个计数器、m5sBlkMark 记封板剔除、
+     回写 rec.hi / rec.p / rec.pSrc、必要时 m5sKeepSave() 落盘。
+     在渲染横幅时顺手调它 = 一次渲染就把 🚀 卡状态栏的计数冲掉、还多打一次 localStorage ——
+     白天看不出来，等某轮渲染恰好插在 m5sRender 中间，状态栏就会闪出一个错的数。
+     ⇒ quiet=true 时**只读不写**：不碰计数器、不标黑名单、不回写存档、不落盘。
+       默认（不传 opt）行为逐字不变，🚀 卡零回归。 */
+  var quiet = !!(opt && opt.quiet);
   var snap = (typeof ANOM !== 'undefined' && ANOM && ANOM.snap) ? ANOM.snap : null;
   var secM = {};
   try { secM = anomSecMap(); } catch (e1) { }
   var out = [], c, needSave = false;
-  M5S.keepDropLimit = 0; M5S.keepDropNeg = 0; M5S.keepUnk = 0;
-  M5S.keepDropOld = 0; M5S.keepDropRoll = 0; M5S.keepDropWeak = 0; M5S.keepNoQuote = 0;
+  if (!quiet) {
+    M5S.keepDropLimit = 0; M5S.keepDropNeg = 0; M5S.keepUnk = 0;
+    M5S.keepDropOld = 0; M5S.keepDropRoll = 0; M5S.keepDropWeak = 0; M5S.keepNoQuote = 0;
+  }
   for (c in M5S_KEEP.map) {
     var r = M5S_KEEP.map[c];
     if (!r || !r.c) continue;
@@ -36631,8 +36817,8 @@ function m5sKeepRows(now) {
          ③ 达标值必须真的过门槛（best ≥ 强势档下界），防「口径一改、旧值虚高」蒙混。
        ①先于②：口径不明的旧账连「属于哪天」都无从谈起，归因到「待核」比「跨日」准确。
        三条都过才往下走，后面才轮到原有的「触板 / 收涨」两道闸门。 */
-    if (r.src && r.src !== 'm5') { M5S.keepDropRoll++; continue; }
-    if (M5S_KEEP.d && m5kDate(r.barAt) !== M5S_KEEP.d) { M5S.keepDropOld++; continue; }
+    if (r.src && r.src !== 'm5') { if (!quiet) M5S.keepDropRoll++; continue; }
+    if (M5S_KEEP.d && m5kDate(r.barAt) !== M5S_KEEP.d) { if (!quiet) M5S.keepDropOld++; continue; }
     var floorK = m5sStrongFloor(r.lim);
     /* ★ 2026-10-23 第九轮：③ 号闸门改成**以当日 K 线真值为准**。
        旧版拿 rec.best 判门槛，而 rec.best 是「上一版抓到未走完那根」留下的虚高（只增不减），
@@ -36644,10 +36830,10 @@ function m5sKeepRows(now) {
     var mgNowOk = !!(mgNow && M5S_KEEP.d && mgNow.date === M5S_KEEP.d);
     var bestK = mgNowOk ? mgNow.max : r.best;
     var barAtK = mgNowOk ? mgNow.at : r.barAt;
-    if (bestK == null || !isFinite(bestK) || bestK < floorK - 1e-9) { M5S.keepDropWeak++; continue; }
+    if (bestK == null || !isFinite(bestK) || bestK < floorK - 1e-9) { if (!quiet) M5S.keepDropWeak++; continue; }
     /* 行情来源：优先本轮监控池快照，其次补快照（掉池票），两者都没有 → 沿用存档值但记一笔 */
     var s = (snap ? snap[c] : null) || (M5S.q ? M5S.q[c] : null);
-    if (!s) M5S.keepNoQuote++;
+    if (!s && !quiet) M5S.keepNoQuote++;
     /* 行情时间戳（用于「陈旧」披露）：池内快照用 ANOM.t，补快照用 q.at */
     var qAt = 0;
     if (snap && snap[c]) qAt = (typeof ANOM !== 'undefined' && ANOM && ANOM.t) ? ANOM.t : 0;
@@ -36686,12 +36872,15 @@ function m5sKeepRows(now) {
       if (p > hi) hi = p;
     }
     if (p > hi) hi = p;
-    r.hi = hi;   /* 回写：跨轮、跨刷新都把「曾摸到多高」守住 */
+    if (!quiet) r.hi = hi;   /* 回写：跨轮、跨刷新都把「曾摸到多高」守住（quiet 只读，不写存档） */
     /* 价格也回写（2026-10-23 第九轮）：用户收盘后看到的「最终涨幅」就靠这一条落盘，
        否则每次刷新都退回入表那一刻的 p/pct。
        第十轮：收盘 K 线口径的回写**不看有没有快照**（收盘后快照本来就是 null），
        并把来源与所用 K 线时间一起落盘，供行内标注「收盘价」而不是「非收盘」。 */
-    if (pSrc === 'kbar') {
+    /* ★ §215：整段回写只在非 quiet 下做 —— quiet 调用方（大盘横幅的板块统计）只需要
+       sec / firstG / best 这几个只读字段，返回值里的 p / pct / hi 都是本函数的局部变量，
+       不回写不影响读数，但能避免横幅渲染改动 🚀 卡的存档（那是另一个功能的唯一真相）。 */
+    if (!quiet && pSrc === 'kbar') {
       r.p = p;
       if (pct != null && isFinite(pct)) r.pct = pct;
       if (mg.last.t) { r.kAt = mg.last.t; r.qAt = 0; }
@@ -36699,12 +36888,12 @@ function m5sKeepRows(now) {
          这一场补数等于白做（上一轮「+1.68% 永远在」就是这么来的）。 */
       if (r.pSrc !== 'kbar' || r.pct !== pct) needSave = true;
       r.pSrc = 'kbar';
-    } else if (pSrc === 'klive') {
+    } else if (!quiet && pSrc === 'klive') {
       /* 盘中 K 线顶替快照：只回写内存，不落盘 —— 它不是收盘价，不该被当成终值存下来 */
       r.p = p;
       if (pct != null && isFinite(pct)) r.pct = pct;
       r.pSrc = 'klive';
-    } else if (s && s.p > 0) {
+    } else if (!quiet && s && s.p > 0) {
       r.p = p;
       if (pct != null && isFinite(pct)) r.pct = pct;
       if (ztp > 0) r.ztp = ztp;
@@ -36716,8 +36905,8 @@ function m5sKeepRows(now) {
           炸板 / 摸板回落的不剔除 —— 用户原话只排除「涨停股」，且举例的华正新材正是炸板票；
        ② **取消「收涨」闸门**：盘中冲高、收盘回落的票同样满足「有一根 5 分钟 K 线 ≥3%」，
           按用户「只要……都请列入」要保留。pct 只用于展示。 */
-    if (ztp > 0 && p > 0 && p >= ztp - 0.001) { M5S.keepDropLimit++; m5sBlkMark('limit', c); continue; }
-    if (pct == null || !isFinite(pct)) M5S.keepUnk++;
+    if (ztp > 0 && p > 0 && p >= ztp - 0.001) { if (!quiet) { M5S.keepDropLimit++; m5sBlkMark('limit', c); } continue; }
+    if ((pct == null || !isFinite(pct)) && !quiet) M5S.keepUnk++;
     var sealedNow = (ztp > 0 && p > 0 && p >= ztp - 0.001);
     /* ★ 第四轮：「仍强 / 已回落」改用**最后一根当日 5 分钟 K 线**的单根涨幅（与上榜同一口径）。
        不再用滚动涨速 —— 同一张卡里出现两套口径，用户没法对照。
@@ -36745,7 +36934,7 @@ function m5sKeepRows(now) {
       pSrc: pSrc, kAt: r.kAt || '', qAt: qAt
     });
   }
-  if (needSave) { try { m5sKeepSave(); } catch (eS) { } }
+  if (needSave && !quiet) { try { m5sKeepSave(); } catch (eS) { } }
   return out;
 }
 var M5S_TIER_TXT = { pulse: '极速脉冲', strong: '强势异动', sealed: '已封板' };

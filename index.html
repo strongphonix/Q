@@ -97,6 +97,11 @@ details .dbody{padding:4px 12px 12px;}
 .g-row[data-wbbjump]{cursor:pointer;transition:background .12s ease,box-shadow .12s ease;}
 .g-row[data-wbbjump]:hover{background:rgba(56,189,248,.08);box-shadow:inset 2px 0 0 #38bdf8;}
 .g-row[data-wbbjump]:active{background:rgba(56,189,248,.15);}
+/* ★ 2026-10-28：⑧ 五池明细（<table><tr> 结构）行点击跳转生命周期工作台 ——
+   与 .g-row 同款交互，但作用域锁在 #m8body，避免误伤其它表格。 */
+#m8body tr[data-wbbjump]{cursor:pointer;transition:background .12s ease;}
+#m8body tr[data-wbbjump]:hover{background:rgba(56,189,248,.08);}
+#m8body tr[data-wbbjump]:active{background:rgba(56,189,248,.15);}
 /* ===== 强势异动工作区 #m5q（2026-10-22 新增 · 5 分钟涨速按板块分类）=====
    分组骨架直接复用 .grp/.grp-h/.grp-b/.g-row（与 ⑤ 涨停复盘同款），
    这里只做两件事：① 组头底色改红（强势异动=进攻，不用涨停复盘的黄）；
@@ -803,6 +808,15 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
   #wtop .wt-breadth .b10.late .bt { color:#fbbf24; }
   /* 基线未采到（午休 / 15:00 后才开页）：压暗，明确「这不是读数」 */
   #wtop .wt-breadth .b10.na { opacity:.62; }
+  /* ★ 2026-10-28 §228：盘面强度 / 梯队晋级 两行的「较 10:00」胶囊 —— 一枚胶囊里并列多个指标的小徽标。
+     为什么把多个指标塞进同一枚，而不是每个指标各配一枚 .b10：
+       强度行已有 5 枚 .sg、梯队行已有 5 枚 .lt，再各加 5 枚胶囊 = 一行十几个 pill，
+       1520 宽会折成 3 行、980 宽折 5 行，「哪一枚跟谁比」直接读不出来。
+       这里用「一枚胶囊 = 一行一个参照时刻」保持 §219 的语义：虚线 = 对比，不是第四个当期读数。 */
+  #wtop .wt-breadth .b10.s10 { white-space:nowrap; }
+  #wtop .wt-breadth .b10 .tc { display:inline-flex; align-items:baseline; gap:3px; margin-left:9px; }
+  #wtop .wt-breadth .b10 .tc i { font-style:normal; font-size:10.5px; color:#8fa0b8; letter-spacing:.2px; }
+  #wtop .wt-breadth .b10 .tc .dl { margin-left:0; }
   #wtop .wt-breadth .bl.na { color:#64748b; font-weight:400; }
   /* 分梯队晋级率（2026-10-22 追加）：1进2 / 2进3 / 3进4 各一枚小胶囊。     强度着色沿用本台「热红 / 中性黄 / 弱绿」：晋级率高=接力热，低=冷（不是涨跌，故不用 .bv 那套）。 */
   #wtop .wt-breadth .wt-lrow .lt { display:inline-flex; align-items:baseline; gap:6px; padding:2px 10px; border-radius:999px;
@@ -868,6 +882,10 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
   #wtop .wt-breadth .wt-lrow .as-wait { font-size:10.5px; color:#fdba74; padding:1px 8px; border-radius:999px;
     border:1px solid rgba(251,146,60,.32); background:rgba(251,146,60,.07); white-space:nowrap; cursor:help; }
   #wtop .wt-breadth .wt-lrow .as-sep { color:#334155; margin:0 2px; }
+  /* ★ 2026-10-29 §236：梯队晋级 · 晋级行业组（口径头 + 若干 .as 胶囊 + 可选「+N 类」）。
+     包成一组的意义：.wt-lrow 是 flex-wrap，散着放时口径头会被甩到上一行末尾、胶囊留在下一行，
+     「这几格属于哪个梯队」就看不出来了（§216 记过同一个坑）。组内自己折行，整组一起移动。 */
+  #wtop .wt-breadth .wt-lrow .lt-ind { display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
   /* ★ 2026-10-26 §216：板块五榜（涨停家数 / 板块涨幅 / 板块跌幅 / 主力净流入 / 主力净流出 各 Top5）。
      为什么是「五列小榜」而不是把 25 个胶囊平铺在一行里：
        ① 25 个胶囊在 1520 宽会折成 3 行、980 宽折成 5 行；更麻烦的是 flex 折行**不保证口径头跟着自己的胶囊走** ——
@@ -1013,6 +1031,13 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
   #wtop .wt-tc-idx { font-size:11px; color:#94a3b8; margin-top:4px; padding-top:4px; border-top:1px dashed #233047; line-height:1.65; }
   #wtop .wt-tc-idx b { font-weight:800; }
   #wtop .wt-tc-why { font-size:11px; color:#cbd5e1; margin-top:2px; line-height:1.5; }
+  /* ★ 2026-10-28（用户要求）：板块内实时连板梯队 chips（最高板→首板 家数分布） */
+  #wtop .wt-ec { display:inline-flex; flex-wrap:wrap; gap:4px; align-items:center; margin-top:3px; }
+  #wtop .wt-ec .ec-lbl { font-size:10.5px; color:#7dd3fc; font-weight:700; margin-right:2px; letter-spacing:.2px; }
+  #wtop .wt-ec .ec-i { font-size:10.5px; line-height:1.5; padding:0 5px; border-radius:4px; font-variant-numeric:tabular-nums; border:1px solid rgba(148,163,184,.3); color:#cbd5e1; background:rgba(148,163,184,.06); }
+  #wtop .wt-ec .ec-i.hi { border-color:rgba(240,69,58,.5); background:rgba(240,69,58,.12); color:#ff9f97; font-weight:700; }
+  #wtop .wt-ec .ec-i.mid { border-color:rgba(251,191,36,.45); background:rgba(251,191,36,.10); color:#fcd34d; }
+  #wtop .wt-ec .ec-i.lo { border-color:rgba(16,185,129,.4); background:rgba(16,185,129,.08); color:#6ee7b7; }
   #wtop .wt-leg b { font-weight:800; }
   #wtop .wt-leg .r { color:#f0453a; } #wtop .wt-leg .g { color:#10b981; } #wtop .wt-leg .y { color:#fbbf24; }
 
@@ -1767,7 +1792,7 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
 
 <!-- 模块顺序（2026-09-27 用户要求）：大盘情绪 → 集合竞价 → 涨停板 → 主力资金 → 板块/题材 → 策略引擎 → 持仓 → 总结 -->
 <section class="card" id="m7top12">
-<h2 style="border-color:#f0453a;color:#f0453a">7.12 四指标 v3 中军系统 · 三档分类 + 五维打分<small>2026-09-27：结论口径由 MA5 四状态<b>全面替换为四指标 v3</b>｜扫描范围（2026-09-27 v5 · 用户定稿）= <b>今日涨停 &gt; 3 家的板块</b> 中 <b>今日成交额 &gt; 10 亿</b> 的股票（v5.1：板块内 5 日均额排序已取消，满足即全量入池，按今日成交额降序编号）｜ <b>2026-09-28 v6：板块层可改为手动输入行业</b>（卡片顶部输入框，多个用逗号/空格分隔；个股层与 v3 判定不变，7.10B 一票否决仍生效）｜ 生命周期的<b>限定已删除</b>（该列仅展示）｜ 结果只列「v3 买入档」与「v3 观察档」两类</small></h2>
+<h2 style="border-color:#f0453a;color:#f0453a">7.12 四指标 v3 中军系统 · 三档分类 + 四维打分<small>2026-09-27：结论口径由 MA5 四状态<b>全面替换为四指标 v3</b>｜扫描范围（2026-09-27 v5 · 用户定稿）= <b>今日涨停 &gt; 3 家的板块</b> 中 <b>今日成交额 &gt; 10 亿</b> 的股票（v5.1：板块内 5 日均额排序已取消，满足即全量入池，按今日成交额降序编号）｜ <b>2026-09-28 v6：板块层可改为手动输入行业</b>（卡片顶部输入框，多个用逗号/空格分隔；个股层与 v3 判定不变，7.10B 一票否决仍生效）｜ 生命周期的<b>限定已删除</b>（该列仅展示）｜ 结果只列「v3 买入档」与「v3 观察档」两类</small></h2>
 <div id="m7_12"><div class="loading">数据加载中…</div></div>
 </section>
 <!-- ==== MERGE730-BEGIN ==== 7.30 断板二波三部曲（原 7.30 二波蓄势 / 7.32 阴线洗盘 / 7.31 弱转强·分歧转一致 已合并；重复文案去重到卡底「统一口径」）==== -->
@@ -1795,7 +1820,7 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
 <div id="m7_22"><div class="loading">数据加载中…</div></div>
 </section>
 <section class="card" id="m7top16">
-<h2 style="border-color:#f0453a;color:#f0453a">7.16 个人持仓 · 四指标 v3 实时监控（三档分类 + 五维打分 + 实时买入信号）<small>2026-09-27：结论口径由 MA5 四状态<b>全面替换为四指标 v3</b>（MA5 + KDJ(9,3,3) + VOL + 冲高回吐 + BIAS 满分 100 + S5 修正）；MA5 仅作为 v3 的 S1 维度参与打分</small></h2>
+<h2 style="border-color:#f0453a;color:#f0453a">7.16 个人持仓 · 四指标 v3 实时监控（三档分类 + 四维打分 + 实时买入信号）<small>2026-09-27：结论口径由 MA5 四状态<b>全面替换为四指标 v3</b>（MA5 + KDJ(9,3,3) + VOL + 冲高回吐 + BIAS 满分 100 + S5 修正）；MA5 仅作为 v3 的 S1 维度参与打分</small></h2>
 <div id="m7_16"><div class="loading">数据加载中…</div></div>
 </section>
 
@@ -12688,7 +12713,7 @@ function wbbHostInit(){
        不能落到下面的 data-wbbjump 分支 —— 🚀 强势异动与 🌱 低位启动的行是整行挂
        data-wbbjump 的，点一下勾选框会顺带弹出个股诊断页（点勾选 ≠ 想看诊断）。
        位置必须在 data-wbbjump 之前，与 data-wbbpicktoggle 同级。 */
-    if(t.closest && t.closest('.wl-cbw, .wl-cb, .wl-bar')) return;
+    if(t.closest && t.closest('.wl-cbw, .wl-cb, .wl-bar, .wl-act')) return;
     var jump = t.closest ? t.closest('[data-wbbjump]') : null;
     if(jump){
       try{ window.open(WBB.LC_URL + '?code=' + encodeURIComponent(jump.getAttribute('data-wbbjump')), '_blank'); }catch(eO){ }
@@ -16184,11 +16209,23 @@ function tmThermo(inp, r) {
     if (zbc != null && (t.zbcLo != null || t.zbcHi != null)) { known++; if (tqIn(zbc, t.zbcLo, t.zbcHi)) hits++; }
     if (zt != null && (t.ztLo != null || t.ztHi != null)) { known++; if (tqIn(zt, t.ztLo, t.ztHi)) hits++; }
     if (inp.promoPct != null && (t.promoLo != null || t.promoHi != null)) { known++; if (tqIn(inp.promoPct, t.promoLo, t.promoHi)) hits++; }
-    return { k: t.k, label: t.label, hits: hits, known: known, rate: known ? hits / known : null };
+    /* 携带该档的 headline zt 边界（hot≥80 / ferm≥50 / warm≥30 / ebb·ice·clear≤29），
+       供下方 best 护栏判定「定义性涨停门槛是否被突破」。 */
+    return { k: t.k, label: t.label, hits: hits, known: known, rate: known ? hits / known : null,
+             ztLo: t.ztLo, ztHi: t.ztHi };
   });
   var best = null;
   scored.forEach(function (s) {
     if (s.rate == null) return;
+    /* ★ 护栏（2026-10-28 排查修复）：定义性涨停门槛被突破的档不得成为 best。
+       每个档位都有一条 headline zt 边界，它是该档的「定义性」门槛——未命中即该档不成立。
+       旧逻辑只把 zt 当作四维计分的一项，导致 zt=68 时仍可经保守平局裁决选出 hot≥80 / ebb≤29 等矛盾档，
+       进而驱动 dist≥1/2 修正或结构否决把最终档翻成与主判定自相矛盾的档（截图「发酵主升 → 退潮防守」即此类）。
+       缺涨停读数（zt==null）时不靠此门否决，仍允许参选。 */
+    if (zt != null) {
+      if (s.ztLo != null && zt < s.ztLo) return;
+      if (s.ztHi != null && zt > s.ztHi) return;
+    }
     if (!best || s.rate > best.rate + 1e-9) { best = s; return; }
     if (Math.abs(s.rate - best.rate) < 1e-9) {
       if (tqTieBreak(best.k, s.k, quad) === s.k) best = s;
@@ -20783,7 +20820,7 @@ function s4kCellLogic(sk) {
   if (!sk || !sk.ok) return '<span class="flat">v3 未算出：' + esc((sk && sk.why) || '—') + '</span>';
   var cls = sk.total >= S4K_RULE.buyRunMin ? 'up' : (sk.total >= S4K_RULE.s4kProfitMin ? 'yel' : 'dn');
   return '四指标 <b class="' + cls + '">' + sk.total + '</b>' +
-    '（MA5 ' + sk.s1.v + ' · KDJ ' + sk.s2.v + ' · VOL ' + sk.s3.v + ' · 回吐 ' + sk.s4.v + ' · BIAS ' + sk.s6.v + '）' +
+    '（MA5 ' + sk.s1.v + ' · KDJ ' + sk.s2.v + ' · VOL ' + sk.s3.v + ' · 回吐 ' + sk.s4.v + ' · BIAS提醒 ' + sk.s6.v + '）' +
     '<br><b>' + esc(sk.action) + '</b>' +
     s4kBadgeTail(sk);
 }
@@ -20799,7 +20836,7 @@ function s4kBadgeTail(sk) {
     (sk.heightMod > 0 ? '+' : '') + sk.heightMod + '</span>';
   return t;
 }
-/* 五维分列（供 7.16 / 7.30 的宽表把「偏离MA5 / 站破线 / 斜率」等旧 MA5 列整组换掉）。
+/* 四维分列（供 7.16 / 7.30 的宽表把「偏离MA5 / 站破线 / 斜率」等旧 MA5 列整组换掉）。
    返回与 MA5 旧列等宽的一组 <td>：总分 / MA5 / KDJ / VOL / 回吐 / BIAS / 结论。 */
 function s4kDimCells(sk) {
   if (!sk || !sk.ok) return '<td colspan="7" class="flat">v3 未算出：' + esc(sk && sk.why || '—') + '</td>';
@@ -20810,12 +20847,12 @@ function s4kDimCells(sk) {
     d(sk.s1.v) + d(sk.s2.v) + d(sk.s3.v) + d(sk.s4.v) + d(sk.s6.v) +
     '<td class="lgc"><b>' + esc(sk.action) + '</b>' + s4kBadgeTail(sk) + '</td>';
 }
-/* 五维分列的表头（与 s4kDimCells 一一对应，改一处必须改另一处） */
+/* 四维分列的表头（与 s4kDimCells 一一对应，改一处必须改另一处） */
 function s4kDimHead() {
   return '<th>v3 总分</th><th title="MA5 维度（权重 12~42%）">MA5</th><th title="KDJ(9,3,3) 维度">KDJ</th>' +
-    '<th title="量能维度">VOL</th><th title="冲高回吐维度">回吐</th><th title="BIAS 乖离率维度">BIAS</th><th>v3 结论</th>';
+    '<th title="量能维度">VOL</th><th title="冲高回吐维度">回吐</th><th title="BIAS 乖离率（移出加权，仅作提醒）">BIAS提醒</th><th>v3 结论</th>';
 }
-/* 7.12 专用列组（2026-09-30 用户定稿）：五维分数列（MA5/KDJ/VOL/回吐/BIAS）退出 7.12 表面，
+/* 7.12 专用列组（2026-09-30 用户定稿）：四维分数列（MA5/KDJ/VOL/回吐）+ BIAS提醒 退出 7.12 表面，
    「周期仓位」列一并取消；换成两个数值列 —— MA5斜率（sk.slope，今日 5 日均价较昨日 %）与
    乖离率（sk.bias5，BIAS5 =（现价 − 5 日均价）/ 5 日均价 × 100%）。
    ★ s4kDimCells / s4kDimHead 是三处消费点（7.12 之外的 7.16 / 7.30）共用的尺子，保持不动；
@@ -20971,7 +21008,7 @@ var S4K_RULE = {
          故取 fair=8 / mild=15 / over=18；10 日按打板卡取 12 / 20 / 24。
      方向性结论：BIAS 是**右偏惩罚型**因子（越高越危险、越负越安全），故赋分曲线为倒 U 型，
      峰值落在「−2% ~ +8%」的贴均线上行区（= 打板卡的"乖离合理"形态）。 */
-  biasW: 10,                                   /* BIAS 固定权重（%），从 MA5 与 KDJ 扣减，见 s4kTotal */
+  biasW: 10,                                   /* ★ 2026-10-27 起 BIAS 已移出加权（改为独立提醒），此键保留仅为兼容旧引用，实际加权已不使用；原 10% 权重并入 KDJ */
   bias5Fair: 8, bias5Mild: 15, bias5Over: 18,  /* 5 日乖离档位 */
   bias10Fair: 12, bias10Mild: 20, bias10Over: 24, /* 10 日乖离档位 */
   bias5K: 0.6, bias10K: 0.4,                   /* 双周期合成比（5 日 60% + 10 日 40%） */
@@ -21005,17 +21042,17 @@ var S4K_RULE = {
   /* ---- ★ 破位闸（2026-09-27 用户定稿 · A 股补充硬闸）----------------------------------
      用户原话：「MA5 跌破的股票，是不符合买入的」。
      ── 为什么光靠 S1 = 0 挡不住（**真实漏洞 · 已实测复现**，不是理解偏差）
-        s4kS1 对「跌破 MA5 且 MA5 方向向下」给 0 分，但 S1 只是五维之一，要看趋势档分两说：
+        s4kS1 对「跌破 MA5 且 MA5 方向向下」给 0 分，但 S1 只是四维之一，要看趋势档分两说：
           · 趋势判为 **down** 时（今日收盘亦在 MA5 之下）：MA5 权重 32，其余四维满分理论值 68，
             但 down 档下 s4kS2 把低位金叉压到 30、s4kS3 放量下跌给 −100、s4kS4 回吐上限 40，
             实测天花板仅 **29 分** ⇒ 这一支**确实挡得住**（_tune_gate.js 只覆盖到本支，故当时误判为"纯保险"）。
           · 趋势判为 **side** 时（★ 真正的漏洞口）：今日**反抽收回 MA5 之上**、但昨日收盘仍在
             当日 MA5′ 之下，MA5 自身仍下拐 ⇒ `!stand ∧ slope<0` ⇒ 同样是 S1 = 0 那一格，
-            可 MA5 权重在震荡档只剩 12，其余四维（KDJ 28 + VOL 25 + 回吐 25 + BIAS 10）能同时打满：
+            可 MA5 权重在震荡档只剩 18，其余四维（KDJ 32 + VOL 25 + 回吐 25）能同时打满：
             反抽日**无上影** → 回吐维 100（若昨日回吐 >3% 且未收复昨日高点，叠加②再 −10；反之 +30）、
             **放量** → VOL 维 100、**低位金叉** → KDJ 维 100、贴均线 → BIAS 维 80~100。
             实测复现（30 横盘 + 40 根 +0.4% + 10 根 −3% + 末根 +6% 放量无上影）：
-            五维 = [MA5 0, KDJ 100, VOL 100, 回吐 130, BIAS 80] ⇒ **原始总分 94，落入买入档**。
+            四维 = [MA5 0, KDJ 100, VOL 100, 回吐 130]（BIAS 80 已移出加权、不计入）⇒ **原始总分 90，落入买入档**。
         ⇒ 定性：这是**可复现的真漏洞**，破位闸是真修复。量级证据（200,000 条随机日线路径）：
           S1=0 样本 185,967 条（93.0%），其中 **4,676 条（2.5%）原始总分 ≥ 62**，最高 **94**。
           证据脚本：_uiopt/_tune_gate3.js（随机穷举）、_uiopt/_tune_gate4.js（可复现最小用例）。
@@ -21621,16 +21658,26 @@ function s4kTotal(klines, kj, ctx) {
   if (!k.ok) return { ok: false, why: k.why };
   var tr = s4kTrend(k);
   var p1 = s4kS1(k), p2 = s4kS2(kj, tr.trend, k, klines), p3 = s4kS3(k, tr.trend), p4 = s4kS4(k, tr.trend), p5 = s4kBias(k);
-  /* v3 权重（2026-09-26）：新增第 5 维 **BIAS 乖离率**，固定占 10%，从 MA5 与 KDJ 两维扣减：
-       · BIAS 是 MA 的一阶衍生（与 MA5 共线度最高）→ 主要从 MA5 扣
-       · 震荡市 KDJ 为主导维，且与 BIAS 同属"超买超卖振荡器"（信息重叠）→ 震荡市多从 KDJ 扣
-     三档之和仍恒为 100，不改动 VOL / 冲高回吐 的权重语义：
-       上升/下降 32+23+20+15+10 = 100 ｜ 震荡 12+28+25+25+10 = 100 ｜ 强势主升 42+13+20+15+10 = 100
-     ※ 加维 = 换标尺 → s4kAction 的 75/60/45/30/15 五档已同步用真实分布加权网格重标定
-       （证据见 _probe_calib_s4k.js 输出）。 */
-  var w = tr.strong ? { ma5: 42, kdj: 13, vol: 20, ht: 15, bias: 10 }
-    : (tr.trend === 'side' ? { ma5: 12, kdj: 28, vol: 25, ht: 25, bias: 10 } : { ma5: 32, kdj: 23, vol: 20, ht: 15, bias: 10 });
-  var baseTotal = Math.round((p1.v * w.ma5 + p2.v * w.kdj + p3.v * w.vol + p4.v * w.ht + p5.v * w.bias) / 100);
+  /* v3 权重（2026-09-26 起）：MA5 + KDJ + VOL + 冲高回吐 四维加权，三档之和恒为 100。
+     ★ 2026-10-27（与生命周期台同步 · 用户确认 MA5 与 BIAS 重复惩罚）：**BIAS 乖离率移出加权打分，改为独立「提醒」**。
+       依据：BIAS = (收盘−MA5)/MA5，是 MA5 的一阶衍生（与 S1 MA5 共线度最高）；且 S1 的位置系数
+       （跌破MA5 → ×0.5）与 S6 负乖离档、S1 加速段档与 S6 高乖离档**对同一「追高/破位」事实双重惩罚**。
+       BIAS 不再进 baseTotal，仅在报告里作危险区提醒徽章（不参与扣分，避免与 MA5 重复）。
+     ★ 腾出的 10% 权重**原封不动并入 KDJ**（用户要求「提升灵敏度」——KDJ 是快振荡器，权重上去后
+       金叉/死叉转折点反应更快），四维和仍 =100：
+       上升/下降 32+33+20+15 = 100 ｜ 震荡 18+32+25+25 = 100 ｜ 强势主升 42+23+20+15 = 100
+     ★ 震荡档 MA5 12 → 18（KDJ 28 → 32）：本次移植一并补上生命周期台 §192 的 MA5 提权；§192 原规划 KDJ 28→22，
+       但 10-27 移维后实际落到 32（原 10% 权重全归 KDJ）。依据（_probe_ma5_weight.js，58~96 只成交额前排 /
+       1.9~3.2 万根，T+3/5/10 三周期）：单维 IC 上 S1 MA5（+0.020/+0.029/+0.027）三个周期都最高或并列最高，
+       而 S2 KDJ 震荡档 T+5 为 −0.003（最弱）—— 原「KDJ 28% > MA5 12%」与自身数据方向相反。
+       代价：买入档数量 +17%（912→1068 / 96 只样本），已按 SKILL 坑8 跑 _probe_calib_s4k.js 重标定五档线位。
+       不动上升/下降 32%：该档提高 MA5 只会稀释买入档（中位不变、数量 +35%、胜率 −1pp）。
+       不动强势主升 42%：该档 IC 为负是「追高」问题，不是权重问题，靠 S7 追高闸门处理。
+     ※ 权重变动 = 换标尺 → s4kAction 的 76/62/50/40/25 五档可能需按真实分布重新标定
+       （证据见 _probe_calib_s4k.js 输出；本次仅移维+提 KDJ，未重标门槛，待交易日实机复校）。 */
+  var w = tr.strong ? { ma5: 42, kdj: 23, vol: 20, ht: 15 }
+    : (tr.trend === 'side' ? { ma5: 18, kdj: 32, vol: 25, ht: 25 } : { ma5: 32, kdj: 33, vol: 20, ht: 15 });
+  var baseTotal = Math.round((p1.v * w.ma5 + p2.v * w.kdj + p3.v * w.vol + p4.v * w.ht) / 100);
   /* ★ S5（2026-09-26 新增）：板块高度晋级 —— 修正项，直接加在总分上（不重分配 100 分权重） */
   var s5 = s4kS5(ctx);
   var hMod = s5.na ? 0 : s5.hScore;
@@ -21638,10 +21685,10 @@ function s4kTotal(klines, kj, ctx) {
   if (total > 100) total = 100;
   if (total < -100) total = -100;
   /* ★ 破位闸（2026-09-27 用户定稿）：「跌破 MA5 且 MA5 向下」= S1 为 0 的那一格 → 总分封顶到买入线下一分。
-     为什么必须在这里封顶而不是只靠 S1=0：S1 只是五维之一，挡不挡得住要看趋势档 ——
+     为什么必须在这里封顶而不是只靠 S1=0：S1 只是四维之一，挡不挡得住要看趋势档 ——
        · 趋势 down（连跌）：其余四维被 s4kS2/S3/S4 的趋势修正压住，实测上限约 29 分 → 本就挡得住；
-       · 趋势 side（**反抽收回 MA5 之上、MA5 仍下拐**）：MA5 权重只剩 12，
-         其余四维可同时打满 → **实测原始总分 94，会被判成买入档**（真实漏洞，用户实测抓到）。
+       · 趋势 side（**反抽收回 MA5 之上、MA5 仍下拐**）：MA5 权重只剩 18，
+         其余四维可同时打满 → **实测原始总分 90，会被判成买入档**（真实漏洞，用户实测抓到）。
      证据见 _uiopt/_tune_gate3.js（20 万条随机路径：S1=0 样本的 2.5% 原始分 ≥ 62）与
      _uiopt/_tune_gate4.js（可复现最小用例：30 横盘 + 40 根 +0.4% + 10 根 −3% + 末根 +6% 放量无上影）。 */
   var bGate = s4kBreakGate(k);
@@ -21804,7 +21851,7 @@ var lcS4K_RULE = {
          故取 fair=8 / mild=15 / over=18；10 日按打板卡取 12 / 20 / 24。
      方向性结论：BIAS 是**右偏惩罚型**因子（越高越危险、越负越安全），故赋分曲线为倒 U 型，
      峰值落在「−2% ~ +8%」的贴均线上行区（= 打板卡的"乖离合理"形态）。 */
-  biasW: 10,                                   /* BIAS 固定权重（%），从 MA5 与 KDJ 扣减，见 lcS4kTotal */
+  biasW: 10,                                   /* ★ 2026-10-27 起 BIAS 已移出加权（改为独立提醒），此键保留仅为兼容旧引用，实际加权已不使用；原 10% 权重并入 KDJ */
   bias5Fair: 8, bias5Mild: 15, bias5Over: 18,  /* 5 日乖离档位 */
   bias10Fair: 12, bias10Mild: 20, bias10Over: 24, /* 10 日乖离档位 */
   bias5K: 0.6, bias10K: 0.4,                   /* 双周期合成比（5 日 60% + 10 日 40%） */
@@ -22888,7 +22935,7 @@ async function resolveBoardHeightScope(code, name, hybk, asOfDay) {
    两个保护：
      · **会话预算** __S5_SCOPE_MAX（默认 60 只）—— 批量分析几百只时不会把接口打爆；
        失败也计入预算（防反复重试）。命中 localStorage 缓存时仍是 0 网络请求。
-     · `window.__S5_THEME = false` 可整体关闭 → S5 走 na（从打分中剔除），其余五维完全不受影响。 */
+     · `window.__S5_THEME = false` 可整体关闭 → S5 走 na（从打分中剔除），其余四维完全不受影响。 */
 var lc__S5_SCOPE = {}, __S5_SCOPE_TRIED = {}, __S5_SCOPE_USED = 0, __S5_SCOPE_MAX = 60;
 /* lcS5_WIN：浏览器里就是 window；无 window 的环境（vm 单测沙箱）退化为空对象 ——
    这样整个 S4K 区块都能被抽出来在 Node 里单测（与 _probe_calib_s4k.js / _test_s4k_v3.js 同构）。 */
@@ -23095,12 +23142,15 @@ function lcS4kTotal(klines, kj, ctx) {
   if (!k.ok) return { ok: false, why: k.why };
   var tr = lcS4kTrend(k);
   var p1 = lcS4kS1(k), p2 = lcS4kS2(kj, tr.trend, k, klines), p3 = lcS4kS3(k, tr.trend), p4 = lcS4kS4(k, tr.trend), p5 = lcS4kBias(k);
-  /* v3 权重（2026-09-26）：新增第 5 维 **BIAS 乖离率**，固定占 10%，从 MA5 与 KDJ 两维扣减：
-       · BIAS 是 MA 的一阶衍生（与 MA5 共线度最高）→ 主要从 MA5 扣
-       · 震荡市 KDJ 为主导维，且与 BIAS 同属"超买超卖振荡器"（信息重叠）→ 震荡市多从 KDJ 扣
-     三档之和仍恒为 100，不改动 VOL / 冲高回吐 的权重语义：
-       上升/下降 32+23+20+15+10 = 100 ｜ 震荡 18+22+25+25+10 = 100 ｜ 强势主升 42+13+20+15+10 = 100
-     ★ 2026-10-21 §192：震荡档 MA5 12 → 18（KDJ 28 → 22，其余不动）。
+  /* v3 权重（2026-09-26 起）：MA5 + KDJ + VOL + 冲高回吐 四维加权，三档之和恒为 100。
+     ★ 2026-10-27（与生命周期台同步 · 用户确认 MA5 与 BIAS 重复惩罚）：**BIAS 乖离率移出加权打分，改为独立「提醒」**。
+       依据：BIAS = (收盘−MA5)/MA5，是 MA5 的一阶衍生（与 S1 MA5 共线度最高）；且 S1 的位置系数
+       （跌破MA5 → ×0.5）与 S6 负乖离档、S1 加速段档与 S6 高乖离档**对同一「追高/破位」事实双重惩罚**。
+       BIAS 不再进 baseTotal，仅在报告里作危险区提醒徽章（不参与扣分，避免与 MA5 重复）。
+     ★ 腾出的 10% 权重**原封不动并入 KDJ**（用户要求「提升灵敏度」——KDJ 是快振荡器，权重上去后
+       金叉/死叉转折点反应更快），四维和仍 =100：
+       上升/下降 32+33+20+15 = 100 ｜ 震荡 18+32+25+25 = 100 ｜ 强势主升 42+23+20+15 = 100
+     ★ 2026-10-21 §192：震荡档 MA5 12 → 18（KDJ 28 → 22，其余不动；本次 10-27 再叠 KDJ 22 → 32）。
        依据（_probe_ma5_weight.js，58~96 只成交额前排 / 1.9~3.2 万根，T+3/5/10 三周期）：
          · 单维 IC：S1 MA5 = +0.020/+0.029/+0.027（**三个周期都是最高或并列最高**）；
            S2 KDJ = +0.020/+0.008/+0.014，且**震荡档 T+5 为 −0.003（最弱）**。
@@ -23110,11 +23160,11 @@ function lcS4kTotal(klines, kj, ctx) {
        代价：买入档数量 +17%（912→1068 / 96 只样本），已按 SKILL 坑8 跑 _probe_calib_s4k.js 重标定五档线位。
        不动上升/下降 32%：该档提高 MA5 只会稀释买入档（中位不变、数量 +35%、胜率 −1pp）。
        不动强势主升 42%：该档 IC 为负是「追高」问题，不是权重问题，靠 S7 追高闸门处理。
-     ※ 加维 = 换标尺 → lcS4kAction 的 75/60/45/30/15 五档已同步用真实分布加权网格重标定
-       （证据见 _probe_calib_s4k.js 输出）。 */
-  var w = tr.strong ? { ma5: 42, kdj: 13, vol: 20, ht: 15, bias: 10 }
-    : (tr.trend === 'side' ? { ma5: 18, kdj: 22, vol: 25, ht: 25, bias: 10 } : { ma5: 32, kdj: 23, vol: 20, ht: 15, bias: 10 });
-  var baseTotal = Math.round((p1.v * w.ma5 + p2.v * w.kdj + p3.v * w.vol + p4.v * w.ht + p5.v * w.bias) / 100);
+     ※ 权重变动 = 换标尺 → lcS4kAction 的 76/62/50/40/25 五档可能需按真实分布重新标定
+       （证据见 _probe_calib_s4k.js 输出；本次仅移维+提 KDJ，未重标门槛，待交易日实机复校）。 */
+  var w = tr.strong ? { ma5: 42, kdj: 23, vol: 20, ht: 15 }
+    : (tr.trend === 'side' ? { ma5: 18, kdj: 32, vol: 25, ht: 25 } : { ma5: 32, kdj: 33, vol: 20, ht: 15 });
+  var baseTotal = Math.round((p1.v * w.ma5 + p2.v * w.kdj + p3.v * w.vol + p4.v * w.ht) / 100);
   /* ★ S5（2026-09-26 新增）：板块高度晋级 —— 修正项，直接加在总分上（不重分配 100 分权重） */
   var s5 = lcS4kS5(ctx);
   var hMod = s5.na ? 0 : s5.hScore;
@@ -24850,7 +24900,7 @@ function renderM712Core(){
       (rows.length && headHtml ? '<thead>' + headHtml + '</thead>' : '') + '<tbody>' +
       (rows.length ? rows.map(colFn).join('') : '<tr><td class="loading" colspan="10">' + emptyTxt + '</td></tr>') + '</tbody></table></div></div>';
   }
-  /* ★ 2026-09-27：本卡整组换 v3 五维列（原「偏离MA5 / 站破线 / 斜率 / 判定逻辑」= MA5 结论口径，
+  /* ★ 2026-09-27：本卡整组换 v3 四维列（原「偏离MA5 / 站破线 / 斜率 / 判定逻辑」= MA5 结论口径，
      与 v3 档位无因果关系；并列会出现「破 1 日 · 向下」挂在一个 v3 档位旁的错读）。
      ★ 2026-09-30（用户定稿）：7.12 两张表（买入 / 观察票）五维分数列换成「MA5斜率 + 乖离率」数值列，
      与买入表共用 s4kDimCells712 / RF_HEAD_MINI（7.16 三档卡 2026-09-30 起同样切 s4kDimHead712/s4kDimCells712；共用尺 s4kDimCells/s4kDimHead 保留作内核契约测试）。 */
@@ -24867,19 +24917,19 @@ function renderM712Core(){
   h += lifeLegend();
   h += '<div style="margin-top:6px">' + stateCard('观察票（v3 观察档 · 只看不买）', 'b-g', cats.watch, '暂无观察标的', rowMini, null, RF_HEAD_MINI()) + '</div>';
   /* ⑥ 规则速查（两重复盘 / 买点体系 / 仓位管理） */
-  h += '<details><summary>四指标 v3 规则速查（三档档位 · 五维权重 · 破位闸 · 每日两重复盘 · 仓位管理）</summary><div class="dbody">' +
+  h += '<details><summary>四指标 v3 规则速查（三档档位 · 四维权重 · 破位闸 · 每日两重复盘 · 仓位管理）</summary><div class="dbody">' +
     '<div class="twrap"><table class="mini-tbl"><thead><tr><th>档位</th><th>触发条件（四指标 v3）</th><th>操作</th></tr></thead><tbody>' +
     '<tr><td class="up"><b>🟢 买入档</b></td><td>总分 ≥ ' + S4K_RULE.buyRunMin + '（≥ ' + S4K_RULE.s4kHeavyMin + ' 为「重仓买入/加仓」）且无一票否决、无破位闸</td><td>可建仓 / 持有；仓位受执行周期（情绪）上限约束</td></tr>' +
     '<tr><td class="flat"><b>⏳ 观察档</b></td><td>' + S4K_RULE.s4kProfitMin + ' ≤ 总分 &lt; ' + S4K_RULE.buyRunMin + '</td><td>只看不买；等总分回到买入档再考虑</td></tr>' +
     '<tr><td class="dn"><b>🔴 清仓档</b></td><td>总分 &lt; ' + S4K_RULE.s4kProfitMin + ' 或触发一票否决</td><td>按纪律减仓 / 清仓，不博弈反弹</td></tr>' +
     '<tr><td class="ora"><b>🛑 破位闸</b></td><td>收盘跌破 MA5 且 MA5 方向向下（= MA5 维度恰好 0 分那一格）→ 内核把总分封顶到 ' + (S4K_RULE.buyRunMin - 1) + '</td><td><b>不允许买入</b>；本表直接剔除，不占「观察档」名额</td></tr>' +
     '</tbody></table></div>' +
-    '<div class="twrap" style="margin-top:8px"><table class="mini-tbl"><thead><tr><th>五维权重（按趋势档位切换 · 三档之和恒为 100）</th><th>说明</th></tr></thead><tbody>' +
-    '<tr><td style="white-space:normal">MA5 12~42% · KDJ 13~28% · VOL 20~25% · 冲高回吐 15~25% · BIAS 10%</td>' +
+    '<div class="twrap" style="margin-top:8px"><table class="mini-tbl"><thead><tr><th>四维权重（按趋势档位切换 · 三档之和恒为 100）</th><th>说明</th></tr></thead><tbody>' +
+    '<tr><td style="white-space:normal">MA5 18~42% · KDJ 23~33% · VOL 20~25% · 冲高回吐 15~25%（BIAS 移出加权，仅作提醒）</td>' +
     '<td style="white-space:normal">另加 <b>S5 板块高度晋级</b>修正（直接加减在总分上，不重分配 100 分权重；本表已接入 7.5 板块总表与 7.43 主线的板块高度）</td></tr>' +
     '</tbody></table></div>' +
     '<div class="twrap" style="margin-top:8px"><table class="mini-tbl"><thead><tr><th>每日两重复盘</th><th>规则</th></tr></thead><tbody>' +
-    '<tr><td class="yel">盘中实时判定</td><td>本模块随 180 秒刷新实时重算 v3 五维与总分（MA5 只作为其中一个维度参与）</td></tr>' +
+    '<tr><td class="yel">盘中实时判定</td><td>本模块随 180 秒刷新实时重算 v3 四维与总分（MA5 只作为其中一个维度参与）</td></tr>' +
     '<tr><td class="yel">尾盘最终定局</td><td>收盘后以终值重算：买入档 → 次日继续持有 / 择机建仓；观察档 → 不加仓；清仓档或破位闸 → 按纪律减仓 / 离场</td></tr>' +
     '</tbody></table></div>' +
     '<div class="twrap" style="margin-top:8px"><table class="mini-tbl"><thead><tr><th>扫描范围（两层 · ★ v7）</th><th>口径与自证</th></tr></thead><tbody>' +
@@ -24902,7 +24952,7 @@ function renderM712Core(){
       '<b>5 日平均成交额</b> = <code>f6 × mean₅(v·c) ÷ v_末根·c_末根</code>（用今日实际成交额锚定量纲，再按近 5 日量能形态还原；腾讯「手」/新浪「股」差 100 倍，跨股票比大小必须锚定）。盘中 f6 与末根 v 同为部分量 → amt5 自动成为「按当前量能水平折算的日均值」。</td></tr>' +
     '<tr><td class="yel" style="white-space:normal">③ 生命周期门</td><td style="white-space:normal"><b class="dn">已于 2026-09-21 按用户要求删除</b>（原为「中军再经温斯坦阶段过滤，只放行非 3 / 4 阶段」）。' +
       '现在<b>生命周期阶段只展示、不参与筛选</b> —— 表内仍保留该列供人工判断。<br>' +
-      '<span class="flat">⚠ 副作用（必须知道）：派发期 / 下跌期的票现在也可能出现在「买入档」表里 —— 四指标 v3 的五维（MA5/KDJ/VOL/回吐/BIAS）不含大级别位置约束。' +
+      '<span class="flat">⚠ 副作用（必须知道）：派发期 / 下跌期的票现在也可能出现在「买入档」表里 —— 四指标 v3 的四维（MA5/KDJ/VOL/回吐）不含大级别位置约束。' +
       '要恢复过滤：从 <code>_backup_before_712_fix.html</code> 取回 <code>ma5LifeGate</code> 并接回分类循环即可。</span></td></tr>' +
     '<tr><td class="yel" style="white-space:normal">④ 显示层</td><td style="white-space:normal"><b>只显示「买入档」与「观察档」两类</b>；清仓档（&lt;' + S4K_RULE.s4kProfitMin + ' 或一票否决）、🛑 破位闸、v3 未算出（日K不足 26 根）三类只计数不展示（均可在上方漏斗行复核过滤是否生效）。</td></tr>' +
     '<tr><td class="yel" style="white-space:normal">空态自证（2026-09-21 新增 · v5 适配）</td><td style="white-space:normal">板块数为 0 时不再只报「共 0 个」，而是<b>逐级打印</b>：今日涨停池只数 → 板块聚合数（含今日涨停家数 TOP8，一眼看出为什么不满 4 家）→ 准入命中数 → 板块码映射 → 7.10B 一票否决状态。<br>' +
@@ -24914,7 +24964,7 @@ function renderM712Core(){
       '成分股与日K均 <b>缓存 30 分钟</b>，之后刷新为 0 请求。</td></tr>' +
     '</tbody></table></div>' +
     '<div class="note"><b>仓位管理：</b>v3 买入档=正常仓位（仍受情绪周期（⑤）仓位上限约束）；观察档=不加仓；清仓档=减至零仓；🛑 破位闸=禁止买入。' +
-    '<b>数据口径：</b>日K为前复权 200 根（v3 需 ≥26 根；腾讯fqkline→新浪→东财三通道兜底），末根以实时价覆盖；v3 五维 = MA5 维度 + KDJ(9,3,3) + VOL 量能 + 冲高回吐 + BIAS 乖离率（10 日/5 日双周期合成）。' +
+    '<b>数据口径：</b>日K为前复权 200 根（v3 需 ≥26 根；腾讯fqkline→新浪→东财三通道兜底），末根以实时价覆盖；v3 四维 = MA5 维度 + KDJ(9,3,3) + VOL 量能 + 冲高回吐（BIAS 乖离率已移出加权，仅作危险区提醒徽章）。' +
     '以上仅为交易体系梳理与数据可视化，不构成任何投资建议。</div></div></details>';
   setHtml(box, h);
 }
@@ -24981,7 +25031,7 @@ function renderM714(){
 }
 
 /* ==================================================================
-   7.16 个人持仓 · 四指标 v3 实时监控（三档分类 + 五维打分 + 实时买入信号）
+   7.16 个人持仓 · 四指标 v3 实时监控（三档分类 + 四维打分 + 实时买入信号）
    ------------------------------------------------------------------
    复用 7.12 的 MA5 引擎（ma5Stats/ma5Classify/ma5Buy），对「用户自行输入的持仓」逐只判定。
    持仓存于 localStorage（wb_hold_v1），不上传；实时价取 loadTxQuotes，日K取 klineBars（30分钟缓存）。
@@ -25769,7 +25819,7 @@ function renderM716body(rows, exec, st, e, reason){
   if(cats.buy.length){
     h += '<div class="alert-buy"><span class="ab-ic">🟢</span><div style="flex:1"><div>实时买入信号 · 共 ' + cats.buy.length +
       ' 只满足四指标 v3 买入档（总分 ≥ ' + S4K_RULE.buyRunMin + '，且无一票否决、无破位闸）</div>' +
-      '<table><thead><tr><th>名称</th><th>代码</th><th>现价</th><th>v3 总分</th><th>买点逻辑（五维）</th><th>生命周期阶段</th></tr></thead><tbody>' +
+      '<table><thead><tr><th>名称</th><th>代码</th><th>现价</th><th>v3 总分</th><th>买点逻辑（四维）</th><th>生命周期阶段</th></tr></thead><tbody>' +
       cats.buy.map(function(r){ return '<tr><td><b>' + esc(r.name) + '</b>' + rankBadgeAny(r.code) + '</td><td class="mono">' + esc(r.code) + '</td>' +
         '<td class="mono">' + (r.price != null ? r.price.toFixed(2) : '—') + '</td>' +
         '<td class="mono"><b class="up">' + r.s4k.total + '</b></td>' +
@@ -25803,7 +25853,7 @@ function renderM716body(rows, exec, st, e, reason){
   h += secBoardHtml(all);
   D.holds = all;   /* 暴露给 7.16 个人持仓监控：持仓逐只含 sec{grade,role,f3,f6}，供个股动作判定复用 */
   /* ④ 四状态分类卡片 */
-  /* ★ 2026-09-27：原「偏离MA5 / 站破线 / 斜率 / 判定逻辑」四列整组换成四指标 v3 五维分列 ——
+  /* ★ 2026-09-27：原「偏离MA5 / 站破线 / 斜率 / 判定逻辑」四列整组换成四指标 v3 四维分列 ——
      旧四列是 MA5 系统的结论口径，与 v3 的档位判定无因果关系，并列会让用户看到
      「破 1 日 · 向下 · 今日跌破 MA5」的 MA5 读数挂在一个 v3 档位标签旁边，误以为系统自相矛盾。 */
   /* ★ 2026-09-30：与 7.12 同步收敛列组 —— 五维分列（MA5/KDJ/VOL/回吐/BIAS）整组退出表面，
@@ -25900,15 +25950,15 @@ function renderM716body(rows, exec, st, e, reason){
       cats.noData.map(function(r){ return esc(r.name) + '(' + esc(r.code) + ')'; }).join('、') + '。请检查代码格式（6位 A股代码）。</div>';
   }
   /* ⑥ 规则速查 */
-  h += '<details><summary>四指标 v3 规则速查（个人持仓适用 · 三档 / 五维 / 破位闸 / 仓位）</summary><div class="dbody">' +
+  h += '<details><summary>四指标 v3 规则速查（个人持仓适用 · 三档 / 四维 / 破位闸 / 仓位）</summary><div class="dbody">' +
     '<div class="twrap"><table class="mini-tbl"><thead><tr><th>档位</th><th>触发条件（四指标 v3）</th><th>操作</th></tr></thead><tbody>' +
     '<tr><td class="up"><b>🟢 买入档</b></td><td>总分 ≥ ' + S4K_RULE.buyRunMin + '（≥ ' + S4K_RULE.s4kHeavyMin + ' 为「重仓买入/加仓」）且无一票否决、无破位闸</td><td>可持有 / 逢回踩加仓；仓位仍受执行周期上限约束</td></tr>' +
     '<tr><td class="flat"><b>⏳ 观察档</b></td><td>' + S4K_RULE.s4kProfitMin + ' ≤ 总分 &lt; ' + S4K_RULE.buyRunMin + '</td><td>只看不买 / 不加仓，等总分回到买入档</td></tr>' +
     '<tr><td class="dn"><b>🔴 清仓档</b></td><td>总分 &lt; ' + S4K_RULE.s4kProfitMin + ' 或触发一票否决</td><td>按纪律减仓 / 清仓，不等反弹</td></tr>' +
     '<tr><td class="ora"><b>🛑 破位闸</b></td><td>收盘跌破 MA5 且 MA5 方向向下（= MA5 维度 0 分那一格）→ 内核把总分封顶到 ' + (S4K_RULE.buyRunMin - 1) + '</td><td><b>不允许买入 / 加仓</b>；持有者按清仓档与「连续 2 日破 MA5」纪律执行</td></tr>' +
     '</tbody></table></div>' +
-    '<div class="twrap" style="margin-top:8px"><table class="mini-tbl"><thead><tr><th>五维权重（按趋势档位切换，三档之和恒为 100）</th><th>说明</th></tr></thead><tbody>' +
-    '<tr><td style="white-space:normal">MA5 12~42% · KDJ 13~28% · VOL 20~25% · 冲高回吐 15~25% · BIAS 10%</td>' +
+    '<div class="twrap" style="margin-top:8px"><table class="mini-tbl"><thead><tr><th>四维权重（按趋势档位切换，三档之和恒为 100）</th><th>说明</th></tr></thead><tbody>' +
+    '<tr><td style="white-space:normal">MA5 18~42% · KDJ 23~33% · VOL 20~25% · 冲高回吐 15~25%（BIAS 移出加权，仅作提醒）</td>' +
     '<td style="white-space:normal">另加 <b>S5 板块高度晋级</b>修正（在总分上直接加减，不重分配 100 分权重；本表无板块输入时自动按 na 剔除）</td></tr>' +
     '</tbody></table></div>' +
     '<div class="note"><b>仓位管理：</b>买入档=正常仓（受周期上限约束）；观察档=不加仓；清仓档=减至零仓；🛑 破位闸=禁止买入。' +
@@ -26919,10 +26969,10 @@ function m722LoadForms(pool){
       「缩量小阳小阴」只说明「在横盘蓄势」，不说明「趋势已转向」——叠加 v3 打分后，列出来的才是
       「蓄势 + 四指标达线」的票；两者是**与（AND）**关系，任一不满足即不出现在表内。
       ▸ 破位闸的由来（2026-09-27 用户实测申诉）：原以为「MA5 维度给 0 分」就足够挡掉破位票，
-        实则 MA5 维度只占权重 12~42%。挡不挡得住分两支：
+        实则 MA5 维度只占权重 18~42%。挡不挡得住分两支：
           · 趋势 down（连跌）：其余四维被趋势修正压住，实测上限约 29 分 → 本就挡得住；
-          · 趋势 side（反抽收回 MA5 之上、MA5 仍下拐）：MA5 权重仅 12，其余四维可同时打满
-            → **实测原始总分 94，会被判成买入档**（真漏洞，_uiopt/_tune_gate3.js / _tune_gate4.js 实证）。
+          · 趋势 side（反抽收回 MA5 之上、MA5 仍下拐）：MA5 权重仅 18，其余四维可同时打满
+            → **实测原始总分 90，会被判成买入档**（真漏洞，_uiopt/_tune_gate3.js / _tune_gate4.js 实证）。
         故在 v3 内核加 `S4K_RULE.breakVeto`（命中即把总分封顶到买入线之下），本表再显式剔除。
       口径完全复用 7.12 / 7.16 引擎（s4kScore 四指标 v3），见 dbV3Gate 头部注释。
    ── 保留（降级为信息列，不再作为列出闸门）──
@@ -27030,9 +27080,9 @@ function dbGate(bars, opt){
      ⚠️ 用户申诉的原话现象：某票当日「破 1 日 · 向下 · 今日跌破 MA5（斜率同步向下）」却仍被列出。
         根因有三：① 本闸原先在「日K不足 26 根」时回退 MA5 口径（见下）；
         ② 更早版本用 ma5Classify 的四状态分类，本身就不是 v3；
-        ③ S1 仅为五维之一（权重 12~42%）—— 趋势 down 时其余四维被趋势修正压住（实测上限约 29 分）本就挡得住，
-           但趋势 side（反抽收回 MA5 之上、MA5 仍下拐）时 MA5 权重仅 12，其余四维可同时打满
-           → **实测原始总分 94，会被判成买入档**（真漏洞，_uiopt/_tune_gate3.js / _tune_gate4.js 实证）。
+        ③ S1 仅为四维之一（权重 18~42%）—— 趋势 down 时其余四维被趋势修正压住（实测上限约 29 分）本就挡得住，
+           但趋势 side（反抽收回 MA5 之上、MA5 仍下拐）时 MA5 权重仅 18，其余四维可同时打满
+           → **实测原始总分 90，会被判成买入档**（真漏洞，_uiopt/_tune_gate3.js / _tune_gate4.js 实证）。
    ▸ ⚠️ v3 算不出（日K不足 26 根）→ **不再回退旧 MA5 口径**。
      2026-09-27 之前的临时做法是「不足 26 根就沿用 MA5 判定」，后果正是把不符合 v3 的票放了进来。
      现改为 kind = null（不列出），并在文首概览里单独计「v3 数据不足 N 只」——
@@ -27067,7 +27117,7 @@ function dbV3GateTxt(m){
     (sk.heightMod ? '　S5 ' + (sk.heightMod > 0 ? '+' : '') + sk.heightMod : '') +
     (m.kind == null ? '（不在「买入档 / 观察档」两类内 → 不列出）' : '');
   return tag + ' · 四指标 ' + sk.total + ' 分（MA5 ' + sk.s1.v + ' · KDJ ' + sk.s2.v + ' · VOL ' + sk.s3.v +
-    ' · 回吐 ' + sk.s4.v + ' · BIAS ' + sk.s6.v + '）→ ' + sk.action + tail;
+    ' · 回吐 ' + sk.s4.v + ' · BIAS提醒 ' + sk.s6.v + '）→ ' + sk.action + tail;
 }
 /* ---------- 7.30 竞价快照（集合竞价成交量：竞价时段 9:25–9:30 在线时抓取，当日有效） ----------
    平台无付费实时「集合竞价成交量」源；腾讯行情 qt.gtimg.cn 在集合竞价窗口内 index[6]=集合竞价成交量(手)。
@@ -27533,7 +27583,7 @@ function dbTableHtml(rows, stageOk){
       mid = '<td colspan="2" class="flat">—（今日才涨停 / 窗口外）</td>';
     }
     /* 四指标 v3 列（2026-09-27 全面替换原「MA5限定」列）：
-       整组走 v3 五维读数 + 档位徽章，不再显示 MA5 自己的斜率/站破线/翻上几日读数
+       整组走 v3 四维读数 + 档位徽章，不再显示 MA5 自己的斜率/站破线/翻上几日读数
        —— 那些是 MA5 系统的结论口径，与 v3 的档位判定无因果关系，并列会出现"破位票挂着买点标签"的错读。
        🛑 破位闸命中者与本列无关：它们在 dbListed 阶段就已出局，根本走不到渲染。 */
     var v3Cell = (function(){
@@ -27541,7 +27591,7 @@ function dbTableHtml(rows, stageOk){
       var tip = 'title="' + esc(dbV3GateTxt(M)).replace(/"/g, '&quot;') + '"';
       if(!sk || !sk.ok) return '<td ' + tip + '><span class="badge b-b">v3 未算出</span></td>';
       var dim = '<div class="flat mono" style="font-size:11px">MA5 ' + sk.s1.v + ' · KDJ ' + sk.s2.v +
-        ' · VOL ' + sk.s3.v + ' · 回吐 ' + sk.s4.v + ' · BIAS ' + sk.s6.v + '</div>';
+        ' · VOL ' + sk.s3.v + ' · 回吐 ' + sk.s4.v + ' · BIAS提醒 ' + sk.s6.v + '</div>';
       if(M.kind === 'buy'){
         return '<td ' + tip + '><span class="badge b-y">✅ 买入档 ' + sk.total + '</span>' + dim + '</td>';
       }
@@ -27565,10 +27615,10 @@ function dbTableHtml(rows, stageOk){
   /* 2026-09-22 用户要求：口径说明 + 逐条判定明细 默认折叠（details.foldpanel，点开才显示，减少首屏长度） */
   h += '<details class="foldpanel" style="margin-top:8px"><summary>📖 口径说明 与 逐条判定明细（达标票 · 默认收起，点击展开）</summary><div style="margin-top:6px">';
   h += '<div class="note" style="margin-top:6px">＊ = 该量能为盘中按已过交易时间折算的<b>全天估算值</b>（非成交量终值）；无 ＊ 的为原始量能比。<br>' +
-    '<b>「四指标 v3」列</b>取自本平台的四指标打分系统 <b>v3</b>（MA5 + KDJ(9,3,3) + VOL + 冲高回吐 + BIAS 五维加权，满分 100，再叠加 S5 板块高度修正），与 7.12 / 7.16 是<b>同一把尺子、同一份 30 分钟日K缓存</b>：' +
+    '<b>「四指标 v3」列</b>取自本平台的四指标打分系统 <b>v3</b>（MA5 + KDJ(9,3,3) + VOL + 冲高回吐 四维加权，BIAS 移出加权仅作提醒，满分 100，再叠加 S5 板块高度修正），与 7.12 / 7.16 是<b>同一把尺子、同一份 30 分钟日K缓存</b>：' +
     '<b>买入档</b> ≥ 62 分 ｜ <b>止盈档</b> 25~61 分（列内显示为「⏳ 只观察」）｜ <b>清仓档</b> &lt; 25 分或触发一票否决。上表<b>只可能</b>出现前两类。' +
     '<b class="dn">🛑 破位闸</b>：收盘跌破 MA5 且 MA5 方向向下（v3 的 MA5 维度恰好 0 分那一格）→ 总分被封顶到买入线之下、本表<b>直接剔除</b>（用户 2026-09-27 口径：「MA5 跌破的股票，是不符合买入的」）。' +
-    'v3 未算出（日K不足 26 根）的票同样<b>不列出</b>（不回退旧的 MA5 口径，避免不符合 v3 的票混进来）。鼠标悬停该列可看五维分数与被挡的具体理由。<br>' +
+    'v3 未算出（日K不足 26 根）的票同样<b>不列出</b>（不回退旧的 MA5 口径，避免不符合 v3 的票混进来）。鼠标悬停该列可看四维分数与被挡的具体理由。<br>' +
     '「生命周期阶段」列取自平台温斯坦阶段引擎；「竞价量/昨量」在竞价时段（9:25–9:30）在线才会记录，否则显示「—」。</div>';
   /* 逐条明细（只列达标票，避免上百条噪声） */
   if(arr.length){
@@ -27612,7 +27662,7 @@ function dbRulesHtml(){
     '　· <b>v3 观察档</b>（列出为 ⏳ 只观察）：' + S4K_RULE.s4kProfitMin + ' ≤ 总分 &lt; ' + S4K_RULE.buyRunMin + ' —— 形态达标但分数不到买入线，只看不买<br>' +
     '　· <b class="dn">🛑 破位闸</b>：收盘跌破 MA5 且 MA5 方向向下（= v3 的 MA5 维度恰好 0 分那一格）→ 内核把总分封顶到 ' + (S4K_RULE.buyRunMin - 1) + '，且本表<b>直接剔除</b>（用户 2026-09-27 口径：「MA5 跌破的股票，是不符合买入的」）<br>' +
     '　· <b>其余一律不列出</b>：v3 清仓档（总分 &lt; ' + S4K_RULE.s4kProfitMin + ' 或一票否决）｜v3 未算出（日K不足 26 根，<b>不回退旧 MA5 口径</b>）<br>' +
-    '　· 五维权重：MA5 12~42% · KDJ 13~28% · VOL 20~25% · 冲高回吐 15~25% · BIAS 10%（按趋势档位切换，三档之和恒为 100，另加 S5 板块高度修正）<br>' +
+    '　· 四维权重：MA5 18~42% · KDJ 23~33% · VOL 20~25% · 冲高回吐 15~25%（BIAS 移出加权、仅作提醒；按趋势档位切换，三档之和恒为 100，另加 S5 板块高度修正）<br>' +
     '　· 口径来源：<b>直接调用本平台的 s4kScore（四指标 v3）</b>，与 7.12 / 7.16 同一份引擎、同一份 30 分钟日K缓存，<b>不复制、不写第二套阈值</b>；因此同一只票在三处的结论必然一致。<br>' +
     '　· 唯一差别：7.12 有板块成分股快照 → 用实时价覆盖末根；7.30 无全市场快照 → 直接用日K 末根（腾讯 fqkline 盘中末根本身即实时价，收盘后为终值），故无需额外请求。<br>' +
     '　· 为什么值得加这道门：<b>「缩量小阳小阴」只证明「在横盘」，不证明「趋势已转向」</b> —— 缩量也可能是下跌中继的死水。叠加 v3 打分后，留下的才是「蓄势 + 四指标达线」的交集。<br><br>' +
@@ -29263,10 +29313,41 @@ function wlData(){
   });
   return WL;
 }
+/* ==== 自选池镜像发布（2026-10-29 §232）=========================================
+   用户要求：「五池明细自选股中的股票，自动加入生命周期工作台的自选股」。
+
+   ── 为什么是「镜像」而不是直接写对方的键（bwork_watchlist）──────────────
+     · 直接写对方键 = 每次本台一存盘就把对方整份自选覆盖掉，对方手工加的票全没；
+     · 删除语义会打架：对方删一只，本台下次保存又给写回来，永远删不掉。
+   故本台只发布**只读镜像**，由对方（生命周期台）自己决定怎么并入、并维护拒绝清单。
+
+   ── 契约 ────────────────────────────────────────────────────────────────
+     · 键：wb_watch_mirror_v1 = { v:1, ts, n, items:[{ c:代码, n:名称, at:加入时刻 }] }
+     · 单向：本台**只写不读**（与 wb_bridge_a2l 同纪律）；不需要对方页面在线。
+     · 依赖前提：同浏览器下 file:// 页面共享 localStorage —— 已真机探针证实
+       （2026-10-29：涨停台写入 → 生命周期台目录读出，同一 --user-data-dir）。
+     · 指纹去重：内容没变不重写，避免每次 wlSave 都动一次盘。
+     · 失败不影响本台：整段 try 包住，镜像发不出去也绝不影响 wb_watch_v1 本身。 */
+var WL_MIRROR_KEY = 'wb_watch_mirror_v1';
+var WL_MIRROR_FP = '';
+function wlMirrorPub(force){
+  try{
+    var out = wlList().map(function(x){
+      return { c: wlNormCode(x.code), n: String(x.name || ''), at: Number(x.addedAt) || 0 };
+    });
+    var fp = out.map(function(x){ return x.c + ':' + x.n + ':' + x.at; }).join('|');
+    if (!force && fp === WL_MIRROR_FP) return null;
+    WL_MIRROR_FP = fp;
+    var box = { v: 1, ts: Date.now(), n: out.length, items: out };
+    try{ lsSet(WL_MIRROR_KEY, box); }catch(eW){ }
+    return box;
+  }catch(e){ return null; }
+}
 function wlSave(){
   wlData();
   var out = WL_ORD.map(function(c){ return WL[c]; }).filter(Boolean);
   try{ lsSet(WL_KEY, out); }catch(e){ }
+  try{ wlMirrorPub(); }catch(eM){ }     /* §232：存盘顺手发布镜像（内容没变则跳过） */
   return out.length;
 }
 function wlList(){
@@ -29932,16 +30013,16 @@ function renderPool(){
       var tj = x.tj ? (x.tj.days + '天' + x.tj.ct + '板') : '—';
       var rb = rankBadgeAny(x.code);
       if(isDt){
-        return '<tr><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rb + '</td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.price ? x.price.toFixed(2) : '—') + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + pnum((x.fund || 0) / 1e8) + '</td><td class="mono">' + ((x.lbc || 1) >= 2 ? '<span class="dn">' + x.lbc + '连跌停</span>' : '今日首跌') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td>' + esc(x.ind) + '</td>' +
+        return '<tr data-wbbjump="'+esc(x.code)+'" title="点击打开生命周期工作台诊断该股"><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rb + '</td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.price ? x.price.toFixed(2) : '—') + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + pnum((x.fund || 0) / 1e8) + '</td><td class="mono">' + ((x.lbc || 1) >= 2 ? '<span class="dn">' + x.lbc + '连跌停</span>' : '今日首跌') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td>' + esc(x.ind) + '</td>' +
           lifeCell(lifeBarsOf(x.code), lifeCtxOf(x.code, x.name, x.ind, x.price, { lbc: x.lbc })) + '</tr>';
       }
-      return '<tr><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rb + '</td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.price ? x.price.toFixed(2) : '—') + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + pnum((x.fund || 0) / 1e8) + '</td><td class="mono">' + ((x.lbc || 1) >= 2 ? '<span class="up">' + x.lbc + '板</span>' : '首板') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td class="mono">' + x.zbc + '</td><td>' + esc(x.ind) + '</td><td class="yel">' + tj + '</td>' +
+      return '<tr data-wbbjump="'+esc(x.code)+'" title="点击打开生命周期工作台诊断该股"><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rb + '</td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.price ? x.price.toFixed(2) : '—') + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + pnum((x.fund || 0) / 1e8) + '</td><td class="mono">' + ((x.lbc || 1) >= 2 ? '<span class="up">' + x.lbc + '板</span>' : '首板') + '</td><td class="mono">' + fmtFbt(x.fbt) + '</td><td class="mono">' + x.zbc + '</td><td>' + esc(x.ind) + '</td><td class="yel">' + tj + '</td>' +
         lifeCell(lifeBarsOf(x.code), lifeCtxOf(x.code, x.name, x.ind, x.price, { lbc: x.lbc })) + '</tr>';
     }).join('');
   } else if(t === 'top' || t === 'bot'){
     head = '<tr><th>排名</th><th>代码</th><th>名称</th><th>涨跌幅</th><th>最新价</th><th>成交额(亿)</th><th>所属行业</th><th>生命周期阶段</th></tr>';
     rows = view.map(function(x){
-      return '<tr><td class="mono">' + x.rank + '</td><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td><td>' + pcts(x.zdp == '-' ? null : x.zdp) + '</td><td class="mono">' + (x.price == '-' || x.price == null ? '—' : Number(x.price).toFixed(2)) + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + esc(x.ind) + '</td>' +
+      return '<tr data-wbbjump="'+esc(x.code)+'" title="点击打开生命周期工作台诊断该股"><td class="mono">' + x.rank + '</td><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td><td>' + pcts(x.zdp == '-' ? null : x.zdp) + '</td><td class="mono">' + (x.price == '-' || x.price == null ? '—' : Number(x.price).toFixed(2)) + '</td><td class="mono">' + famt((x.amt || 0) / 1e8) + '</td><td>' + esc(x.ind) + '</td>' +
         lifeCell(lifeBarsOf(x.code), lifeCtxOf(x.code, x.name, x.ind, (x.price == '-' ? null : x.price), {})) + '</tr>';
     }).join('');
   } else if(t === 'k10'){
@@ -29950,7 +30031,7 @@ function renderPool(){
     var prevR = k10PrevRanks();
     head = '<tr><th>排名</th><th>代码</th><th>名称</th><th>10日涨幅</th><th>今日涨跌幅</th><th>最新价</th><th>量比</th><th>名次变动</th><th>所属行业</th><th>生命周期阶段</th></tr>';
     rows = view.map(function(x){
-      return '<tr><td class="mono">' + x.rank + '</td><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + k10TjTag(x.code) + '</td>' +
+      return '<tr data-wbbjump="'+esc(x.code)+'" title="点击打开生命周期工作台诊断该股"><td class="mono">' + x.rank + '</td><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + k10TjTag(x.code) + '</td>' +
         '<td class="up mono">' + pcts(x.g10 == null ? null : x.g10) + '</td>' +
         '<td>' + pcts(x.zdp === '-' || x.zdp == null ? null : x.zdp) + '</td>' +
         '<td class="mono">' + (x.price == '-' || x.price == null ? '—' : Number(x.price).toFixed(2)) + '</td>' +
@@ -29984,7 +30065,7 @@ function renderPool(){
     rows = view.map(function(x){
       var q = wlQOf(x.code);
       var qtip = q.src ? ('行情来源：' + q.src + (q.at ? '（' + wlDayTxt(q.at) + '）' : '')) : '行情未取到（接口与本机快照都没有这只票）';
-      return '<tr>' +
+      return '<tr data-wbbjump="'+esc(x.code)+'" title="点击打开生命周期工作台诊断该股">' +
         '<td class="mono">' + esc(x.code) + '</td>' +
         '<td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td>' +
         '<td><span class="tag tag-b" style="font-size:10px">' + esc(x.from) + '</span>' +
@@ -29997,7 +30078,7 @@ function renderPool(){
         '<td>' + wlS4KCell(x.code) + '</td>' +
         '<td>' + esc(x.ind) + '</td>' +
         lifeCell(lifeBarsOf(x.code), lifeCtxOf(x.code, x.name, x.ind, (q.price == null ? null : q.price), {})) +
-        '<td><button class="btn b3" type="button" style="min-height:20px;font-size:11px;padding:1px 7px" onclick="wlDelOne(\'' + esc(x.code) + '\');return false" title="从自选池移出（不影响 7.16 个人持仓）">移出</button></td>' +
+        '<td class="wl-act"><button class="btn b3" type="button" style="min-height:20px;font-size:11px;padding:1px 7px" onclick="wlDelOne(\'' + esc(x.code) + '\');return false" title="从自选池移出（不影响 7.16 个人持仓）">移出</button></td>' +
         '</tr>';
     }).join('');
     /* 行业补查：复用 ⑤ / 7.5 / 🚀 / 🌱 同一条 F10 批量链路（ztIndEnsure + 7 天缓存），首次进入时补一次 */
@@ -30009,7 +30090,7 @@ function renderPool(){
   } else {
     head = '<tr><th>代码</th><th>名称</th><th>昨日连板数</th><th>今日涨跌幅</th><th>今日最高</th><th>开盘溢价</th><th>所属行业</th><th>生命周期阶段</th></tr>';
     rows = view.map(function(x){
-      return '<tr><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td><td class="mono">' + x.lbc + '板</td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.high || '—') + '</td><td>' + pcts(x.openPrem) + '</td><td>' + esc(x.ind) + '</td>' +
+      return '<tr data-wbbjump="'+esc(x.code)+'" title="点击打开生命周期工作台诊断该股"><td class="mono">' + esc(x.code) + '</td><td><b>' + esc(x.name) + '</b>' + rankBadgeAny(x.code) + '</td><td class="mono">' + x.lbc + '板</td><td>' + pcts(x.zdp) + '</td><td class="mono">' + (x.high || '—') + '</td><td>' + pcts(x.openPrem) + '</td><td>' + esc(x.ind) + '</td>' +
         lifeCell(lifeBarsOf(x.code), lifeCtxOf(x.code, x.name, x.ind, null, { lbc: x.lbc })) + '</tr>';
     }).join('');
   }
@@ -32876,6 +32957,43 @@ function wtClassifySector(g) {
   return { cls: 'mid', tag: '轮动支线', why: '涨停稀少 / 脉冲，不构成主线' };
 }
 
+/* ★ 2026-10-28（用户要求）：板块「10 个交易日内最高板高度」+ 板块内实时连板梯队。
+   数据源：历史最高板取自跨日状态机 wb_secstage_v1（seccHist，保留 12 个交易日，与 ③ 情绪周期 / 7.5B 同一把尺）；
+   今日最高板取自快照 WT.snap.sectors[k].maxLbc；板块内梯队取自今日涨停池同行业聚类 rows（每条带 lbc），零额外请求。
+   任一取数失败 → 留白 / 降级，绝不编数字（与全站纪律一致）。 */
+function secMaxLbc10d(name, todayMax) {
+  var hi = (todayMax != null && todayMax > 0) ? todayMax : 0;
+  try {
+    var hist = seccHist(name);
+    if (hist && hist.length) {
+      var last10 = hist.slice(-10);                 /* seccHist 已按日期升序且排除今日 → 取最近 10 个有记录交易日 */
+      last10.forEach(function (d) { if (d.maxLbc > hi) hi = d.maxLbc; });
+    }
+  } catch (e) { }
+  return hi;
+}
+/* 板块内实时连板梯队（最高板 → 首板 的家数分布）。数据源 = 今日涨停池同行业聚类 rows（WT.snap.sectors[k].rows，每条带 lbc）。
+   配色沿用全站「高标=热红 / 中高=黄 / 低位首板=绿」语义：≥5 板 hi · 3~4 板 mid · ≤2 板 lo。 */
+function secEchelonHtml(name, rows) {
+  if (!rows || !rows.length) return '';
+  var ec = {}, maxL = 1;
+  rows.forEach(function (z) {
+    var l = (z.lbc != null) ? (+z.lbc || 1) : 1;
+    ec[l] = (ec[l] || 0) + 1;
+    if (l > maxL) maxL = l;
+  });
+  var html = '<span class="wt-ec" title="板块内连板梯队（最高板→首板 的家数分布 · 实时）"><span class="ec-lbl">梯队</span>';
+  for (var l = maxL; l >= 1; l--) {
+    var cnt = ec[l] || 0;
+    if (cnt === 0) continue;
+    var cls = l >= 5 ? 'hi' : (l >= 3 ? 'mid' : 'lo');
+    var lbl = l >= 2 ? (l + '板') : '首板';
+    html += '<span class="ec-i ' + cls + '">' + lbl + '×' + cnt + '</span>';
+  }
+  html += '</span>';
+  return html;
+}
+
 /* 主线三类卡渲染（与 wtMainLinesHtml 共用同一份 s.sectors 快照，宽度数据异步到位后由 wtBreadthRepaint 重画） */
 function wtMainLineCardsHtml() {
   var s = WT.snap;
@@ -32909,7 +33027,9 @@ function wtMainLineCardsHtml() {
     var b = rows[g.name], bTxt = '—';
     if (b) bTxt = (b.p5 == null ? '—' : b.p5.toFixed(0) + '%') + (b.n ? '（' + b.s5 + '/' + b.n + '）' : '');
     else if (BR.state === 'loading') bTxt = '取数中…';
-    var meta = ['涨停 ' + (g.zt || 0) + ' 家', '最高 ' + (g.maxLbc || 0) + ' 板'];
+    var tMax = (g.maxLbc || 0);
+    var m10 = (function () { try { return secMaxLbc10d(g.name, tMax); } catch (eM10) { return tMax; } })();
+    var meta = ['涨停 ' + (g.zt || 0) + ' 家', '10日高 ' + m10 + ' 板' + (m10 !== tMax ? ('（今日 ' + tMax + '）') : '')];
     /* ★ 2026-10-08（用户要求）：备注「昨涨停 N 家」（昨日涨停池 D.prev 同名板块家数，与 7.5B 总表同一把尺）。
        昨日池未就绪 → 留白；N=0 照常标（昨日无涨停 = 新热点信号，缺失 ≠ 0）。 */
     var pz3 = null; try { pz3 = prevZtCntOf(g.name); } catch (eP3) { pz3 = null; }
@@ -32932,6 +33052,7 @@ function wtMainLineCardsHtml() {
       '<div class="wt-tc-h"><span class="wt-tc-tag">' + c.tag + '</span><b>' + esc(g.name) + '</b>' + ssC7 +
       '<span class="wt-tc-grade ' + gcls + '">' + (g.grade || '—') + '级</span></div>' +
       '<div class="wt-tc-m">' + meta.join('　·　') + '</div>' +
+      (function () { try { return secEchelonHtml(g.name, g.rows); } catch (eEC) { return ''; } })() +
       /* ★ 2026-10-23：板块等权指数 5 日线体检（异步取数，数据到位由 wtBreadthRepaint 重画本容器）。
          与 ptChip / yfTag 同策略：读数层出任何异常都只留白，**绝不把整列卡片打空**。 */
       (function () { try { return secmaLineHtml(g.name); } catch (eSMl) { return ''; } })() +
@@ -33000,7 +33121,13 @@ function wtMainLinesHtml() {
       /* ★ 2026-09-24（用户要求）：13:00 之后封板的涨停股单独标出来 —— 午后接力 / 尾盘偷袭，
          与早盘板（9:30~10:00 黄金半小时）的资金性质不同，次日分歧概率更高。悬停看是哪几只几点封的。 */
       (x.late ? '　｜　<b style="color:#fbbf24" title="' + esc(wtLateTip(x)) + '">⏰ 13:00 后 ' + x.late + ' 只</b>' : '') +
-      '　｜　涨停股成交额合计 ' + wtYi(x.amount) + '　｜　最高 ' + x.maxLbc + ' 板' +
+      '　｜　涨停股成交额合计 ' + wtYi(x.amount) + (function () { try {
+        var _tm = (x.maxLbc || 0), _m10 = secMaxLbc10d(x.name, _tm);
+        var _s = '　｜　10日高 ' + _m10 + ' 板' + (_m10 !== _tm ? ('（今日 ' + _tm + '）') : '');
+        var _ec = secEchelonHtml(x.name, x.rows);
+        if (_ec) _s += '　｜　' + _ec;
+        return _s;
+      } catch (e) { return '　｜　最高 ' + (x.maxLbc || 0) + ' 板'; } })() +
       '　｜　板块宽广度 <b title="' + esc(tip) + '">' + txt + '</b></div>';
   });
   /* 汇总说明：命中就列出性质与风险，没命中**也照实写一行**（让人知道这项跑了、只是今天没有） */
@@ -33608,7 +33735,7 @@ function ladderPromoStat() {
   var inZt = {}, i, k;
   for (i = 0; i < zt.length; i++) { var ck = lbCodeOf(zt[i]); if (ck) inZt[ck] = 1; }
   var out = [];
-  for (k = 1; k <= 3; k++) out.push({ k: k, n: 0, ok: 0 });
+  for (k = 1; k <= 3; k++) out.push({ k: k, n: 0, ok: 0, okList: [], allList: [] });
   for (i = 0; i < prev.length; i++) {
     var x = prev[i]; if (!x) continue;
     var lb = (x.lbc == null ? 1 : +x.lbc);
@@ -33616,7 +33743,17 @@ function ladderPromoStat() {
     var c = lbCodeOf(x); if (!c) continue;
     var t = out[lb - 1];
     t.n++;
-    if (inZt[c]) t.ok++;      /* 今日仍在涨停池 = 晋级（含炸板后回封，按收盘前未开板处理不了，属盘中口径） */
+    /* ★ 2026-10-29 §236（用户原话「1进2 的行业也请列出」+「1进2 晋级的行业的 1进2 晋级率也列出」）：
+       晋级个股与**该梯队全体成员**都要留下 —— 只累加 ok 的话渲染层拿不到"晋级的到底是谁"，
+       行业的晋级率更算不出来（分母得是该行业昨日首板家数，不是全池 63）。
+       留 {c,n,hybk} 三元组足够：c 走 secIndOf 取行业键，hybk 兜底，n 用于 tooltip 指名。
+       ★ 不算新请求：这些行本来就来自昨日涨停池（D.prev），身份是池子里现成的字段。 */
+    var item = { c: c, n: String(x.n || ''), hybk: String(x.hybk || '').trim() };
+    t.allList.push(item);
+    if (inZt[c]) {
+      t.ok++;    /* 今日仍在涨停池 = 晋级（含炸板后回封，按收盘前未开板处理不了，属盘中口径） */
+      t.okList.push(item);
+    }
   }
   return out;
 }
@@ -33668,6 +33805,118 @@ function lbBandTxt(k) {
   return '＞' + b.hi + '% ' + b.hot + '　|　' + b.mid + '~' + b.hi + '% ' + b.midL +
     '　|　' + b.low + '~' + b.mid + '% ' + b.cold + '　|　＜' + b.low + '% ' + b.ice;
 }
+/* ★ 2026-10-29 §236（用户原话：「1进2 的行业也请列出」→「1进2 晋级的行业的 1进2 晋级率也列出」）
+   晋级率的百分比只说"接力强不强"，不说"钱去了哪个方向" —— 6/63 涨的是半导体还是汽零，
+   对下单完全是两回事。所以每个梯队的晋级个股再按行业归并一次，并算出**该行业自己的**晋级率。
+   ★ 两个百分比分母不同，必须都印、且不许互相比较：
+       · 梯队胶囊上的全池率 = 6/63（该梯队全部成员）
+       · 行业胶囊上的行业率 = 该行业晋级家数 ÷ 该行业昨日该梯队家数
+     行业率普遍高于全池率（强势行业集中晋级、弱势行业集体阵亡，全池率是行业率按家数加权的
+     结果），看着"行业 37% 比全池 9% 强"是口径错觉，不是超额。
+   ★ 行业键一律走 secIndOf（F10 行业优先 → ind2Canon 归一 → themeOf 主题层），与 ⑧ 自选池、
+     §216 板块五榜、⑤ 复盘分组**同一把尺**。绝不直接读 x.hybk 当键：hybk 是东财 8 字节截断的
+     4 字缩写（「汽车零部」），直接当键会把同一行业拆成两格，出现"这里 2 家、那里 1 家"。
+   ★ 取不到行业（空 / '—' / 未分类）→ 归「其他」且永远垫底，**绝不丢样本**：
+     各格家数之和必须等于该梯队 ok（分母各家之和必须等于该梯队 n）。
+   ★ 零新增请求：只用池子里现成的 c / hybk，F10 缺就用 hybk 兜底（与 ⑧ 三级取数同一退让顺序）。
+   ★ 分母 0（理论上不会，行业键来自同一批行）→ pct 给 null 而不是 0：0% 会被读成"全灭"。 */
+function ladderIndAgg(list, allList) {
+  var m = {}, order = [], i;
+  var indOf = function (it) {
+    var k = '';
+    if (typeof secIndOf === 'function') {
+      try { k = secIndOf(it.c, it.hybk || '') || ''; } catch (e) { k = ''; }
+    } else if (typeof ind2Canon === 'function') {
+      try { k = ind2Canon(it.hybk || '') || ''; } catch (e2) { k = ''; }
+    } else {
+      k = it.hybk || '';
+    }
+    k = String(k || '').trim();
+    return (!k || k === '—' || k === '未分类' || k === '其他') ? '其他' : k;
+  };
+  var slot = function (k) {
+    var g = m[k];
+    if (!g) { g = m[k] = { ind: k, cnt: 0, tot: 0, names: [] }; order.push(k); }
+    return g;
+  };
+  /* 分母先立：该梯队的**全体成员**（昨日该连板档全部个股），不是晋级成员 */
+  for (i = 0; i < (allList || []).length; i++) {
+    var a = allList[i]; if (!a) continue;
+    slot(indOf(a)).tot++;
+  }
+  /* 分子：晋级成员（同时收个股名，供 tooltip 指名） */
+  for (i = 0; i < (list || []).length; i++) {
+    var it = list[i]; if (!it) continue;
+    var g = slot(indOf(it));
+    g.cnt++;
+    g.names.push((it.n || '—') + (it.c ? '（' + it.c + '）' : ''));
+  }
+  var out = order.map(function (k) { return m[k]; });
+  out.forEach(function (g2) {
+    g2.pct = (g2.tot > 0) ? (g2.cnt / g2.tot * 100) : null;   /* 分母 0 → null，绝不印 0% */
+  });
+  out.sort(function (a2, b2) {
+    if (b2.cnt !== a2.cnt) return b2.cnt - a2.cnt;                       /* 先按晋级家数降序：主线一眼可指 */
+    if ((a2.ind === '其他') !== (b2.ind === '其他')) return a2.ind === '其他' ? 1 : -1;   /* 「其他」永远垫底 */
+    return a2.ind < b2.ind ? -1 : (a2.ind > b2.ind ? 1 : 0);             /* 同家数按名排序，保证刷新不移位 */
+  });
+  return out;
+}
+/* 一行最多印几个行业胶囊：多则折成「+N 类」（明细全在 title 里，不丢信息）。
+   5 个胶囊 ≈ 600px（带行业晋级率后），1520 宽能跟在三个梯队胶囊后面不折行；放开会撑成两行。 */
+var LAD_IND_MAX = 5;
+function ladderIndHtml(t) {
+  if (!t || !t.okList || !t.okList.length) return '';
+  var all = ladderIndAgg(t.okList, t.allList);
+  if (!all.length) return '';
+  /* 只列「真有晋级」的行业：分母里必然带着一堆 0 晋级的行业，全印出来会把这一行撑成两行，
+     也会把「+N 类」的含义搞混（那 N 类里混着 0/3）。0 晋级的行业数放口径头的 tooltip，
+     信息不丢、版面不脏。 */
+  var agg = all.filter(function (g) { return g.cnt > 0; });
+  var dead = all.filter(function (g) { return !g.cnt; });
+  if (!agg.length) return '';
+  var b = LB_TIER[t.k] || {};
+  var tierName = b.name || (t.k + '进' + (t.k + 1));
+  var show = agg.slice(0, LAD_IND_MAX), rest = agg.slice(LAD_IND_MAX);
+  var pctOf = function (g) {
+    return (g.pct == null || !isFinite(g.pct)) ? '' : (g.pct.toFixed(1) + '%' + (g.tot < 3 ? '*' : ''));
+  };
+  var titleOf = function (g) {
+    return tierName + ' · ' + g.ind + '\n' +
+      '晋级 ' + g.cnt + ' / ' + (g.tot > 0 ? g.tot : '?') + ' 只' +
+      (pctOf(g) ? ' → ' + g.pct.toFixed(1) + '%' : '（分母未知，不给百分比）') + '\n' +
+      '口径：行业晋级率 = 该行业昨日 ' + t.k + ' 连板中今日仍在涨停池的家数 ÷ 该行业昨日 ' + t.k + ' 连板家数\n' +
+      '⚠ 分母是「该行业」的，不是全池 ' + t.n + ' 只 → 与梯队胶囊上的全池率不同分母，别拿两者比大小\n' +
+      '个股：' + g.names.join('、') +
+      (g.tot > 0 && g.tot < 3 ? '\n* 样本仅 ' + g.tot + ' 只：百分比跳动极大，只作方向参考，别当胜率' : '');
+  };
+  var hdTip = tierName + ' 行业分布 · 行业晋级率\n' +
+    '全池 ' + t.ok + '/' + t.n + ' = ' + (t.n ? (t.ok / t.n * 100).toFixed(1) : '—') +
+    '%（就是梯队胶囊上那个数）\n' +
+    '每格 = 该行业晋级家数 ÷ 该行业昨日 ' + t.k + ' 连板家数 —— **分母不同，别跟全池率比大小**：\n' +
+    '行业率普遍高于全池率（强势行业集中晋级、弱势行业集体阵亡，全池率是行业率按家数加权的）。\n' +
+    (dead.length
+      ? '另有 ' + dead.length + ' 个行业昨日 ' + t.k + ' 连板今日 0 晋级：' +
+        dead.map(function (g) { return g.ind + ' 0/' + g.tot; }).join('、')
+      : '昨日 ' + t.k + ' 连板覆盖的行业，今日全部有晋级');
+  /* 口径头 + 胶囊包成同一个 inline-flex 组：.wt-lrow 是 flex-wrap，散着放会让口径头被甩到
+     上一行末尾（§216 注释里记过这个坑），组在一起折行时才是整体移动。 */
+  var h = '<span class="lt-ind"><span class="as-hd" title="' + esc(hdTip) + '">' +
+    esc(tierName + ' 行业·晋级率') + '</span>';
+  show.forEach(function (g) {
+    h += '<span class="as" title="' + esc(titleOf(g)) + '">' +
+      '<span class="an">' + esc(g.ind) + '</span>' +
+      '<b>' + g.cnt + (g.tot > 0 ? '/' + g.tot : '') + '</b>' +
+      (pctOf(g) ? '<span class="at">' + pctOf(g) + '</span>' : '') + '</span>';
+  });
+  if (rest.length) {
+    h += '<span class="as-more" title="' + esc(rest.map(function (g) {
+      return g.ind + ' ' + g.cnt + (g.tot > 0 ? '/' + g.tot : '') + (pctOf(g) ? ' ' + pctOf(g) : '') +
+        '（' + g.names.join('、') + '）';
+    }).join('\n')) + '">+' + rest.length + ' 类</span>';
+  }
+  return h + '</span>';
+}
 function wtLadderRowHtml() {
   var st = null;
   try { st = ladderPromoStat(); } catch (e) { st = null; }
@@ -33701,8 +33950,10 @@ function wtLadderRowHtml() {
           : '全断板 → 高度被压死，今日最高只剩低位板，接力整体降一级')) + '\n' +
       '⚠ 样本只有 ' + tb.n + ' 只：这是龙头指针，不是胜率，别按百分比理解');
   }
+  var pcts = {};                        /* ★ §228：各梯队晋级率留档，供「较 10:00」胶囊比对 */
   st.forEach(function (t) {
     var j = lbJudge(t), b = LB_TIER[t.k];
+    pcts[t.k] = (j && j.pct != null && isFinite(j.pct)) ? +j.pct : null;
     var few = (t.n > 0 && t.n < 5);
     if (!j) {
       chips.push('<span class="lt' + (few ? ' few' : '') + '"><span class="ln">' + b.name + '</span>' +
@@ -33721,6 +33972,36 @@ function wtLadderRowHtml() {
       (few ? '\n⚠ 样本仅 ' + t.n + ' 只：高位样本天然少，百分比跳动极大，只作情绪参考、不当胜率用' : ''));
   });
 
+  /* ★ 2026-10-29 §236：晋级个股的行业分布（有几个梯队晋级就出几组）。
+     位置刻意放在三档梯队胶囊**之后**、虚强 / 较 10:00 **之前**：
+     先读「接力强不强」（百分比），再读「钱去哪了」（行业），最后才是修正项。
+     不塞进梯队胶囊内部 —— 三档百分比要连成一排才好横着比，中间插行业就把对比切碎了。 */
+  var indTips = [];
+  st.forEach(function (t) {
+    var h = '';
+    try { h = ladderIndHtml(t); } catch (eI) { h = ''; }
+    if (!h) return;
+    chips.push(h);
+    try {
+      var b2 = LB_TIER[t.k] || {};
+      var aggAll = ladderIndAgg(t.okList, t.allList);
+      var live = aggAll.filter(function (g) { return g.cnt > 0; });
+      indTips.push((b2.name || (t.k + '进' + (t.k + 1))) + ' 晋级 ' + t.ok + ' 只 → 行业分布（行业晋级率）：' +
+        live.map(function (g) {
+          return g.ind + ' ' + g.cnt + '/' + g.tot +
+            (g.pct == null || !isFinite(g.pct) ? '' : ' ' + g.pct.toFixed(1) + '%' + (g.tot < 3 ? '*' : ''));
+        }).join(' · ') +
+        '\n' + live.map(function (g) { return '· ' + g.ind + '：' + g.names.join('、'); }).join('\n') +
+        (aggAll.length > live.length
+          ? '\n· 0 晋级的行业 ' + (aggAll.length - live.length) + ' 个：' +
+            aggAll.filter(function (g) { return !g.cnt; }).map(function (g) { return g.ind + ' 0/' + g.tot; }).join('、')
+          : '') +
+        '\n（行业率分母 = 该行业昨日 ' + t.k + ' 连板家数，与全池 ' + t.ok + '/' + t.n +
+        ' 分母不同，别互相比大小；* = 样本 <3 只，只作方向参考）');
+    } catch (eI2) { }
+  });
+  if (indTips.length) tips.push(indTips.join('\n\n'));
+
   /* 虚强：1进2 落「强」但炸板率 ≥40% —— 用户点名的场景（早盘抢筹、烂板多、午后易兑现） */
   var j1 = lbJudge(st[0]);
   var ztn = (typeof D !== 'undefined' && D && D.zt) ? D.zt.length : 0;
@@ -33733,6 +34014,22 @@ function wtLadderRowHtml() {
     tips.push('⚠ 虚强：1进2 已落「强」，但炸板率 ' + burst.toFixed(0) + '%（≥40%）\n' +
       '含义：早盘抢筹而分歧巨大、大量烂板 → 午后容易集中兑现回落，属虚强，别按强势加码\n' +
       '（炸板率 = 炸板 ' + zbn + ' ÷（涨停 ' + ztn + ' + 炸板 ' + zbn + '））');
+  }
+
+  /* ★ 2026-10-28 §228：与「同一个交易日 10:00」对比（用户点名要）。
+     昨高板按「晋级只数」比、三档梯队按「晋级率百分点」比 —— 前者样本常只有 1~3 只，
+     拿百分比比会把 1/1 → 0/2 说成 −50pt，故只数对只数。 */
+  try {
+    var _l10 = s10Chip('梯队晋级', S10_KEYS.ladder, s10NowMin(), {
+      top: (tb ? tb.ok : null),
+      p1: pcts[1], p2: pcts[2], p3: pcts[3]
+    }, S10_SPEC.ladder,
+      '口径：昨高板按「晋级只数」比、三档梯队按「晋级率百分点(pt)」比 —— ' +
+      '昨高板样本常只有 1~3 只，拿百分比比会把 1/1 → 0/2 说成 −50pt，那是噪声不是变化。');
+    if (_l10 && _l10.html) chips.push(_l10.html);
+    if (_l10 && _l10.tip) tips.push(_l10.tip);
+  } catch (eL10) {
+    tips.push('梯队晋级 · 较 10:00：渲染异常 → 已跳过（' + String((eL10 && eL10.message) || eL10) + '）');
   }
 
   return '<div class="wt-lrow" id="wtLadderRow" title="' + esc(tips.join('\n\n') + '\n\n' +
@@ -33873,6 +34170,22 @@ function wtSurgeRowHtml() {
     tips.push('核按钮 ' + s.nuke + ' 家｜口径 = 🩸 风险板块**同一判定**：昨日涨停 → 今日竞价低开 ≤−5% 或直接跌停\n' +
       (nkRate == null ? '' : '占昨涨停池比 = ' + s.nuke + ' ÷ ' + s.prevN + ' 只 = ' + nkRate.toFixed(1) + '%（7.44 亏钱效应 B 侧同源）\n') +
       '档位（本台自定）：0 无 ｜ 1~2 个别 ｜ ≥3 偏多 → 本行转橙框');
+  }
+
+  /* ★ 2026-10-28 §228：与「同一个交易日 10:00」对比（用户点名要）。
+     一枚胶囊内并列多个指标的小徽标；缺数的指标不进去，tooltip 点名。整段 try/catch：
+     基线取/采失败只让这一枚消失，绝不许拖垮盘面强度读数本身。 */
+  try {
+    var _s10 = s10Chip('盘面强度', S10_KEYS.surge, s10NowMin(), {
+      zt: s.zt, dt: s.dt, zbc: s.zbc,
+      face: (s.faceOk ? s.face : null), nuke: (s.nukeOk ? s.nuke : null)
+    }, S10_SPEC.surge,
+      '单位口径：涨停 / 跌停 / 大面 / 核按钮按「家数」比；炸板率按「百分点(pt)」比 —— ' +
+      '炸板率是 炸板 ÷（涨停 + 炸板），分母会随行情变化，直接减两个百分比才是同期可比量。');
+    if (_s10 && _s10.html) chips.push(_s10.html);
+    if (_s10 && _s10.tip) tips.push(_s10.tip);
+  } catch (eS10) {
+    tips.push('盘面强度 · 较 10:00：渲染异常 → 已跳过（' + String((eS10 && eS10.message) || eS10) + '）');
   }
 
   if (!chips.length) return '';
@@ -34305,6 +34618,149 @@ function br10Chip(up, dn, r, nowMin){
     ' → 现值 ' + r.toFixed(2) + ' : 1，变化 ' + (dlt >= 0 ? '+' : '−') + Math.abs(dlt).toFixed(2) +
     '（' + word + '）' + (onTime ? '' : '。⚠ 迟采：非 10:00 整点值');
   return { html: html, tip: tip };
+}
+
+/* ==================================================================
+   ★ 2026-10-28 §228：盘面强度·实时 / 梯队晋级·实时 也加「与同一个交易日 10:00 的对比」
+   用户原话：「实时盯盘 一、大盘与量能中的盘面强度·实时，梯队晋级·实时，均增加与同一个交易日10点对比。」
+
+   与 §219（涨跌比）同一套时间语义，但**两行各存各的基线**（不是共用一条）：
+     · 两侧数据来自不同池（强度 ← D.zt/dt/zb + mrUniverse；梯队 ← D.prev ∩ D.zt），
+       谁先有数谁先落基线 → 各记各的 t / hm；
+     · 诚实标注：哪一行「迟采」只影响它自己那枚胶囊，不连坐另一行。
+   采集窗口 / 跨日作废 / 整点判定 / 迟采标记 / 「未采到」文案**全部复用** §219 的
+   BR10_RULE + br10InWin + br10HM + br10Today —— 同一页绝不并列两把时间尺。
+
+   ★ 方向色义（关键，别按数值正负直接套）：
+     本台色义是「变强 = 红、变弱 = 绿」，不是「数值涨 = 红」。
+       涨停 ↑、晋级率 ↑            → 变强 → up（红）
+       跌停 ↑、炸板率 ↑、大面 ↑、核按钮 ↑ → 变弱 → dn（绿）
+     所以每个指标都带 dir：+1 = 数值上升代表盘面变强，-1 = 数值上升代表盘面变弱。
+
+   ★ 诚实边界（沿用本台纪律）：
+     ① 基线没采到 → 印「较 10:00 未采到」并写明原因，不拿昨收 / 全日均值估算；
+     ② 某一指标基线或当前值缺 → 该指标**不出现在胶囊里**，tooltip 点名「缺数，不比较」，
+        绝不印 0 当变化（0 会被读成「持平」，而真相是「不知道」）；
+     ③ 整行一个可比的指标都没有 → 这一枚胶囊整枚不出现（不留空壳）。
+   ================================================================== */
+var S10_KEYS = { surge: 'wb_s10s_v1', ladder: 'wb_s10l_v1' };
+/* unit：'' = 整数家数 ｜ 'pt' = 百分点（炸板率 / 晋级率这类百分数的变化量，故不写 % 而写 pt） */
+var S10_SPEC = {
+  surge: [
+    { k: 'zt',   label: '涨停',   dir: 1,  unit: '' },
+    { k: 'dt',   label: '跌停',   dir: -1, unit: '' },
+    { k: 'zbc',  label: '炸板率', dir: -1, unit: 'pt' },
+    { k: 'face', label: '大面',   dir: -1, unit: '' },
+    { k: 'nuke', label: '核按钮', dir: -1, unit: '' }
+  ],
+  ladder: [
+    { k: 'top', label: '昨高板', dir: 1, unit: '' },
+    { k: 'p1',  label: '1进2',  dir: 1, unit: 'pt' },
+    { k: 'p2',  label: '2进3',  dir: 1, unit: 'pt' },
+    { k: 'p3',  label: '3进4',  dir: 1, unit: 'pt' }
+  ]
+};
+function s10NowMin() {
+  var d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+function s10Load(key) {
+  var st = null;
+  try { st = lsGet(key, null); } catch (e) { st = null; }
+  if (!st || typeof st !== 'object') return null;
+  if (String(st.d) !== String(br10Today())) return null;          /* 跨日作废（隔日相比 = 假对比） */
+  if (st.t == null || !isFinite(st.t)) return null;
+  if (!st.v || typeof st.v !== 'object') return null;
+  return st;
+}
+/* 取基线；当天还没有就当场采一笔（只在窗口内、且至少有一个有效读数时） */
+function s10Touch(key, nowMin, cur) {
+  var st = s10Load(key);
+  if (st) return st;
+  if (!br10InWin(nowMin)) return null;
+  var v = {}, ok = false;
+  for (var k in cur) {
+    if (!Object.prototype.hasOwnProperty.call(cur, k)) continue;
+    var x = cur[k];
+    if (x != null && isFinite(x)) { v[k] = x; ok = true; }
+  }
+  if (!ok) return null;                                          /* 一个数都没有 → 不建空基线 */
+  var rec = { d: br10Today(), t: nowMin, hm: br10HM(nowMin), v: v };
+  try { lsSet(key, rec); } catch (e) { }
+  return rec;
+}
+function s10Fmt(x, unit) {
+  if (x == null || !isFinite(x)) return '—';
+  if (unit === 'pt' || unit === '%') return x.toFixed(1);
+  return String(Math.round(x));
+}
+/* 与基线比 → { html, tip }；html 空串 = 此刻不该出现这一枚 */
+function s10Chip(name, key, nowMin, cur, specs, note) {
+  var hasCur = false;
+  for (var kk in cur) { if (Object.prototype.hasOwnProperty.call(cur, kk) && cur[kk] != null && isFinite(cur[kk])) { hasCur = true; break; } }
+  var b = null;
+  try { b = s10Touch(key, nowMin, cur); } catch (eB) { b = null; }
+  if (!b) {
+    if (!hasCur) return { html: '', tip: name + ' · 较 10:00：当前读数全部缺失 → 按实留白，不比较、不印 0。' };
+    var why = (nowMin != null && nowMin < BR10_RULE.from)
+      ? '尚未到采集时点（现 ' + br10HM(nowMin) + '）'
+      : ((nowMin != null && nowMin > BR10_RULE.noonA && nowMin < BR10_RULE.noonB)
+        ? '午休时段开页（窗口内不采：午休读数其实是 11:30 的值）'
+        : '本机 10:00~15:00 之间没有开过页');
+    return {
+      html: '<span class="b10 na" title="' + esc(name + ' · 当日 10:00 基线：未采到\n原因：' + why +
+        '\n不估算、不拿昨收或全日均值顶替 —— 没有就是没有。\n明日 10:00 前开页即可自动建立基线。') + '">' +
+        '较 10:00 未采到</span>',
+      tip: name + ' · 较 10:00：未采到基线（' + why + '）；不估算，明日 10:00 前开页自动建立。'
+    };
+  }
+  var toks = [], lines = [], any = false, skipped = [];
+  specs.forEach(function (sp) {
+    var bv = (b.v && b.v[sp.k] != null && isFinite(b.v[sp.k])) ? +b.v[sp.k] : null;
+    var cv = (cur && cur[sp.k] != null && isFinite(cur[sp.k])) ? +cur[sp.k] : null;
+    if (bv == null || cv == null) {
+      if (bv != null || cv != null) skipped.push(sp.label + '（' + (bv == null ? '基线缺' : '当前值缺') + '）');
+      return;
+    }
+    var d = cv - bv;
+    /* 持平死区：百分数 0.05pt、家数 0.5 家 —— 只是为了滤掉浮点噪声，不是新阈值 */
+    var eps = (sp.unit === 'pt' || sp.unit === '%') ? 0.05 : 0.5;
+    var flat = Math.abs(d) < eps;
+    var cls = flat ? 'flat' : (((d > 0) === (sp.dir > 0)) ? 'up' : 'dn');
+    var mag = s10Fmt(Math.abs(d), sp.unit);
+    var sfx = (sp.unit === 'pt') ? 'pt' : '';
+    var num = flat ? '＝0' : ((d > 0 ? '↑' : '↓') + mag + sfx);
+    toks.push('<span class="tc"><i>' + sp.label + '</i><span class="dl ' + cls + '">' + num + '</span></span>');
+    lines.push('· ' + sp.label + '：' + s10Fmt(bv, sp.unit) + (sp.unit === 'pt' ? '%' : '') +
+      ' → ' + s10Fmt(cv, sp.unit) + (sp.unit === 'pt' ? '%' : '') +
+      '（' + (flat ? '持平' : ((d > 0 ? '+' : '−') + mag + sfx + (cls === 'up' ? ' 走强' : ' 走弱'))) + '）');
+    any = true;
+  });
+  if (!any) {
+    return {
+      html: '',
+      tip: name + ' · 较 10:00：基线与当前读数没有共同指标（' +
+        (skipped.length ? skipped.join('、') : '全部缺数') + '）→ 按实留白，不比较。'
+    };
+  }
+  var onTime = Math.abs(b.t - BR10_RULE.from) <= BR10_RULE.tol;
+  var lab = onTime ? '10:00' : b.hm;
+  var tip = name + ' · 较 10:00 基线对比（基线采集于 ' + b.hm + (onTime ? '，整点基线' : '，迟采 · 非 10:00 整点') + '）\n' +
+    lines.join('\n') +
+    (skipped.length ? ('\n（以下指标缺数，不比较：' + skipped.join('、') + '）') : '') +
+    (note ? ('\n' + note) : '') +
+    '\n\n着色规则：按「变强 / 变弱」上色（涨停或晋级率↑ = 红，跌停 / 炸板率 / 大面 / 核按钮↑ = 绿），' +
+    '不按数值正负直接套色。\n' +
+    '口径：基线 = 当日首次观测到 10:00 之后的那一次读数，先到先得、当天不覆盖；跨日作废重采；' +
+    '午休与 15:00 后不采（读数不是新时点 / 收盘比收盘恒为 0）。' +
+    (onTime ? '' : '\n⚠ 本机开页晚于 10:05，基线实采 ' + b.hm + ' —— 不是 10:00 整点值，已按实际时刻标注（橙框）。');
+  return {
+    html: '<span class="b10 s10' + (onTime ? '' : ' late') + '" title="' + esc(tip) + '">' +
+      '较 <span class="bt">' + lab + '</span>' + (onTime ? '' : '<span class="bt" title="迟采">*</span>') +
+      toks.join('') + '</span>',
+    tip: name + ' · 较 ' + lab + '：' + lines.map(function (x) { return x.replace(/^· /, ''); }).join('；') +
+      (onTime ? '' : '。⚠ 迟采：非 10:00 整点值') + (note ? ('\n' + note) : '')
+  };
 }
 function wtBreadthHtml() {
   var c = null;
@@ -35272,7 +35728,8 @@ function wtRender() {
     /* ★ 2026-10-20（用户要求）：三类卡与下方明细**同标**「🔥 连N日上榜」，标题这里给统一口径，
        省得两块各写一段说明。h3 small 没有全局样式，颜色/字号/字重全部内联写死。 */
     '<small style="color:#94a3b8;font-weight:400;font-size:11.5px;margin-left:8px">' +
-    '🔥 连N日上榜 = 该题材<b>连续 ≥3 个交易日</b>进榜（当日有涨停且被判出情绪周期）· 与 7.5B 板块总表同一把尺 · 三类卡与下方明细同标</small></h3>' +
+    '🔥 连N日上榜 = 该题材<b>连续 ≥3 个交易日</b>进榜（当日有涨停且被判出情绪周期）· 与 7.5B 板块总表同一把尺 · 三类卡与下方明细同标' +
+    '　｜　每张卡新增：<b>10日高 N 板</b>（跨日状态机 wb_secstage_v1 近 12 交易日最高板，与 ③ 情绪周期同尺）＋ <b>板块内实时连板梯队</b>（今日涨停池同行业聚类，最高板→首板 家数分布）</small></h3>' +
     '<div id="wtMainCards">' + wtMainLineCardsHtml() + '</div>' +
     '<div id="wtMainLines">' + wtMainLinesHtml() + '</div>';
   /* 二·C 今日领跌 / 反向方向（原挂在「五、风险与操作」下，2026-10-20 该节删除后下沉至此）。
@@ -43708,6 +44165,9 @@ if(window.ResizeObserver){
 })();
 /* 顶栏 scrollspy 初始化（必须在 DOM 就绪后；本段脚本在 </body> 前，DOM 已就绪） */
 try{ initScrollSpy(); }catch(e){}
+/* §232 自选池镜像：开机先发一次（覆盖「用户本次没动过自选池、但池里本来就有票」的情形，
+   否则生命周期台要等本台第一次增删才看得到镜像）。失败静默，不影响本台任何功能。 */
+try{ wlMirrorPub(true); }catch(eMir){ }
 </script>
 </body>
 </html>

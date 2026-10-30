@@ -873,6 +873,9 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
     text-overflow:ellipsis; white-space:nowrap; }
   #wtop .wt-breadth .wt-lrow .as b { font-weight:800; color:#ff9f97; font-variant-numeric:tabular-nums; }
   #wtop .wt-breadth .wt-lrow .as .at { font-size:10px; color:#fca5a5; font-variant-numeric:tabular-nums; }
+  /* ★ 2026-10-29 §236：样本 5~7 只 → 「谨慎参考」，行业率染橙（与 .as-wait 的橙同义：数在，
+     但别当结论）。<5 只直接不印数字，所以这一档只有「有数但要小心」。 */
+  #wtop .wt-breadth .wt-lrow .as .at.warn { color:#fdba74; }
   #wtop .wt-breadth .wt-lrow .as-more { font-size:10.5px; color:#64748b; padding:1px 7px; border-radius:999px;
     border:1px dashed rgba(148,163,184,.3); cursor:help; white-space:nowrap; }
   #wtop .wt-breadth .wt-lrow .as-none { font-size:11px; color:#64748b; }
@@ -882,6 +885,17 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
   #wtop .wt-breadth .wt-lrow .as-wait { font-size:10.5px; color:#fdba74; padding:1px 8px; border-radius:999px;
     border:1px solid rgba(251,146,60,.32); background:rgba(251,146,60,.07); white-space:nowrap; cursor:help; }
   #wtop .wt-breadth .wt-lrow .as-sep { color:#334155; margin:0 2px; }
+  /* ★ 2026-10-30：🩸 风险板块·行业（家数 >3 的行业板块，紧贴强势异动·板块之后）。
+     用**绿系**胶囊呼应 🩸 风险板块工作区 h2 的 #10b981 品牌色（与 .as 的进攻红系区分，不串味：
+     绿=风险侧，红=进攻侧）。行业名 + 家数，风险类型构成进 title；复用 .as-more/.as-none 家族做「+N 类」。 */
+  #wtop .wt-breadth .wt-lrow .rs-hd { font-size:10.5px; font-weight:700; color:#6ee7b7; letter-spacing:.2px;
+    padding:1px 7px; border-radius:5px; border:1px solid rgba(16,185,129,.28); background:rgba(16,185,129,.1);
+    font-variant-numeric:tabular-nums; white-space:nowrap; }
+  #wtop .wt-breadth .wt-lrow .rs { display:inline-flex; align-items:baseline; gap:5px; padding:1px 9px; border-radius:999px;
+    border:1px solid rgba(16,185,129,.3); background:rgba(16,185,129,.06); color:#cbd5e1; cursor:help; }
+  #wtop .wt-breadth .wt-lrow .rs .an { font-size:10.5px; color:#e2e8f0; max-width:132px; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+  #wtop .wt-breadth .wt-lrow .rs b { font-weight:800; color:#6ee7b7; font-variant-numeric:tabular-nums; }
   /* ★ 2026-10-29 §236：梯队晋级 · 晋级行业组（口径头 + 若干 .as 胶囊 + 可选「+N 类」）。
      包成一组的意义：.wt-lrow 是 flex-wrap，散着放时口径头会被甩到上一行末尾、胶囊留在下一行，
      「这几格属于哪个梯队」就看不出来了（§216 记过同一个坑）。组内自己折行，整组一起移动。 */
@@ -33805,6 +33819,27 @@ function lbBandTxt(k) {
   return '＞' + b.hi + '% ' + b.hot + '　|　' + b.mid + '~' + b.hi + '% ' + b.midL +
     '　|　' + b.low + '~' + b.mid + '% ' + b.cold + '　|　＜' + b.low + '% ' + b.ice;
 }
+/* ★ 2026-10-29 §236（用户定点口径，原话）：「昨日首板家数＜5 只时，晋级率数字失效，不采信；
+   样本≥8 只，参考价值高；5~7 只谨慎参考」。
+   → 统一成一把尺，晋级率的每个分母都先过这道闸：
+       0 = 失效（<5 只）：**不印数字**（印了就会被读成结论），只留「晋级只数/样本只数」；
+       1 = 谨慎（5~7 只）：印数字但染橙 + tooltip 明说「谨慎参考」；
+       2 = 高（≥8 只）：正常印。
+   ★ 判的是**分母**（该行业的昨日该梯队家数 / 该梯队的全池家数），不是分子：3/3 看着漂亮，
+     但分母只有 3 只时它只是三只票的事，不是概率。
+   ★ 只此一处定义，不许在渲染层另写 5 / 8 字面量（改口径只改这里）。 */
+function lbSampleGrade(n) {
+  n = +n || 0;
+  if (n < 5) return 0;
+  if (n < 8) return 1;
+  return 2;
+}
+function lbSampleWord(n) {
+  var g = lbSampleGrade(n);
+  return g === 0 ? '样本 ' + (+n || 0) + ' 只 <5 → 晋级率失效，不采信'
+    : (g === 1 ? '样本 ' + (+n || 0) + ' 只（5~7）→ 谨慎参考'
+      : '样本 ' + (+n || 0) + ' 只（≥8）→ 参考价值高');
+}
 /* ★ 2026-10-29 §236（用户原话：「1进2 的行业也请列出」→「1进2 晋级的行业的 1进2 晋级率也列出」）
    晋级率的百分比只说"接力强不强"，不说"钱去了哪个方向" —— 6/63 涨的是半导体还是汽零，
    对下单完全是两回事。所以每个梯队的晋级个股再按行业归并一次，并算出**该行业自己的**晋级率。
@@ -33878,23 +33913,31 @@ function ladderIndHtml(t) {
   var b = LB_TIER[t.k] || {};
   var tierName = b.name || (t.k + '进' + (t.k + 1));
   var show = agg.slice(0, LAD_IND_MAX), rest = agg.slice(LAD_IND_MAX);
+  var baseN = (+t.n || 0);
+  /* ★ 每一个行业各自过「<5 / 5~7 / ≥8」这道闸（lbSampleGrade），不是整行一刀切：
+     同一梯队里 机械设备 14 只配印百分比、娱乐用品 1 只不配 —— 一刀切会把前者也砍掉。 */
   var pctOf = function (g) {
-    return (g.pct == null || !isFinite(g.pct)) ? '' : (g.pct.toFixed(1) + '%' + (g.tot < 3 ? '*' : ''));
+    return (lbSampleGrade(g.tot) > 0 && g.pct != null && isFinite(g.pct)) ? g.pct.toFixed(1) + '%' : '';
   };
+  var hasPct = agg.some(function (g) { return lbSampleGrade(g.tot) > 0; });
   var titleOf = function (g) {
+    var p = pctOf(g), gr = lbSampleGrade(g.tot);
     return tierName + ' · ' + g.ind + '\n' +
-      '晋级 ' + g.cnt + ' / ' + (g.tot > 0 ? g.tot : '?') + ' 只' +
-      (pctOf(g) ? ' → ' + g.pct.toFixed(1) + '%' : '（分母未知，不给百分比）') + '\n' +
-      '口径：行业晋级率 = 该行业昨日 ' + t.k + ' 连板中今日仍在涨停池的家数 ÷ 该行业昨日 ' + t.k + ' 连板家数\n' +
-      '⚠ 分母是「该行业」的，不是全池 ' + t.n + ' 只 → 与梯队胶囊上的全池率不同分母，别拿两者比大小\n' +
-      '个股：' + g.names.join('、') +
-      (g.tot > 0 && g.tot < 3 ? '\n* 样本仅 ' + g.tot + ' 只：百分比跳动极大，只作方向参考，别当胜率' : '');
+      '晋级 ' + g.cnt + ' / ' + (g.tot > 0 ? g.tot : '?') + ' 只' + (p ? ' → ' + p : '') + '\n' +
+      '⚠ ' + lbSampleWord(g.tot) + '\n' +
+      (gr > 0
+        ? '口径：行业晋级率 = 该行业昨日 ' + t.k + ' 连板中今日仍在涨停池的家数 ÷ 该行业昨日 ' + t.k + ' 连板家数\n' +
+          '⚠ 分母是「该行业」的，不是全池 ' + baseN + ' 只 → 与梯队胶囊上的全池率不同分母，别拿两者比大小\n'
+        : '分母 <5 只 → 按口径**不印百分比**（3 只里涨 3 只不是 100% 的胜率，只是三只票的事）\n') +
+      '个股：' + g.names.join('、');
   };
-  var hdTip = tierName + ' 行业分布 · 行业晋级率\n' +
-    '全池 ' + t.ok + '/' + t.n + ' = ' + (t.n ? (t.ok / t.n * 100).toFixed(1) : '—') +
+  var hdTip = tierName + ' 行业分布' + (hasPct ? ' · 行业晋级率' : '') + '\n' +
+    '全池 ' + t.ok + '/' + baseN + ' = ' + (baseN ? (t.ok / baseN * 100).toFixed(1) : '—') +
     '%（就是梯队胶囊上那个数）\n' +
-    '每格 = 该行业晋级家数 ÷ 该行业昨日 ' + t.k + ' 连板家数 —— **分母不同，别跟全池率比大小**：\n' +
-    '行业率普遍高于全池率（强势行业集中晋级、弱势行业集体阵亡，全池率是行业率按家数加权的）。\n' +
+    '样本闸（你定的口径）：<5 只 → 数字失效不采信（不印）；5~7 只 → 谨慎参考（橙）；≥8 只 → 参考价值高\n' +
+    (hasPct
+      ? '每格 = 该行业晋级家数 ÷ 该行业昨日 ' + t.k + ' 连板家数 —— **分母不同，别跟全池率比大小**：\n'
+      : '') +
     (dead.length
       ? '另有 ' + dead.length + ' 个行业昨日 ' + t.k + ' 连板今日 0 晋级：' +
         dead.map(function (g) { return g.ind + ' 0/' + g.tot; }).join('、')
@@ -33902,17 +33945,18 @@ function ladderIndHtml(t) {
   /* 口径头 + 胶囊包成同一个 inline-flex 组：.wt-lrow 是 flex-wrap，散着放会让口径头被甩到
      上一行末尾（§216 注释里记过这个坑），组在一起折行时才是整体移动。 */
   var h = '<span class="lt-ind"><span class="as-hd" title="' + esc(hdTip) + '">' +
-    esc(tierName + ' 行业·晋级率') + '</span>';
+    esc(tierName + ' 行业' + (hasPct ? '·晋级率' : '')) + '</span>';
   show.forEach(function (g) {
+    var p = pctOf(g), gr = lbSampleGrade(g.tot);
     h += '<span class="as" title="' + esc(titleOf(g)) + '">' +
       '<span class="an">' + esc(g.ind) + '</span>' +
       '<b>' + g.cnt + (g.tot > 0 ? '/' + g.tot : '') + '</b>' +
-      (pctOf(g) ? '<span class="at">' + pctOf(g) + '</span>' : '') + '</span>';
+      (p ? '<span class="at' + (gr === 1 ? ' warn' : '') + '">' + p + '</span>' : '') + '</span>';
   });
   if (rest.length) {
     h += '<span class="as-more" title="' + esc(rest.map(function (g) {
       return g.ind + ' ' + g.cnt + (g.tot > 0 ? '/' + g.tot : '') + (pctOf(g) ? ' ' + pctOf(g) : '') +
-        '（' + g.names.join('、') + '）';
+        '（' + lbSampleWord(g.tot) + '）';
     }).join('\n')) + '">+' + rest.length + ' 类</span>';
   }
   return h + '</span>';
@@ -33963,13 +34007,17 @@ function wtLadderRowHtml() {
     }
     chips.push('<span class="lt ' + j.cls + (few ? ' few' : '') + '">' +
       '<span class="ln">' + b.name + '</span>' +
-      '<b>' + j.pct.toFixed(1) + '%</b>' +
+      /* ★ 2026-10-29 §236：分母 <5 只 → 晋级率数字失效，按口径不印百分比（印了就会被当结论）。
+         绝对只数留在 .ns 里（2/2 仍是事实），tooltip 写明为什么不给率。 */
+      '<b>' + (lbSampleGrade(t.n) === 0 ? '—' : j.pct.toFixed(1) + '%') + '</b>' +
       '<span class="lv">' + j.label + '</span>' +
       '<span class="ns">' + t.ok + '/' + t.n + '</span></span>');
     tips.push(b.name + ' ' + j.pct.toFixed(1) + '%（' + t.ok + '/' + t.n + '）· ' + j.label + '\n' +
       '对照区间（10 点快照）：' + lbBandTxt(t.k) + '\n' +
-      '操作含义：' + j.act +
-      (few ? '\n⚠ 样本仅 ' + t.n + ' 只：高位样本天然少，百分比跳动极大，只作情绪参考、不当胜率用' : ''));
+      '操作含义：' + j.act + '\n' +
+      '⚠ ' + lbSampleWord(t.n) + (lbSampleGrade(t.n) === 0
+        ? ' → 故胶囊上印「—」不印百分比（晋级只数仍保留在右侧）' : '') +
+      (few ? '\n高位样本天然少，百分比跳动极大，只作情绪参考、不当胜率用' : ''));
   });
 
   /* ★ 2026-10-29 §236：晋级个股的行业分布（有几个梯队晋级就出几组）。
@@ -33986,18 +34034,19 @@ function wtLadderRowHtml() {
       var b2 = LB_TIER[t.k] || {};
       var aggAll = ladderIndAgg(t.okList, t.allList);
       var live = aggAll.filter(function (g) { return g.cnt > 0; });
+      var pctTxt = function (g) {
+        return (lbSampleGrade(g.tot) > 0 && g.pct != null && isFinite(g.pct))
+          ? ' ' + g.pct.toFixed(1) + '%' + (lbSampleGrade(g.tot) === 1 ? '(谨慎)' : '') : '';
+      };
       indTips.push((b2.name || (t.k + '进' + (t.k + 1))) + ' 晋级 ' + t.ok + ' 只 → 行业分布（行业晋级率）：' +
-        live.map(function (g) {
-          return g.ind + ' ' + g.cnt + '/' + g.tot +
-            (g.pct == null || !isFinite(g.pct) ? '' : ' ' + g.pct.toFixed(1) + '%' + (g.tot < 3 ? '*' : ''));
-        }).join(' · ') +
+        live.map(function (g) { return g.ind + ' ' + g.cnt + '/' + g.tot + pctTxt(g); }).join(' · ') +
         '\n' + live.map(function (g) { return '· ' + g.ind + '：' + g.names.join('、'); }).join('\n') +
         (aggAll.length > live.length
           ? '\n· 0 晋级的行业 ' + (aggAll.length - live.length) + ' 个：' +
             aggAll.filter(function (g) { return !g.cnt; }).map(function (g) { return g.ind + ' 0/' + g.tot; }).join('、')
           : '') +
-        '\n（行业率分母 = 该行业昨日 ' + t.k + ' 连板家数，与全池 ' + t.ok + '/' + t.n +
-        ' 分母不同，别互相比大小；* = 样本 <3 只，只作方向参考）');
+        '\n（样本闸：<5 只 → 数字失效不采信（不印）；5~7 只 → 谨慎；≥8 只 → 参考价值高。' +
+        '行业率分母 = 该行业昨日 ' + t.k + ' 连板家数，与全池 ' + t.ok + '/' + t.n + ' 分母不同，别互相比大小）');
     } catch (eI2) { }
   });
   if (indTips.length) tips.push(indTips.join('\n\n'));
@@ -34223,6 +34272,8 @@ var WT_ASEC = {
   show: 4,       /* 每个口径在版面上最多列 4 个板块，其余折成「+N 个板块」，全清单进 title */
   firstHmMax: 935 /* 首根必须 ≤ 09:35（09:30 与 09:35 两种时间戳都算首根；10:30 才出首根的不算「9点35」） */
 };
+/* ★ 2026-10-30：🩸 风险板块中家数 >3 的行业（逻辑同 WT_ASEC：门槛「大于3家」= ≥4 家才列） */
+var WT_RSEC = { min: 3 };   /* >3 家（≥4）才列；按用户要求「全部都要列出」，不做数量截断 */
 /* 'HH:MM' → 935 这样的整数（用于比较时段）；格式不对返回 -1 */
 function wtHmNum(hm) {
   var m = String(hm == null ? '' : hm).match(/^(\d{1,2}):(\d{2})$/);
@@ -34376,6 +34427,82 @@ function wtAnomSecRowHtml() {
   return '<div class="wt-lrow" id="wtAnomSecRow" title="' + esc(base + full) + '">' +
     '<span class="bl">强势异动·板块</span>' +
     grp(s.first, '9:35', 'first') + '<span class="as-sep">｜</span>' + grp(s.all, '当日', 'all') + waitTxt + '</div>';
+}
+/* ★ 2026-10-30：🩸 风险板块中家数 **>3** 的行业（紧贴「强势异动·板块」之后）。
+   来源：mrUniverse() 的已判定风险股（跌停 ∪ 大面 ∪ 核按钮 ∪ 跌幅>7% 深水区，按代码去重并集），
+   按东财行业 r.sec 归类 —— 与 ⑤ 涨停复盘 / 7.5 板块总表 / 🩸 风险板块工作区**同一把尺**，零新增请求。
+   口径：板块 = mrSecKey_ 产出的 r.sec；「未分类 / 其他 / —」不是行业，不入统计；
+   门槛：板块内风险股家数 **> 3**（即 ≥4 家）才列出 —— 按用户原话「大于3家」，3 家不列。
+   风险类型（跌停/大面/核按钮/深水）各自计数、不叠加，构成进 title，胶囊只印总家数。 */
+function wtRiskSecRowHtml() {
+  var mu = null;
+  try { mu = mrUniverse(); } catch (e) { mu = null; }
+  var base = '【口径】板块 = mrSecKey_（东财 F10 行业优先 → 池 hybk 兜底 → 主题层），与 ⑤ 涨停复盘 / 7.5 板块总表 / 🩸 风险板块工作区同一把尺；\n' +
+    '「未分类 / 其他 / —」不算行业板块，不入统计。\n' +
+    '【风险股定义】跌停 ∪ 大面 ∪ 核按钮 ∪ 跌幅>7% 深水区（去重并集，明细见 🩸 风险板块工作区）；各口径分别计数、不互相叠加。\n' +
+    '【门槛】板块内风险股家数 **> 3**（即 ≥4 家）才列出 —— 按你原话「大于3家」，3 家不列。';
+  if (!mu || !mu.rows) {
+    return '<div class="wt-lrow" id="wtRiskSecRow" title="' + esc(base + '\n\n【当前】风险股并集计算异常，未取到。') + '">' +
+      '<span class="bl na">🩸 风险板块·行业 未取到（计算异常）</span></div>';
+  }
+  var rows = mu.rows.filter(function (r) {
+    return r && r.sec && r.sec !== '其他' && r.sec !== '未分类' && r.sec !== '—';
+  });
+  var cnt = {}, comp = {};   /* sec → 家数 / sec → {dt,face,nuke,deep} */
+  rows.forEach(function (r) {
+    var k = r.sec;
+    if (!cnt[k]) { cnt[k] = 0; comp[k] = { dt: 0, face: 0, nuke: 0, deep: 0 }; }
+    cnt[k]++;
+    var c = comp[k];
+    if (r.isDt) c.dt++;
+    if (r.isFace) c.face++;
+    if (r.isNuke) c.nuke++;
+    if (r.isDeep) c.deep++;
+  });
+  var namesOf = {};
+  rows.forEach(function (r) { (namesOf[r.sec] = namesOf[r.sec] || []).push(r); });
+  var list = Object.keys(cnt).filter(function (k) { return cnt[k] > WT_RSEC.min; })
+    .map(function (k) { return { sec: k, n: cnt[k], c: comp[k] }; })
+    .sort(function (a, b) { return b.n - a.n; });
+  var hd = '<span class="rs-hd">🩸 风险板块·行业</span>';
+  /* 跌停池都没取回 → 数据还没到（首轮刷新到达前为空属正常），说清楚别让用户以为功能坏了 */
+  if (!mu.stat.poolOk && !rows.length) {
+    return '<div class="wt-lrow" id="wtRiskSecRow" title="' + esc(base +
+      '\n\n【当前】当日跌停池尚未取回（首轮刷新到达前为空属正常）。') + '">' +
+      '<span class="bl">🩸 风险板块·行业</span>' + hd +
+      '<span class="as-none">跌停池尚未取回（随主刷新到达）</span></div>';
+  }
+  if (!list.length) {
+    var msg = (rows.length
+      ? ('当日风险股共 ' + rows.length + ' 只，但分散在各板块均不超过 ' + WT_RSEC.min + ' 家')
+      : '当日无风险股（跌停 / 大面 / 核按钮 / 深水区）');
+    return '<div class="wt-lrow" id="wtRiskSecRow" title="' + esc(base + '\n\n【当前】' + msg) + '">' +
+      '<span class="bl">🩸 风险板块·行业</span>' + hd +
+      '<span class="as-none">' + esc(msg) + '</span></div>';
+  }
+  function tipOf(x) {
+    var c = x.c, ns = (namesOf[x.sec] || []).map(function (r) {
+      return nmId(r.c, r.n) + ' ' + (r.zdp == null ? '' : r.zdp.toFixed(2) + '%') +
+        (r.isDt ? ' 跌停' : '') + (r.isFace ? ' 大面' : '') + (r.isNuke ? ' 核按钮' : '') + (r.isDeep ? ' 深水' : '');
+    });
+    return '🩸 ' + x.sec + ' · 风险股 ' + x.n + ' 家\n' +
+      '跌停 ' + c.dt + ' / 大面 ' + c.face + ' / 核按钮 ' + c.nuke + ' / 深水 ' + c.deep + '\n' +
+      (ns.length ? ns.join('\n') : '（无个股明细）');
+  }
+  var shown = list;          /* 用户要求「全部都要列出」：满足 >3 家的行业一个不落，不再截前 N + 「+N 个行业」 */
+  var more = '';
+  var full = '\n\n【全部 >3 家行业 · ' + list.length + ' 个】\n' +
+    list.map(function (x) {
+      return x.sec + ' ' + x.n + ' 家（跌停 ' + x.c.dt + '/大面 ' + x.c.face + '/核按钮 ' + x.c.nuke + '/深水 ' + x.c.deep + '）';
+    }).join('\n') +
+    '\n\n【总计】当日风险股 ' + rows.length + ' 只，分布 ' + Object.keys(cnt).length + ' 个行业板块；' +
+    (mu.stat && mu.stat.topSec ? ('今日风险最集中板块：' + mu.stat.topSec + ' ' + mu.stat.topSecN + ' 家') : '');
+  return '<div class="wt-lrow" id="wtRiskSecRow" title="' + esc(base + full) + '">' +
+    '<span class="bl">🩸 风险板块·行业</span>' + hd +
+    shown.map(function (x) {
+      return '<span class="rs" title="' + esc(tipOf(x)) + '">' +
+        '<span class="an">' + esc(x.sec) + '</span><b>' + x.n + '家</b></span>';
+    }).join('') + more + '</div>';
 }
 /* ================= 板块五榜 · Top5（§216） =================
    ★ 2026-10-26：接在「强势异动·板块」之后，补上用户要的五个榜 —— 涨停家数 / 板块涨幅 / 板块跌幅 /
@@ -34829,6 +34956,8 @@ function wtBreadthHtml() {
     wtLadderRowHtml() +
     /* ★ 2026-10-26 §215：强势异动 >3 家的行业板块（两个口径：9:35 首根 / 当日累计） */
     wtAnomSecRowHtml() +
+    /* ★ 2026-10-30：🩸 风险板块中家数 >3 的行业板块（紧贴强势异动·板块之后） */
+    wtRiskSecRowHtml() +
     /* ★ 2026-10-26 §216：板块五榜 Top5（涨停家数 / 涨幅 / 跌幅 / 净流入 / 净流出） */
     wtSecRankRowHtml() + '</div>';
 }

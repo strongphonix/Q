@@ -3470,6 +3470,75 @@ function idxAmtYest(txcode){
     });
 }
 
+/* ★ 2026-11-10 §296：真实「昨日同期」成交额 —— 修盘中放量/缩量方向判反（用户报告 #wtop 大盘与量能 + #m6 情绪周期）
+   病根：D.amtEst = 昨日全天 × tradeProgressW()（U 型**经验**权重，AMT_W 静态拟合）。
+   真实分时分布偏离 U 型假设时（例：今日早盘爆量但 U 型给的分母更高 → 明明放量算成缩量；反之亦然），
+   方向判反；盘后权重=1.0 所以准。修法：东财 5 分钟 K（klt=5，f51=bar 结束时刻，f57=成交额·元）——
+     · todayCum = 今日已收 bar 成交额累计（截止当前钟点）；
+     · yestCum  = 昨日（今日之前最近一个有 bar 的交易日，跨周末/节假日天然正确）**同一钟点止**累计；
+   两者同源同截止分钟 → 比值即真实「较昨日同期」。取不到 → 回退 U 型估算（D.amtEstReal=false，界面如实标注）。
+   换算：amtEst = yestCum × (amtToday / todayCum) —— scale 把「今日实时口径」与「5 分钟K累计口径」对齐
+   （数据源差异 + 当前未满 bar 补正），保证 amtR = amtToday/amtEst = todayCum/yestCum 精确同源同截止；
+   盘后 todayCum=全日 → amtR ≈ amtToday/amtYest（与盘后旧口径一致，天然回归精确）。 */
+var AMT_REAL_C = { at: 0, days: null };
+function idxAmtRealSameFetch(){
+  var now = Date.now();
+  if(AMT_REAL_C.days && now - AMT_REAL_C.at < 60000) return Promise.resolve(AMT_REAL_C.days);   /* 60s 缓存：盘中方向判断不需要秒级 */
+  return Promise.all(['1.000001', '0.399001'].map(function(secid){
+    return jsonp('https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=' + secid + '&klt=5&fqt=1&lmt=200&end=20500101&fields1=f1,f2,f3&fields2=f51,f53,f57', 'cb', 12000)
+      .then(function(r){
+        var kl = (r && r.data && r.data.klines) || [], out = {};
+        kl.forEach(function(s){
+          var p = String(s).split(','), tm = p[0] || '', a = parseFloat(p[2]);
+          if(!tm || tm.length < 16 || isNaN(a) || a <= 0) return;
+          var dt = tm.slice(0, 10).replace(/-/g, ''), hm = tm.slice(11, 16).split(':');
+          (out[dt] = out[dt] || []).push({ m: (+hm[0]) * 60 + (+hm[1]), a: a / 1e8 });   /* 元 → 亿 */
+        });
+        return out;
+      }).catch(function(){ return null; });
+  })).then(function(rs){
+    if(!rs[0] || !rs[1] || !Object.keys(rs[0]).length || !Object.keys(rs[1]).length) return null;
+    var days = {};
+    rs.forEach(function(src){ Object.keys(src).forEach(function(dt){ (days[dt] = days[dt] || []).push.apply(days[dt], src[dt]); }); });
+    AMT_REAL_C.at = Date.now(); AMT_REAL_C.days = days;
+    return days;
+  });
+}
+/* 纯函数核心（可单测）：days = {YYYYMMDD: [{m: 分钟(0-1439), a: 亿}, ...]}，nowMins=当前钟点分钟。
+   返回 {todayCum, yestCum} 或 null（今日无 bar / 累计为 0 / 无昨日 → 调用方回退 U 型估算）。 */
+function idxAmtRealSameCore(days, today, nowMins){
+  if(!days || !today) return null;
+  var tBars = days[today];
+  if(!tBars || !tBars.length) return null;
+  var todayCum = 0;
+  tBars.forEach(function(b){ if(b.m <= nowMins) todayCum += b.a; });
+  if(todayCum <= 0) return null;
+  var dts = Object.keys(days).filter(function(k){ return k < today; }).sort();
+  if(!dts.length) return null;
+  var yBars = days[dts[dts.length - 1]], yestCum = 0;
+  yBars.forEach(function(b){ if(b.m <= nowMins) yestCum += b.a; });
+  if(yestCum <= 0) return null;
+  return { todayCum: todayCum, yestCum: yestCum };
+}
+function idxAmtRealSame(){
+  return idxAmtRealSameFetch().then(function(days){
+    if(!days) return null;
+    var d = new Date();
+    return idxAmtRealSameCore(days, D.date, d.getHours() * 60 + d.getMinutes());
+  }).catch(function(){ return null; });
+}
+/* §296 覆盖判定（纯逻辑，可单测）：rs = {todayCum, yestCum} 或 null。
+   通过 → D.amtEst = yestCum × (amtToday/todayCum)（口径对齐换算）且 D.amtEstReal=true，返回 'real'；
+   rs 缺失 / 累计为 0 / scale 出 [0.5,2)（5分钟K不可信） → 保留 U 型估算，返回 'keep'。 */
+function amtRealApply(rs){
+  if(!(rs && rs.yestCum > 0 && rs.todayCum > 0 && D.amtToday > 0)) return 'keep';
+  var sc = D.amtToday / rs.todayCum;                     /* 实时口径 ÷ 5分钟K累计（源差异+未满bar补正） */
+  if(!(sc > 0.5 && sc < 2)) return 'keep';
+  D.amtEst = rs.yestCum * sc;
+  D.amtEstReal = true;
+  return 'real';
+}
+
 function fetchNews(){
   return jsonp('https://zhibo.sina.com.cn/api/zhibo/feed?page=1&page_size=30&zhibo_id=152&tag_id=0&dire=f&dpc=1', 'callback', 12000).then(function(r){
     var list = (r && r.result && r.result.data && r.result.data.feed && r.result.data.feed.list) || [];
@@ -3565,7 +3634,11 @@ function emoPkKey(){ return 'wb_emopk_' + (D.date || 'today'); }
    但 A 股成交额是 U 型（早盘/尾盘重、午间轻）：09:30-10:00 通常占全天约 20%，
    而均匀折算只给 12.5% ⇒ 早盘 amtEst 系统性偏低 ⇒ amtR = 今日/估算 几乎恒 >1，
    把「放量」灌进 情绪指标⑧ 与 7.15 窗口一/尾盘预演。
-   这里用 8 个半小时桶的经验累计占比做桶内线性插值（标注为"经验权重"，非精确分时）。 */
+   这里用 8 个半小时桶的经验累计占比做桶内线性插值（标注为"经验权重"，非精确分时）。
+   ★ 2026-11-10 §296：本函数**降级为回退口径** —— 真实分时分布偏离 U 型假设时方向仍可能判反
+   （用户实测：明明缩量显示放量）。主口径改为「真实昨日同期」（idxAmtRealSame：沪深指数 5 分钟K
+   累计至当前同一钟点，同源同截止分钟），本函数仅在 5 分钟K不可达/scale 异常时兜底；
+   D.amtEstReal = false 时界面一律如实标注「估算」。 */
 var AMT_W = [0.20, 0.33, 0.43, 0.52, 0.61, 0.70, 0.80, 1.00];
 var AMT_SEG = [[570, 600], [600, 630], [630, 660], [660, 690], [780, 810], [810, 840], [840, 870], [870, 900]];
 function tradeProgressW(){
@@ -4072,7 +4145,14 @@ function refreshAll(manual){
     return Promise.all([idxAmtYest('sh000001'), idxAmtYest('sz399001')]);
   }).then(function(ys){
     D.amtYest = (ys[0] != null && ys[1] != null) ? (ys[0] + ys[1]) : null;
-    D.amtEst = (D.amtYest != null && D.amtToday != null) ? D.amtYest * tradeProgressW() : null;   /* F7：U 型分时权重，见 AUDIT 块 */
+    D.amtEst = (D.amtYest != null && D.amtToday != null) ? D.amtYest * tradeProgressW() : null;   /* F7：U 型分时权重；★ §296 起降级为回退口径，真实同期到达后覆盖 */
+    D.amtEstReal = false;   /* ★ §296 口径标记：false=U 型估算（回退），true=真实昨日同期（5 分钟K） */
+    try {   /* ★ 2026-11-10 §296：真实「昨日同期」覆盖 U 型估算（修盘中放量/缩量方向判反，见 idxAmtRealSame 头注释）。
+               失败/scale 异常 → 保留 U 型估算，永不把方向判反的数据清空成留白。 */
+      if(D.amtToday > 0){
+        idxAmtRealSame().then(function(rs){ amtRealApply(rs); }).catch(function(){ });
+      }
+    } catch(eAE){ }
     var codes = D.prev.map(function(x){ return txCode(x.c); }).filter(Boolean);
     return loadTxQuotes(codes);
   }).then(function(q){
@@ -12290,7 +12370,9 @@ function afCtx(){
     var v2 = AF_CTX.v, j2 = v2 && v2.judge;
     if(j2){
       var amtRatio = null;
-      if(D.amtToday > 0 && D.amtYest > 0){
+      if(D.amtToday > 0 && D.amtEst > 0){          /* ★ §296：D.amtEst 优先真实昨日同期（U 型估算仅回退口径） */
+        amtRatio = D.amtToday / D.amtEst;
+      } else if(D.amtToday > 0 && D.amtYest > 0){
         var pw2 = (typeof tradeProgressW === 'function') ? tradeProgressW() : 1;
         if(pw2 > 0 && pw2 <= 1) amtRatio = D.amtToday / (D.amtYest * pw2);
       }
@@ -12387,12 +12469,16 @@ function afStyleJudge(inp){
       r.ev++;
       if(D.amtToday >= AF_STY.amtHot) r.atk += 1;
       else if(D.amtToday < AF_STY.amtCold) r.def += 1;
-      if(D.amtYest > 0){
+      if(D.amtEst > 0){            /* ★ §296：优先真实昨日同期（U 型估算仅回退口径），放量/缩量方向才判得准 */
+        r.amtRatio = D.amtToday / D.amtEst;
+        /* 放量方向修正（2026-10-09）：普跌日的放量 = 恐慌出逃（叩富/约投顾/头条多源一致），
+           不得记进攻；非普跌日的放量维持进攻证据不变。缩量两态都记防御。 */
+        if(r.amtRatio >= AF_STY.volUp){ if(cg.crash) r.def += 1; else r.atk += 1; }
+        else if(r.amtRatio <= AF_STY.volDn) r.def += 1;
+      } else if(D.amtYest > 0){
         var pw = (typeof tradeProgressW === 'function') ? tradeProgressW() : 1;
         if(pw > 0 && pw <= 1){
           r.amtRatio = D.amtToday / (D.amtYest * pw);
-          /* 放量方向修正（2026-10-09）：普跌日的放量 = 恐慌出逃（叩富/约投顾/头条多源一致），
-             不得记进攻；非普跌日的放量维持进攻证据不变。缩量两态都记防御。 */
           if(r.amtRatio >= AF_STY.volUp){ if(cg.crash) r.def += 1; else r.atk += 1; }
           else if(r.amtRatio <= AF_STY.volDn) r.def += 1;
         }
@@ -14629,7 +14715,8 @@ function emoRevDimsCore(e, st){
     else { amtLv = '平量'; amtTone = 'yel'; }
   }
   add('成交额趋势', (D.amtToday != null ? famt(D.amtToday) : '—') +
-      (ar == null ? '' : '（较昨日同期 ' + ((ar - 1) * 100 >= 0 ? '+' : '') + ((ar - 1) * 100).toFixed(1) + '%）'),
+      (ar == null ? '' : '（较昨日同期' + (D.amtEstReal ? '·真实' : '·估算') + ' ' +
+        ((ar - 1) * 100 >= 0 ? '+' : '') + ((ar - 1) * 100).toFixed(1) + '%）'),
     amtLv, amtTone, w[7]);
   /* ⑤ 封板率 / 晋级率（权重各 9%） */
   var sp = raw.sealPct, pp = raw.promoPct;
@@ -17727,7 +17814,7 @@ function renderM71(){
   var cmp = (D.amtToday != null && D.amtEst != null && D.amtEst > 0) ? (D.amtToday / D.amtEst - 1) * 100 : null;
   setHtml($('m7_1'), '<div class="grid3">' +
     '<div class="kpi"><div class="t">今日全市场实时成交额</div><div class="v up mono">' + famt(D.amtToday) + '</div><div class="s">上证指数+深证成指合计</div></div>' +
-    '<div class="kpi"><div class="t">较昨日此时(估算)</div><div class="v ' + pctCls(cmp) + '">' + fpct(cmp) + '</div><div class="s">按已交易时间比例折算</div></div>' +
+    '<div class="kpi"><div class="t">较昨日此时' + (D.amtEstReal ? '(真实)' : '(估算)') + '</div><div class="v ' + pctCls(cmp) + '">' + fpct(cmp) + '</div><div class="s">' + (D.amtEstReal ? '沪深指数5分钟K同期累计（§296）' : 'U 型分时经验权重折算（5分钟K不可达时回退）') + '</div></div>' +
     '<div class="kpi"><div class="t">昨日全天成交额</div><div class="v mono">' + famt(D.amtYest) + '</div><div class="s">指数日K成交额口径</div></div>' +
   '</div>');
 }
@@ -26289,8 +26376,11 @@ function holdStocks(codes){
   for(i = 0; i < ids.length; i += 50) parts.push(ids.slice(i, i + 50));
   var out = {};
   return Promise.all(parts.map(function(p){
+    /* ★ §298（2026-11-10）：扩容 f3 涨跌幅 / f5 成交量(手) / f15 高 f16 低 f17 开 f18 昨收 ——
+       供防守面板快照缺失时的实时兜底（除权免疫，优于 qfq 日K比值口径）；
+       既有消费方（f6 成交额 / f14 名称 / f100 行业）零影响，只多取不覆盖。 */
     return jsonp('https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&secids=' + p.join(',') +
-      '&fields=f2,f3,f6,f12,f14,f21,f100', 'cb', 9000).then(function(r){
+      '&fields=f2,f3,f5,f6,f12,f14,f15,f16,f17,f18,f21,f100', 'cb', 9000).then(function(r){
       var d = r && r.data && r.data.diff; if(!d) return;
       Object.keys(d).forEach(function(k){ var x = d[k]; if(x && x.f12) out[x.f12] = x; });
     }).catch(function(){});
@@ -32106,7 +32196,7 @@ function wtSevenHtml() {
   try {
     var cmpA = (D.amtToday != null && D.amtEst != null && D.amtEst > 0) ? (D.amtToday / D.amtEst - 1) * 100 : null;
     h += '<div class="wt-line">全市场成交额：<b class="wt-mono">' + famt(D.amtToday) + '</b>' +
-      '　较昨日此时(估算) <b class="' + (cmpA == null ? '' : (cmpA >= 0 ? 'wt-up' : 'wt-dn')) + '">' +
+      '　较昨日此时' + (D.amtEstReal ? '(真实)' : '(估算)') + ' <b class="' + (cmpA == null ? '' : (cmpA >= 0 ? 'wt-up' : 'wt-dn')) + '">' +
       (cmpA == null ? '—' : ((cmpA >= 0 ? '+' : '') + cmpA.toFixed(1) + '%')) + '</b>' +
       '　昨日全天 <span class="wt-mono">' + famt(D.amtYest) + '</span></div>';
   } catch (e) { }
@@ -37296,12 +37386,15 @@ function wtBreadthHtml() {
     if (ar != null) {
       var dd = (ar - 1) * 100;
       /* ★ 2026-11-03 §259（用户要求「增加较上一日缩量或放量的具体数额」）：
-         百分比旁补具体差额。差额 = 今日实时 − D.amtEst（昨日全天 × U型权重）；
-         盘后 tradeProgressW()=1 → 即「今日全日 − 昨日全日」的真实差额（2026-11-03 实测 17034.37 − 17836.95 = −803亿）；
-         盘中为「同期估算差额」，与百分号同一估算口径 —— 两者同源同生同灭：amtEst 缺 → 百分比与差额一起不印，绝不猜 0。 */
+         百分比旁补具体差额。差额 = 今日实时 − D.amtEst；
+         ★ 2026-11-10 §296：D.amtEst 优先「真实昨日同期」（沪深指数 5 分钟K累计至当前同一钟点），
+         5 分钟K不可达时回退 昨日全天 × U 型权重 —— 口径由 D.amtEstReal 标记，胶囊尾缀如实标注。
+         盘后两者均收敛为「今日全日 − 昨日全日」的真实差额（2026-11-03 实测 17034.37 − 17836.95 = −803亿）；
+         两者同源同生同灭：amtEst 缺 → 百分比与差额一起不印，绝不猜 0。 */
       var diffYi = (typeof D !== 'undefined' && D && D.amtEst != null && isFinite(D.amtEst)) ? (amt - D.amtEst) : null;
       var dTxt = (diffYi == null) ? '' : '，' + (diffYi >= 0 ? '放量 +' : '缩量 ') + Math.abs(diffYi).toFixed(0) + '亿';
-      pTxt = '（较昨日同期 ' + (dd >= 0 ? '+' : '') + dd.toFixed(1) + '%' + dTxt + '）';
+      var mkTxt = (typeof D !== 'undefined' && D && D.amtEstReal) ? '·真实' : '·估算';
+      pTxt = '（较昨日同期' + mkTxt + ' ' + (dd >= 0 ? '+' : '') + dd.toFixed(1) + '%' + dTxt + '）';
       pCls = dd >= 0 ? ' up' : ' dn';
     }
     segs.push('<span class="ba">成交 <b>' + amt.toFixed(2) + '</b>亿' +
@@ -37311,8 +37404,11 @@ function wtBreadthHtml() {
         ? '较昨日同期：未取到（昨日全天成交额缺失，不估算）'
         : '较昨日同期 ' + (ar - 1 >= 0 ? '+' : '') + ((ar - 1) * 100).toFixed(1) + '%' +
           (diffYi == null ? '' : '，' + (diffYi >= 0 ? '放量 +' : '缩量 ') + Math.abs(diffYi).toFixed(0) + ' 亿元') +
-          '（= 今日 ÷ 昨日同期；昨日同期 = 昨日全天 × U 型分时经验权重 tradeProgressW()，属**估算口径**，非精确同时刻值；' +
-          '差额 = 今日实时 − 昨日同期估算，盘后权重=1 时即今日全日 − 昨日全日的真实差额）'));
+          '（= 今日 ÷ 昨日同期；昨日同期口径：' +
+          ((typeof D !== 'undefined' && D && D.amtEstReal)
+            ? '真实值 —— 沪深指数 5 分钟K成交额累计至当前同一钟点（§296 修复盘中方向判反）'
+            : '估算值 = 昨日全天 × U 型分时经验权重 tradeProgressW()（5 分钟K不可达时的回退口径）') +
+          '；差额 = 今日实时 − 昨日同期（同一实时口径换算），盘后均收敛为今日全日 − 昨日全日的真实差额）'));
   } else {
     segs.push('<span class="bl na">成交额 未取到</span>');
     tips.push('实时成交额：未取到（D.amtToday 为空或 ≤0；盘前无成交时也走这一支，不印 0.00 亿）');
@@ -46823,6 +46919,24 @@ try{ wlMirrorPub(true); }catch(eMir){ }
   function td$$(id){ return document.getElementById(id); }
 
   /* ── 池：7.16 持仓（红标）+ 自选池（蓝标），code 去重、持仓优先 ── */
+  /* ★ §298 纯函数（可单测）：东财 ulist 行 → 池对象实时兜底装配（快照缺失行）。
+     x = holdStocks 行（f2 价 / f3 涨跌幅% / f5 量手 / f6 额元 / f15 高 f16 低 f17 开）。
+     只填 null 缺口（绝不覆盖腾讯快照成功值）；返回实际补上的字段名数组（测试用）。 */
+  function tdEmFill(it, x){
+    var got = [];
+    if(!x) return got;
+    var p2 = parseFloat(x.f2), p3 = parseFloat(x.f3), hi = parseFloat(x.f15);
+    if(it.price == null && isFinite(p2) && p2 > 0){ it.price = p2; got.push('price'); }
+    if(it.pct == null && isFinite(p3)){ it.pct = p3; got.push('pct'); }
+    if(!it.q && isFinite(hi)){
+      it.q = { price: isFinite(p2) ? p2 : null, open: parseFloat(x.f17),
+        high: hi, low: parseFloat(x.f16), vol: parseFloat(x.f5) };
+      got.push('q');
+    }
+    if(it.amt == null && isFinite(parseFloat(x.f6))){ it.amt = parseFloat(x.f6) / 1e8; got.push('amt'); }
+    return got;
+  }
+
   function tdPool(){
     var out = [], seen = {};
     try { (lsGet('wb_hold_v1', []) || []).forEach(function(h){
@@ -47593,11 +47707,18 @@ try{ wlMirrorPub(true); }catch(eMir){ }
     var st = td$$('tdStatus'); if(st) st.textContent = '判定中…';
     var pool = tdPool(), judged;
     if(!pool.length){ tdRender(pool, {}, {}); TD_BUSY = false; if(st) st.textContent = ''; return; }
-    var codes = pool.map(function(x){ return x.code; });
+    /* ★ §298（2026-11-10）：腾讯快照代码必须带交易所前缀 —— 旧版直接传 tdPool 的 6 位纯码，
+       qt.gtimg 返回的全局变量是 v_sh600000（带前缀），而 loadTxQuotes 读 window['v_600000'] →
+       **恒 undefined → 每一行快照恒缺失** → 全部走 fqkline 兜底（30 分钟缓存滞后 + qfq 前复权
+       在除权除息日 pct 严重失真）→ 盘中实时涨跌幅/现价/高低开/量全部失真，tdJudge 的
+       「今日实时 bar」也从未拼上（防守判定连带失真）。用户报告「盘中实时涨跌幅不准」的根因。
+       加 txCode 前缀根治（与 §217 昨日涨停池取行情同先例）；北交所/未知前缀 txCode=null 照旧走兜底。 */
+    var codes = pool.map(function(x){ return txCode(x.code); }).filter(Boolean);
     loadTxQuotes(codes, 9000).then(function(qs){
       /* 组装每票实时快照（腾讯 a[3]=现价 a[4]=昨收 a[5]=开 a[33]=高 a[34]=低 a[36]=量(手) a[32]=涨跌%） */
       pool.forEach(function(it){
-        var a = qs[it.code];
+        var _tc = txCode(it.code);
+        var a = _tc ? qs[_tc] : null;
         if(!a){ it.price = null; it.pct = null; return; }
         it.price = parseFloat(a[3]); it.pct = parseFloat(a[32]);
         /* §273 成交额：腾讯 a[37] 单位万元 → ÷10000 转亿元（页内既有口径，10950 行注释同源）；停牌空串 → null 如实留「—」 */
@@ -47614,8 +47735,24 @@ try{ wlMirrorPub(true); }catch(eMir){ }
       pool.forEach(function(it){ it.s4k = tdS4kOf(it.bars, it.code); });
       /* §294 动量双因子：纯函数 tdMomOf（10日动量 T 档 + 20日动量分位 P 档），挂池对象供渲染/排序 */
       pool.forEach(function(it){ it.mom = tdMomOf(it.bars); });
-      /* 现价兜底：腾讯快照被拦（a 缺失/解析失败）→ 用 fqkline 末根收盘补显示
-         （页内既有口径：fqkline 盘中末根本身就是当日实时价，收盘后为终值；7.30 同先例） */
+      /* ★ §298 实时兜底第一级（除权免疫）：快照缺失行 → 东财 ulist（holdStocks 扩容字段，60s 缓存）
+         批量补 现价 f2 / 涨跌幅 f3 / 开 f17 / 高 f15 / 低 f16 / 量 f5 / 成交额 f6 ——
+         与腾讯快照同口径（元 / % / 手），fltt=2 已格式化。优于 fqkline 比值口径
+         （30 分钟缓存滞后 + qfq 前复权除权日失真），且顺带补齐 amt 省掉 amtFix 一轮请求。 */
+      var needQ = [], seenQ = {};
+      pool.forEach(function(it){
+        if((it.price == null || it.pct == null) && !seenQ[it.code]){ seenQ[it.code] = 1; needQ.push(it.code); }
+      });
+      var qFix = (needQ.length && typeof holdStocks === 'function')
+        ? holdStocks(needQ).then(function(hm){
+            pool.forEach(function(it){ tdEmFill(it, hm && hm[it.code]); });
+          }).catch(function(){ })
+        : Promise.resolve();
+      return qFix.then(function(){
+      /* 现价兜底（第二级）：腾讯快照与东财 ulist 都缺失 → 用 fqkline 末根收盘补显示
+         （页内既有口径：fqkline 盘中末根本身就是当日实时价，收盘后为终值；7.30 同先例）。
+         ⚠ pct = lb.c/pb.c−1 在 qfq 前复权下除权除息日会失真 —— 仅双通道全挂时的最后防线，
+         EM 成功的行绝不走到这里。 */
       pool.forEach(function(it){
         if(it.price == null && it.bars && it.bars.length){
           var lb = it.bars[it.bars.length - 1], pb = it.bars[it.bars.length - 2];
@@ -47646,6 +47783,7 @@ try{ wlMirrorPub(true); }catch(eMir){ }
              导致「板块阶段」title 恒显「行业未解析」、板块资金 secflowSeries(it.ind) 恒走主题兜底 */
         });
       });
+      });                                                  /* ← §298 qFix.then 收口 */
     }).then(function(){
       /* §269 名称修复：池内「name 为空或 = 纯代码」的条目（代码直添时解析通道未给名、
          或旧版本遗留）→ 东财 ulist jsonp 批量补名并写回存储（hold → wb_hold_v1 /

@@ -1138,6 +1138,12 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
     background:rgba(240,69,58,.10); border:1px solid rgba(240,69,58,.30); border-radius:4px;
     padding:0 5px; margin:1px 2px 1px 0; white-space:nowrap; }
   #wtop .wt-tc-big .wt-tc-bgo b { color:#f0453a; }
+  /* ★ 2026-11-12 §310b：收盘封板小标（只留一个视觉记号，口径差异说明收进卡头悬停，正文不并列数字） */
+  .wt-tc-sld { font-style:normal; font-size:9px; font-weight:700; color:#f0453a;
+    background:rgba(240,69,58,.14); border:1px solid rgba(240,69,58,.35); border-radius:3px;
+    padding:0 2px; margin-left:3px; vertical-align:1px; }
+  /* 口径差异图标：只在名单里出现「非本板块行业但已封板」的票时显示，悬停看完整解释（正文不长句） */
+  .wt-tc-info { display:inline-block; margin-left:4px; font-size:10px; color:#94a3b8; cursor:help; }
   /* ★ 2026-11-12 §309：宽度补判徽标（无涨停）—— 与涨停驱动的阶段必须一眼可分：
      同一阶段同一配色（不另立色板），但边框改虚线 + 后缀小字「宽度」，
      用户不会把「宽度补判」误读成「今天真的打出涨停了」。 */
@@ -33759,6 +33765,62 @@ function wtUdLineHtml(name, brief){
     (r.n < thinN ? ' <span class="dn" style="font-size:10px">⚠ 样本偏少</span>' : '') +
     '</div>';
 }
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ★ 2026-11-12 §310（用户核对：军工卡「涨停 1 家」与「涨>5% 9 家」不一致）
+   ── 两个数确实不同源，必须**对账**而不是互相顶替 ──
+   ①「涨停 N 家」（卡头 / 家数序列 / 阶段 / 梯队 / 晋级率）= 东财涨停池 getTopicZTPool 的**盘口快照**。
+      收盘后回看它有缺口：实测 2026-11-12「军工」，池只记 1 家（长城军工），而收盘价核实是 3 家封板 ——
+      起帆电缆 605222 收 20.55（+10.01%）、大西洋 600558 收 5.96（+9.96%），两只尾盘封板未入池。
+   ②「🚀 涨>5% N 家」= 板块全成分股的**收盘快照**（clist / 数据中心 F10），涨幅是最终值、不含时点缺口。
+      所以它反而比涨停池更接近收盘真相（9 家里 3 家是封板的，其中 2 家池里没有）。
+   ③ 处理原则：**只用 ② 对账 ①，绝不回写 D.zt** ——
+      回写会让阶段 / 家数序列 / 梯队 / 晋级率跟着变，而快照只覆盖部分板块（本轮 12 张卡里 8 张有快照），
+      等于制造"有的板块补、有的不补"的新不一致。判定仍走池口径，差异如实并列给用户看。
+   ④ 板别判定按代码前缀（60/00 → 10%、30/68 → 20%、8/4/92 → 30%；ST / 北交所已在 loadSecMembers 剔除）。
+      容差 0.15 个百分点：低价股涨停价四舍五入后涨幅会略低于 10%（5.42→5.96 = +9.96%）。
+      认不出板别 → 不判（绝不按 10% 硬套）。
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function wtZtLimitOf(code){
+  var s = String(code || '');
+  if(/^(60|00)/.test(s)) return 10;
+  if(/^(30|68)/.test(s)) return 20;
+  if(/^(8|4|92)/.test(s)) return 30;
+  return null;
+}
+/* 用**收盘快照**数该板块的封板家数。名单取自 r.big（f3 降序，涨停票必在最前 30 只内）。
+   名单不完整（>5% 的票里有缺名称的，或超过 30 只被截断）时仍可判 —— 但只在"快照封板数 > 池家数"
+   这种**明确漏记**方向上出提示，反方向（m < zt）要求名单完整才出，避免缺名称造成误报。 */
+function wtZtSnapOf(r){
+  if(!r || r.s5 == null || !r.big) return null;
+  var s5 = +r.s5, list = r.big.slice(0, 30), hit = [];
+  list.forEach(function(o){
+    var lim = wtZtLimitOf(o.c);
+    if(lim == null) return;
+    if(+o.f3 >= lim - 0.15) hit.push(o);
+  });
+  return { m: hit.length, list: hit, full: list.length >= Math.min(s5, 30) };
+}
+/* 卡头「涨停 N 家」的**同一个源**：WT.snap.sectors 的 cnt（与 wtFetch 的池聚类同源），
+   取不到才回落 ztg(name).length。对账必须跟卡头同数，否则会制造"卡头 1 / 对账句说 2"的二次不一致。 */
+function wtHeadZtOf(name){
+  try {
+    var ss = (WT.snap && WT.snap.sectors) || [];
+    for (var i = 0; i < ss.length; i++) { if (ss[i] && ss[i].name === name && ss[i].cnt != null) return +ss[i].cnt; }
+  } catch (e) { }
+  try { return ztg(name).length; } catch (e2) { return null; }
+}
+/* 对账结果：{ zt 池家数, m 快照封板数, extra 快照封板但池里没有的票 }；池未就绪 / 无快照 → null */
+function wtZtCrossOf(name, r){
+  if(typeof D === 'undefined' || !D || !D.zt || !D.zt.length) return null;
+  var sp = wtZtSnapOf(r); if(!sp) return null;
+  var zt = wtHeadZtOf(name);
+  if(zt == null) return null;
+  var pool = null; try { pool = ztg(name) || []; } catch(e){ pool = null; }
+  if(pool == null) return null;
+  var inPool = {}; pool.forEach(function(x){ inPool[x.c] = 1; });
+  var extra = sp.list.filter(function(o){ return !inPool[o.c]; });
+  return { zt: zt, m: sp.m, extra: extra, list: sp.list, full: sp.full };
+}
 /* ★ 2026-11-12 §307（用户要求：成分股中涨幅 >5% 的股票家数请列出）：
    口径与「宽度」列 / 7.5 宽度分 B1、B3 **同一把尺**（wtBreadthCalc 的 s5 = 成分股 f3 > 5% 的家数），
    不是另算一份 —— 同一板块宽度列写「9%（5/57）」时，这里的家数就是那个 5。
@@ -33782,14 +33844,28 @@ function wtBigUpLineHtml(name){
     return '<div class="wt-tc-big" title="' + esc(tip) + '"><span class="flat">🚀 涨&gt;5% </span>'
       + '<b class="flat">0 家</b><span class="flat" style="font-size:10px">（成分股无一只涨超 5% —— 有效读数，不是缺数）</span></div>';
   }
+  /* ★ 2026-11-12 §310：与卡头「涨停 N 家」（涨停池口径）对账 —— 同一份收盘快照里有多少只真的封板 */
+  var xz = null; try { xz = wtZtCrossOf(name, r); } catch (eX) { xz = null; }
+  var ztHit = {}; if(xz) xz.list.forEach(function(o){ ztHit[o.c] = 1; });
   var chips = list.map(function(o){
-    return '<span class="wt-tc-bgo" title="' + esc(o.n + ' ' + o.c + '　' + (o.f3 >= 0 ? '+' : '') + o.f3.toFixed(2) + '%') + '">'
-      + esc(o.n) + ' <b>+' + o.f3.toFixed(1) + '%</b></span>';
+    return '<span class="wt-tc-bgo" title="' + esc(o.n + ' ' + o.c + '　' + (o.f3 >= 0 ? '+' : '') + o.f3.toFixed(2) + '%'
+      + (ztHit[o.c] ? '　收盘封板（按涨停幅度判定）' : '')) + '">'
+      + esc(o.n) + ' <b>+' + o.f3.toFixed(1) + '%</b>' + (ztHit[o.c] ? '<i class="wt-tc-sld">板</i>' : '') + '</span>';
   }).join(' ');
   /* 「共 N 只」而不是「等 N 只」：N 是**总家数**不是剩余数，写「等」会被读成"还有 N 只没列"（截图实测歧义） */
   var more = (s5 > list.length) ? '<span class="flat" style="font-size:10px">　共 ' + s5 + ' 只</span>' : '';
+  /* ★ 2026-11-12 §310b：正文不写长句，只留一个 ⓘ —— 名单里有「已封板但不属于本板块行业」的票时才出现，
+     悬停说明两个口径为什么不等（涨停池 hybk 归并 vs 东财概念板块成分）。不封板时不出（多数卡没有这个图标）。 */
+  var info = '';
+  if(xz && xz.extra && xz.extra.length){
+    var xs = xz.extra.slice(0, 4).map(function(o){ return o.n; }).join('、');
+    info = '<span class="wt-tc-info" title="' + esc('本行名单＝东财「' + name + '」板块成分股口径（' + (r.n == null ? '—' : r.n) + ' 只）；'
+      + '卡头「涨停 N 家」＝涨停池按 hybk 行业归并的口径。两个集合本就不等：'
+      + xs + ' 已封板，但行业归类不在本板块（大西洋＝通用设备、起帆电缆＝电网设备），只是被该概念板块收录，因此不计入本卡涨停家数。'
+      + '同一只票在不同口径下归属不同属正常，不是数据错误。') + '">ⓘ</span>';
+  }
   return '<div class="wt-tc-big" title="' + esc(tip) + '"><span class="wt-tc-bgn">🚀 涨&gt;5% ' + numTxt + '</span>'
-    + (chips ? '　' + chips : '') + more + '</div>';
+    + (chips ? '　' + chips : '') + more + info + '</div>';
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -36442,6 +36518,11 @@ function wtMainLineCardsHtml() {
     var g = {}, kk;
     for (kk in sg) g[kk] = sg[kk];
     g.zt = (sg.cnt != null) ? sg.cnt : (sg.zt || 0);
+    /* ★ 2026-11-12 §310b（撤销上一版「收盘补录」）：**绝不把概念板块成分塞进行业口径的涨停家数**。
+       实测 2026-11-12：东财「军工」板块 408 只里有大西洋（行业=通用设备/金属制品）、起帆电缆（行业=电网设备），
+       它们只是被「军工」概念板块收录，hybk 归并后属于机械设备 / 电力设备 —— 补进军工会直接造出错归。
+       所以：家数仍走涨停池 hybk 归并（1 家），涨>5% 名单仍走东财板块口径（9 家），两个口径**本就不等**，
+       差异只在「🚀 涨>5%」行留一个 ⓘ（悬停解释），正文不并列数字。 */
     if (G.grade) g.grade = G.grade;
     g.secc = G.secc || sg.secc || null;
     g.veto = (G.veto != null) ? G.veto : !!sg.veto;
@@ -36468,7 +36549,11 @@ function wtMainLineCardsHtml() {
     else bTip = '该板块未进入宽度候选集，§280 补取通道也没取到成分股 → 宽度留白（不是「宽度为 0」，也不拿别的板块顶替）';
     var tMax = (g.maxLbc || 0);
     var m10 = (function () { try { return secMaxLbc10d(g.name, tMax); } catch (eM10) { return tMax; } })();
-    var meta = ['涨停 ' + (g.zt || 0) + ' 家', '10日高 ' + m10 + ' 板' + (m10 !== tMax ? ('（今日 ' + tMax + '）') : '')];
+    /* ★ 2026-11-12 §310b：卡头只印一个数 —— **涨停池 hybk 归并口径**（与家数序列 / 梯队 / 晋级率 / 七阶段同尺）。
+       不并列「收盘封板 M 家」：那个 M 来自东财概念板块成分（军工 408 只含通用设备 / 电网设备），
+       与行业口径不是同一集合，并列只会让复盘更难读；口径差异收在「🚀 涨>5%」行的 ⓘ 里。 */
+    var ztMeta = '涨停 ' + (g.zt || 0) + ' 家';
+    var meta = [ztMeta, '10日高 ' + m10 + ' 板' + (m10 !== tMax ? ('（今日 ' + tMax + '）') : '')];
     /* ★ 2026-10-08（用户要求）：备注「昨涨停 N 家」（昨日涨停池 D.prev 同名板块家数，与 7.5B 总表同一把尺）。
        昨日池未就绪 → 留白；N=0 照常标（昨日无涨停 = 新热点信号，缺失 ≠ 0）。 */
     var pz3 = null; try { pz3 = prevZtCntOf(g.name); } catch (eP3) { pz3 = null; }

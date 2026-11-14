@@ -105,6 +105,10 @@ details .dbody{padding:4px 12px 12px;}
 #m8body tr[data-wbbjump]{cursor:pointer;transition:background .12s ease;}
 #m8body tr[data-wbbjump]:hover{background:rgba(56,189,248,.08);}
 #m8body tr[data-wbbjump]:active{background:rgba(56,189,248,.15);}
+/* ★ 2026-11-14 §316-C：个股资金主战场四榜（#wtFundBox）行内个股名/代码可点跳「个股诊断」。
+   同样走 WBB 全局委托（data-wbbjump → WBB.LC_URL?code=），作用域锁 #wtFundBox，不碰其它区块。 */
+#wtFundBox b[data-wbbjump],#wtFundBox span[data-wbbjump]{cursor:pointer;}
+#wtFundBox b[data-wbbjump]:hover,#wtFundBox span[data-wbbjump]:hover{text-decoration:underline;color:#38bdf8;}
 /* ===== 强势异动工作区 #m5q（2026-10-22 新增 · 5 分钟涨速按板块分类）=====
    分组骨架直接复用 .grp/.grp-h/.grp-b/.g-row（与 ⑤ 涨停复盘同款），
    这里只做两件事：① 组头底色改红（强势异动=进攻，不用涨停复盘的黄）；
@@ -1138,6 +1142,18 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
     background:rgba(240,69,58,.10); border:1px solid rgba(240,69,58,.30); border-radius:4px;
     padding:0 5px; margin:1px 2px 1px 0; white-space:nowrap; }
   #wtop .wt-tc-big .wt-tc-bgo b { color:#f0453a; }
+  /* ★ 2026-11-13 §311：💰 赚亏钱效应行（与涨>5% 行同字号、同左侧缩进，视觉上属同一组读数） */
+  #wtop .wt-tc-earn { font-size:11px; color:#94a3b8; margin-top:2px; line-height:1.95; }
+  #wtop .wt-tc-earn b.up { color:#f0453a; }
+  #wtop .wt-tc-earn b.dn { color:#10b981; }
+  #wtop .wt-tc-earn b.flat { color:#94a3b8; }
+  /* ★ 2026-11-13 §315：🔔 集合竞价强势异动行（与赚亏行同字号同缩进；结论在前、数字在后）。
+     类名不加 #wtop 作用域 —— §306 的教训：作用域一收，别的容器（🩸 风险板块表）复用就全丢样式。 */
+  .wt-tc-auc { font-size:11px; color:#94a3b8; margin-top:2px; line-height:1.95; }
+  .wt-tc-auc b.up { color:#f0453a; }
+  .wt-tc-auc b.dn { color:#10b981; }
+  .wt-tc-auc b.flat { color:#94a3b8; }
+  .wt-tc-auc .wt-tc-aucn { color:#cbd5e1; }
   /* ★ 2026-11-12 §310b：收盘封板小标（只留一个视觉记号，口径差异说明收进卡头悬停，正文不并列数字） */
   .wt-tc-sld { font-style:normal; font-size:9px; font-weight:700; color:#f0453a;
     background:rgba(240,69,58,.14); border:1px solid rgba(240,69,58,.35); border-radius:3px;
@@ -2095,7 +2111,7 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
       <tr><td><span class="tag tag-o">A</span></td><td>梯队单薄但有高标 + 催化仍在（家数 ≥3）</td></tr>
       <tr><td><span class="tag tag-y">B</span></td><td>有涨停但结构与家数不足：龙头断层的活口轮动 / 首板集群（≥3 家无高度）/ 孤股（1 家）</td></tr>
       <tr><td><span class="tag tag-b">C</span></td><td><b>今日无涨停</b>（本表只列有涨停的板块 → 实际不出现）</td></tr>
-      <tr><td><span class="tag tag-r">⛔</span></td><td><b>独立标记（不再改等级）</b>：炸板率 ≥40% 或炸板 ≥涨停半数 或 出现跌停 → 一票否决、不可开仓</td></tr>
+      <tr><td><span class="tag tag-r">⛔</span></td><td><b>独立标记（不再改等级）</b>：炸板率 ≥40% 或 炸板 ≥涨停半数 或 跌停 ≥ max(2, 涨停家数÷2)（今日无涨停时有跌停即算）→ 一票否决、不可开仓。<b>1 家跌停对 8 家涨停不算否决</b>（零星补跌 ≠ 板块瓦解，只在卡内作 ⛔ 提示、不判退潮）</td></tr>
     </tbody></table></div>
   </div>
   <div>
@@ -4716,14 +4732,37 @@ function t1Verify(name, prevMap){
   var arr = prevMap[name] || [];
   if(!arr.length) return { ok: false, n: 0, avg: null, redRate: null, promoRate: null, mian: 0 };
   var ps = [], prom = 0, mian = 0;
+  /* ★ 2026-11-13 §315：两条**加法**口径（不改既有字段语义，老消费方零影响）
+     · ops  = 今日「开盘溢价」（openPrem = 今开/昨收−1，与竞价同尺）→ 取均值 openAvg；
+     · is   = 逐只「今涨幅 − 开盘溢价」= 开盘后到当前的承接（pp）→ 取均值 intra。
+       为什么不拿 avg − openAvg 反推：两条口径的有效样本集可能不同（缺今开 / 缺现价），
+       两个不同分母的均值相减不是「同一只票的日内涨跌」，会把持仓结构差当成承接差。 */
+  var ops = [], is = [];
   arr.forEach(function(x){
     var q = D.prevQ[x.c];
     if(q && q.pct != null && !isNaN(q.pct)){ ps.push(q.pct); if(q.pct <= -5) mian++; }
+    if(q && q.openPrem != null && isFinite(q.openPrem)){
+      ops.push(+q.openPrem);
+      if(q.pct != null && !isNaN(q.pct)) is.push(+q.pct - +q.openPrem);
+    }
     if(D.zt.some(function(y){ return y.c === x.c; })) prom++;
   });
   var avg = mean(ps), redRate = ps.length ? ps.filter(function(v){ return v > 0; }).length / ps.length : null;
-  return { ok: (avg != null && avg > 0 && prom / arr.length >= 0.3), n: arr.length, avg: avg,
-    redRate: redRate, promoRate: prom / arr.length, promo: prom, mian: mian };
+  /* 中位数（偶数取两中值平均）。ps 是**副本**排序，不影响下方 promoRate 等旧字段。 */
+  var med = null;
+  if(ps.length){
+    var so = ps.slice().sort(function(a, b){ return a - b; });
+    med = (so.length % 2) ? so[(so.length - 1) / 2]
+      : Math.round((so[so.length / 2 - 1] + so[so.length / 2]) / 2 * 100) / 100;
+  }
+  var openAvg = mean(ops), intra = mean(is);
+  /* ★ 2026-11-13 §314：补 `vN` = **有效行情样本数**（ps.length），加法字段、不改既有消费方。
+     n = 昨日该板块涨停家数（含无行情的票，如停牌），redRate 的分母却是 ps.length ——
+     原先渲染层用 redRate×n 反推红盘家数，两者不等时会少报（实测缺 1 只行情 → 红 2/3 印成 红 1/3）。 */
+  return { ok: (avg != null && avg > 0 && prom / arr.length >= 0.3), n: arr.length, vN: ps.length,
+    avg: avg, redRate: redRate, promoRate: prom / arr.length, promo: prom, mian: mian,
+    /* §315 加法字段 */
+    med: med, openAvg: openAvg, openVn: ops.length, intra: intra, intraVn: is.length };
 }
 function prevZtBySector(){
   var m = {};
@@ -6036,6 +6075,43 @@ var SECC_RULE = {
   ebbLbCut: 2,                       /* 退潮：连板高度较昨日压缩 ≥2 层 */
   divergeGoodNeed: 2,                /* 分歧三看：≥2 件向好=良性，否则恶性 → 直接按退潮 */
   consensusShare: 0.15,              /* 参考口径：板块涨停占全市场 ≥15% = 资金共识 */
+  /* ★ 2026-11-13 §311：板块宽度否决（向上档 confirm / ferment / accel 的质量闸门，只降不升）
+     用户报障：农林牧渔 涨停 3 家 → 判「确认」，可板块成分股只有 37.5% 上涨、中位 −0.64%、跌停 2 家
+     （其中百洋股份 = 昨日涨停股今日跌停）—— 涨停与板块整体背离，是「孤军拉升」不是主线分水岭。
+     锚点表原文对确认期的描述：「中军：放量站稳 MA20、初步多头排列、同步上涨（主线成立硬验证）」，
+     发酵期：「赚钱效应扩散，板块内部轮动上涨」。中军站 MA20 无稳定量化源，但「板块是否同步上涨」
+     有现成读数（成分股上涨占比 + 中位股），故用它们做**否决闸**：
+       上涨占比 ≤ 40% 且 中位股 ≤ −0.5% → 向上档不成立（两个条件同时满足才算背离，单看一个会误杀）。
+     取不到宽度 → 不否决（缺失 ≠ 通过，也 ≠ 否定），只在依据里注明「宽度未取到，本闸未生效」。 */
+  widthUpPct: 40, widthMed: -0.5,
+  /* ★ 2026-11-13 §314：💰 赚亏效应的「板块背离」阈值（只用于披露，不改判定）
+     用户报障：汽车产业链「赚亏效应 赚钱（昨涨停 1 只 → 今均 +10.00%）」，
+     可同一张卡上 284 只成分股 涨 36 / 跌 246、中位 −1.69%、跌停 3 家、宽度 3%。
+     打板那一只（天普股份 4 板）赚钱是事实，但它代表不了板块 —— 两个读数必须并列说清。
+     背离判据比宽度否决更严（中位 ≤−1% 而非 −0.5%）：只把「明显走弱」的板块挑出来，
+     避免把「板块小跌 + 独苗涨停」也叫背离，冲淡真正需要警觉的卡。 */
+  earnDivergeUp: 40, earnDivergeMed: -1,
+  /* ★ 2026-11-13 §315：💰 赚亏效应「中位数」口径（全网五源共识）
+     原文口径：「溢价率取中位数更能避免个别极端值干扰」。均值 + 中位 **同时** 用：
+       · 亏钱：中位 ≤ −1%（均值被一只涨停拉平也不影响中位说真话）→ 与「大面率 / 今均」并列进否决；
+       · 赚钱：中位 ≥ +0.5%（均值 ≥1.5% 但中位不足 = 只有少数票在涨，不许叫赚钱）。
+     为什么必须补：一只 +10% 的独苗可以把 5 只票的均值从 −1.5% 拉到 +0.8%，均值口径下「亏钱」凭空变「分化」。
+     日内兑现（earnIntra）：收盘/当前溢价 − 开盘溢价 = 开盘后的真实承接（pp）。
+       · ≤ −3 且开盘溢价 ≥ +1.5% → 「高开走弱」：竞价抢筹、开盘被砸，是最典型的诱多失败；
+       · ≥ +3 且开盘溢价 ≤ −1% → 「低开走强」：低开被买回，分歧转一致。
+     两个方向都只作**披露标记**，不改赚钱/亏钱结论 —— 结论由溢价水平 + 红盘率 + 大面率 + 中位决定。 */
+  earnMedDn: -1, earnMedUp: 0.5, earnIntra: 3, earnIntraOpen: 1.5, earnIntraOpenLo: -1,
+  /* ★ 2026-11-13 §312：前史峰值闸（用户报障：传媒 近 5 日家数 2→14→8→1→8，今日 8 家被判「启动」）
+     「启动」的语义是**题材刚冒头**（前一日 0-1 只、无成型梯队、成交额从低位抬升）。
+     可引擎只看今日 + 昨日：昨日崩到 1 家时，所有退潮判据（要求昨涨停 ≥2/≥3）都不成立、
+     断板也判不出（昨最高仅 1 板 <3），于是「高潮后崩一天再回抽」被当成「新题材启动」——方向完全反了。
+     修法：把近 5 日家数序列的前史峰值纳入判定。
+       · 峰值 <8 家 → 前史没有板块效应，闸不介入（真·新题材）；
+       · 今日 ≥ 峰值×70% → 仍在高位，闸不介入（交给发酵/加速/连降逻辑）；
+       · 否则 = 前史有过高潮、今日已明显萎缩 → 不可能是「启动」：
+           今日家数 > 昨日 → 分歧后的局部回流 → 反包（默认逃命，放量收复才算二波）；
+           今日家数 ≤ 昨日 → 持续萎缩 → 退潮。 */
+  histPeakMin: 8, histRetain: 0.7,
   logKey: 'wb_secstage_v1', logDays: 12
 };
 /* ── 锚点表初判（只看 家数 / 高度 两个锚点；其余两锚点做复核与 ⚠ 提示）──
@@ -6047,13 +6123,64 @@ var SECC_RULE = {
      ② 加速 = 家数 >10 只、龙头缩量连板、中军趋势新高；
      ③ 高位股独存而中低位断层，是**退潮/分歧**特征，不是发酵。
    故：加速需「家数 ≥10」或「高度 ≥6 **且** 家数 ≥6」；发酵需「家数 ≥4 且高度 ≥4」或「家数 ≥6」；
-   家数 ≤2 而高度 ≥4 = 孤立高标 → 直接落「启动（试错）」，并在依据里写明断层。 */
+   家数 ≤2 而高度 ≥4 = 孤立高标 → 直接落「启动（试错）」，并在依据里写明断层。
+   ★ 2026-11-13 §311：上面那条修的是「高度单独抬档」；本次修的是它的**对偶漏洞** ——
+   「家数单独抬档确认」。原实现 `tMax >= 3 || tZt >= 3` 是**或**，只要涨停数刚到 3 家就进「确认」，
+   完全不看高度。实测：农林牧渔 3 家涨停（2 板×1 + 首板×2）、高度仅 2 板，被判「确认」，
+   而锚点表原文是「确认：涨停 3-5 只+｜高度 3-4 板」—— 两条是**并列门槛**，且确认期三大件
+   （龙头 3-4 板 + 梯队雏形 + 中军站均线）"缺一不确认"。2 板属启动带（1-2 板），不是主线分水岭。
+   故 confirm 改为「且」：家数 ≥3 **且** 高度 ≥3，两者齐备才确认。 */
 function seccAnchorStage(tZt, tMax){
   if(tZt >= SECC_RULE.ztAccel || (tMax >= SECC_RULE.lbAccel && tZt >= SECC_RULE.ztFermentSolo)) return 'accel';
   if((tZt >= SECC_RULE.ztFermentEntry && tMax >= SECC_RULE.lbFermentLo) || tZt >= SECC_RULE.ztFermentSolo) return 'ferment';
   if(tZt <= SECC_RULE.soloZt && tMax >= SECC_RULE.lbFermentLo) return 'start';   /* 孤立高标：家数 ≤2 / 高度 ≥4 → 断层 */
-  if(tMax >= SECC_RULE.lbConfirmLo || tZt >= SECC_RULE.ztConfirmLo) return 'confirm';       /* 3-4 板 或 3-5 只 */
+  if(tMax >= SECC_RULE.lbConfirmLo && tZt >= SECC_RULE.ztConfirmLo) return 'confirm';  /* §311：3-4 板 **且** 3 只+（并列门槛） */
   return 'start';
+}
+/* ★ 2026-11-13 §311：板块宽度判定（纯函数，单测可直接打）。
+   返回 null = 缺数（不判，缺失 ≠ 通过也 ≠ 否定）；{breach, upPct, med} = 有读数。
+   背离 = 上涨占比 ≤40% **且** 中位股 ≤−0.5%（两个条件同时成立才算，单看一个会误杀
+   「跌多但中位为正 = 权重股拖累」的板块）。判定只在本函数写一次，seccJudge 只调不重算。 */
+/* ★ 2026-11-13 §313b：反包（rebound）是否成立 = 「老龙头回封」**且**「板块有回流」。
+   用户报障：通信 板块 −4.97%、35 只成分股里只有 1 只上涨、涨停 1 家（与昨日持平），
+   只因昨日最高标今日又涨停就被判「反包」—— 那是**个股行为**，板块根本没有资金回流。
+   判据：今日涨停 ≥2 家，或 家数较昨日回升（tZt > yZt）。缺失一律按 0 处理（缺失不构成通过）。
+   纯函数，单测可直接打。 */
+function seccReboundRevive(tZt, yZt){
+  var t = (+tZt) || 0, y = (+yZt) || 0;
+  return (t >= 2) || (t > y);
+}
+function seccWidthBreach(upN, dnN, med){
+  if(upN == null || dnN == null) return null;
+  var u = +upN, d = +dnN;
+  if(!isFinite(u) || !isFinite(d) || (u + d) <= 0) return null;
+  if(med == null || !isFinite(med)) return null;
+  var upPct = u / (u + d) * 100;
+  return { breach: (upPct <= SECC_RULE.widthUpPct && +med <= SECC_RULE.widthMed), upPct: upPct, med: +med };
+}
+/* ★ 2026-11-13 §312：前史峰值闸（纯函数，单测可直接打）。
+   解决的问题：引擎只看「今日 + 昨日」，昨日崩到 1 家时，退潮判据（要求昨涨停 ≥2/≥3）全不成立、
+   断板也判不出（昨最高仅 1 板），于是「14 家高潮 → 1 家崩塌 → 8 家回抽」被当成「新题材启动」。
+   「启动」的语义是题材**刚冒头**（前一日 0-1 只、无成型梯队），前史有过 14 家就绝不可能是启动。
+   返回 {stage, why}；why 为空 = 不改判（序列不足 / 前史无效应 / 仍在高位 / 非向上档）。 */
+function seccHistGate(stage, zs){
+  if(!zs || !zs.seq || zs.seq.length < 3) return { stage: stage, why: '' };
+  if(['start', 'confirm', 'ferment', 'accel'].indexOf(stage) < 0) return { stage: stage, why: '' };
+  var seq = zs.seq, cur = seq[seq.length - 1], y = seq[seq.length - 2], peak = 0;
+  for(var i = 0; i < seq.length - 1; i++){ if(seq[i] > peak) peak = seq[i]; }
+  if(peak < SECC_RULE.histPeakMin) return { stage: stage, why: '' };          /* 前史没有板块效应 → 真·新题材 */
+  if(cur >= peak * SECC_RULE.histRetain) return { stage: stage, why: '' };    /* 仍在高位 → 交给发酵/加速/连降逻辑 */
+  var to = (cur > y) ? 'rebound' : 'ebb';
+  var pct = Math.round(cur / peak * 100);
+  var why = '近 ' + (seq.length - 1) + ' 个交易日峰值 ' + peak + ' 家涨停 → 今日 ' + cur + ' 家（仅为峰值的 ' + pct + '%）'
+    + (to === 'rebound'
+      ? '，但高于昨日的 ' + y + ' 家 = 分歧后的局部回流'
+      : '，且不高于昨日的 ' + y + ' 家 = 持续萎缩')
+    + ' → 前史已走过一轮高潮，今天既不是「启动（新题材刚冒头）」，也不该挂发酵/加速'
+    + (to === 'rebound'
+      ? '；按「反包期」执行（默认按逃命处理，放量收复才算二波）'
+      : '；按「退潮期」执行');
+  return { stage: to, why: why };
 }
 /* ==================== 板块涨停家数「跨日序列」（★ 2026-11-12 §305）====================
    用户原话：「请动态对比前几日板块的涨停情况」。
@@ -6517,9 +6644,13 @@ function secStreakHtml(name){
 }
 /* ==================== 板块「风险否决」（★ 2026-09-24 统一口径 · 唯一来源）====================
    口径（硬闸门，**不再对 S 级豁免** —— 安全类指标不该有豁免，见本项目通则）：
-     · 板块内出现跌停 → 否决（退潮特征）
+     · 板块内出现跌停 → 否决（**须与涨停侧成比例**，见下）
      · 炸板率 = 炸板 ÷ (涨停+炸板) ≥ 40% → 否决（承接崩塌；40% 与大情绪引擎的"退潮强信号"同口径）
      · 炸板家数 ≥ max(2, 涨停家数 × 0.5) → 否决（分歧剧烈；小样本下用家数兜底）
+   ★ 2026-11-13 §313：「跌停 > 0 即否决」是**绝对家数**口径，与大板块严重失配 ——
+     实测传媒 122 只成分股、8 家涨停、13 家涨>5%，只因 1 家跌停就被一票否决，整张卡挂「退潮风险」。
+     现改为「跌停 ≥ max(2, 涨停 × 0.5)」：1 家跌停对 8 家涨停不构成否决（那是零星补跌），
+     2 家对 1 家才构成（多空旗鼓相当）；今日无涨停（zt=0）时 dt>0 仍直接否决（无多头承接 = 纯补跌）。
    ⚠ 只回答"能不能碰"，**不再改写等级**（避免出现"板块有涨停却评 D/退潮"的自相矛盾 —— 用户实测指出）。
    调用方：gradeSectors（产出 g.veto/g.vetoWhy）、b710Eval（一票否决）、7.5B 梯队面板 Step0。
    ==================================================================================== */
@@ -6531,7 +6662,10 @@ function secRiskVeto(name, o){
   var dt = (o.dt != null) ? o.dt : (D.dt || []).filter(function(x){ return hybkEq(x.hybk, name) || themeEq(x.hybk, name); }).length;
   var zt = (o.zt != null) ? o.zt : ztg(name).length;
   var rate = (o.zbRate != null) ? o.zbRate : ((zt + zb) > 0 ? zb / (zt + zb) : null);
-  if(dt > 0) return { veto: true, why: '板块内出现跌停 ' + dt + ' 家（退潮特征）', zb: zb, dt: dt, rate: rate };
+  /* ★ 2026-11-13 §313：跌停否决改为「与涨停家数成比例」—— 1 家跌停不该拖垮 8 家涨停的板块。 */
+  var dtBar = Math.max(2, Math.ceil(zt * 0.5));
+  if(zt === 0 ? dt > 0 : dt >= dtBar)
+    return { veto: true, why: '板块内出现跌停 ' + dt + ' 家' + (zt > 0 ? '（对 ' + zt + ' 家涨停，多空撕裂）' : '（今日无涨停，纯补跌）'), zb: zb, dt: dt, rate: rate };
   if(rate != null && rate >= 0.4) return { veto: true, why: '炸板率 ' + Math.round(rate * 100) + '% ≥40%（承接崩塌）', zb: zb, dt: dt, rate: rate };
   if(zb >= Math.max(2, zt * 0.5)) return { veto: true, why: '炸板 ' + zb + ' 家 ≥ 涨停半数（分歧剧烈）', zb: zb, dt: dt, rate: rate };
   return { veto: false, why: '', zb: zb, dt: dt, rate: rate };
@@ -6545,9 +6679,17 @@ function seccJudge(name, o){
   var gz = ztg(name);
   var pz = seccPrevMap()[name] || [];
   var tZt = gz.length, tMax = (o.maxLbc != null) ? o.maxLbc : maxLbcOf(gz);
-  /* ★ 2026-10-09：同 secRiskVeto —— 主题家族内匹配（组名=锂电池 ↔ hybk=电池 的炸板/跌停）。 */
-  var zb = (o.zb != null) ? o.zb : (D.zb || []).filter(function(x){ return hybkEq(x.hybk, name) || themeEq(x.hybk, name); }).length;
-  var dt = (o.dt != null) ? o.dt : (D.dt || []).filter(function(x){ return hybkEq(x.hybk, name) || themeEq(x.hybk, name); }).length;
+  /* ★ 2026-10-09：同 secRiskVeto —— 主题家族内匹配（组名=锂电池 ↔ hybk=电池 的炸板/跌停）。
+     ★ 2026-11-13 §311：先走 `secIndOf(code, hybk)`（与涨停家数同尺），不命中再回落家族匹配。
+     原因：只有 themeKey 时，农林牧渔的跌停（饲料 / 农产品加工）落到别的键上 → dt 读成 0，
+     「板块内出现跌停 → 退潮」这条链静默失效（实测漏掉 2 家，其中百洋股份还是昨日涨停股今日跌停）。 */
+  var secKeyOf = function(x){
+    var k = null;
+    try{ k = secIndOf(x.c, x.hybk); }catch(eK){ k = null; }
+    return k || themeKey(x.hybk) || '';
+  };
+  var zb = (o.zb != null) ? o.zb : (D.zb || []).filter(function(x){ return secKeyOf(x) === name || hybkEq(x.hybk, name) || themeEq(x.hybk, name); }).length;
+  var dt = (o.dt != null) ? o.dt : (D.dt || []).filter(function(x){ return secKeyOf(x) === name || hybkEq(x.hybk, name) || themeEq(x.hybk, name); }).length;
   var denom = tZt + zb, zbRate = denom ? zb / denom : null;
   /* ── 四锚点：家数 / 高度（上面已算）+ 成交额占比 / 晋级率 ── */
   var ctx = seccCtx();
@@ -6604,24 +6746,41 @@ function seccJudge(name, o){
   /* 恶性分歧：三看中「可量化」的两件（①龙头是否扛住 ③是否留活口）同时转坏 = 强恶化信号。
      中军抗跌无 MA 数据源，不参与「恶性」判定 —— 否则缺板块行情时会把普通分歧一律误判成退潮。 */
   var malignant = (!hold1 && !hold3 && goodCnt <= 1);
-  var ebbHit = (yZt >= 3 && tZt <= Math.max(1, Math.round(yZt * SECC_RULE.ebbZtRatio)))
-            || (dt > 0 && yZt >= 2)
-            || (lbCut && yZt >= 3 && tZt <= Math.max(2, Math.round(yZt * 0.5)))   /* 须昨日有梯队：否则「昨日只有龙一 1 家、今日断板」会被误判退潮 */
-            || (broken && yZt >= 3 && tZt <= 2 && zbRate != null && zbRate >= SECC_RULE.zbRateChaos)
-            || (brokenNow && malignant);        /* 恶性分歧 → 直接按退潮处理（标准口径） */
+  /* ★ 2026-11-13 §313（本轮「板块分级标准」复核）：退潮的五条入口**各自具名**，依据逐条如实写。
+     旧写法有两个错：
+       ① 「板块内出现跌停」单独就能判退潮，且不看家数方向 —— 实测农林牧渔 昨 2 家 → 今 3 家（还在扩散）、
+          只因 2 家跌停就判退潮，卡面还印「昨 2 → 今 3（家数萎缩 / 断档）」—— 3 > 2，文案与事实相反；
+       ② 无论命中哪一条，都无条件印「家数萎缩 / 断档」—— 传媒/汽车那种「前史高潮回抽」的退潮依据也会被这条假文案覆盖。
+     修法：跌停分支追加「家数不增」（tZt <= yZt）。退潮的定义是赚钱效应消失 + 家数萎缩；
+     家数还在增、只是出现跌停 = 板块内部撕裂（分歧），不是退潮 —— 分歧归分歧，退潮归退潮，两回事。 */
+  var ebbZtCut = (yZt >= 3 && tZt <= Math.max(1, Math.round(yZt * SECC_RULE.ebbZtRatio)));
+  var ebbDt = (dt > 0 && yZt >= 2 && tZt <= yZt);
+  var ebbLbCut = (lbCut && yZt >= 3 && tZt <= Math.max(2, Math.round(yZt * 0.5)));   /* 须昨日有梯队：否则「昨日只有龙一 1 家、今日断板」会被误判退潮 */
+  var ebbBroken = (broken && yZt >= 3 && tZt <= 2 && zbRate != null && zbRate >= SECC_RULE.zbRateChaos);
+  var ebbMalig = (brokenNow && malignant);        /* 恶性分歧 → 直接按退潮处理（标准口径） */
+  var ebbHit = ebbZtCut || ebbDt || ebbLbCut || ebbBroken || ebbMalig;
+  /* ★ 2026-11-13 §313b：反包候选的两条入口 + 「是否形成板块回流」的判据（见下方 rebound 分支）。 */
+  var rbBack = (lbWasBroke && lbBack) || (broken && rb >= 1);
+  var rbOk = rbBack && seccReboundRevive(tZt, yZt);
+  var rbSolo = rbBack && !rbOk;
   if(ebbHit){
     stage = 'ebb';
-    why.push('昨涨停 ' + yZt + ' 家 → 今涨停 ' + tZt + ' 家（家数萎缩 / 断档）');
-    if(lbCut) why.push('连板高度压缩：昨最高 ' + yMax + ' 板 → 今最高 ' + tMax + ' 板');
-    if(dt > 0) why.push('板块内出现跌停 ' + dt + ' 家（补跌）');
-    if(broken) why.push('昨日最高标 ' + yMax + ' 板已断板且无回封');
-    if(brokenNow && malignant) why.push('分歧三看中「龙头未扛住 + 无活口」同时成立（' + (hold1 ? '龙头扛住' : '龙头未扛住') + '·' + (hold2 === true ? '中军抗跌' : (hold2 === null ? '中军未知' : '中军破位')) + '·' + (hold3 ? '留活口' : '无活口') + '）→ 恶性分歧，直接按退潮');
+    if(ebbZtCut) why.push('昨涨停 ' + yZt + ' 家 → 今涨停 ' + tZt + ' 家（家数萎缩 ≥60%，赚钱效应消失）');
+    if(ebbDt) why.push('板块内出现跌停 ' + dt + ' 家（补跌）且家数由 ' + yZt + ' 家降至 ' + tZt + ' 家');
+    if(ebbLbCut) why.push('连板高度压缩：昨最高 ' + yMax + ' 板 → 今最高 ' + tMax + ' 板');
+    if(ebbBroken) why.push('昨日最高标 ' + yMax + ' 板已断板且无回封');
+    if(ebbMalig) why.push('分歧三看中「龙头未扛住 + 无活口」同时成立（' + (hold1 ? '龙头扛住' : '龙头未扛住') + '·' + (hold2 === true ? '中军抗跌' : (hold2 === null ? '中军未知' : '中军破位')) + '·' + (hold3 ? '留活口' : '无活口') + '）→ 恶性分歧，直接按退潮');
     if(zbRate != null && zbRate >= SECC_RULE.zbRateChaos) why.push('炸板率 ' + (zbRate * 100).toFixed(0) + '%（≥30%，混沌/退潮特征）');
-  } else if((lbWasBroke && lbBack) || (broken && rb >= 1)){
+  } else if(rbOk){
+    /* ★ 2026-11-13 §313b（用户报障：通信判「反包」有问题）—— 反包 = **板块资金回流**，不是「有一只票回封」。
+       旧口径只要求「昨日最高标今日又涨停」，于是通信（板块 −4.97%、35 只成分股里只有 1 只上涨、
+       涨停 1 家且与昨日持平）也被判「反包」。
+       新增必要条件：家数回升（tZt > yZt）或 至少 2 家涨停 —— 1 家持平/减少的回封是**个股行为**，
+       板块没有回流。不满足 → 落到锚点判定（本例 启动 → 前史闸 → 退潮）。 */
     stage = 'rebound';
     if(lbWasBroke && lbBack) why.push('昨日为' + (SECC_STAGES[prevRec.stage] ? SECC_STAGES[prevRec.stage].label : prevRec.stage) + '，今日该板块最高标重回涨停（老龙头反包）');
     if(broken && rb >= 1) why.push('昨日最高标 ' + yMax + ' 板断板，今日断板回封 ' + rb + ' 家（资金回流）');
-    why.push('涨停 ' + tZt + ' 家（局部回流，少于发酵期）');
+    why.push('涨停 ' + tZt + ' 家' + (tZt > yZt ? '（较昨日 ' + yZt + ' 家回升 = 资金回流）' : '（局部回流，少于发酵期）'));
     why.push('量能：' + (boost == null ? '无跨日快照' : boost.toFixed(2) + '× 自身近期均量') + ' → ' + (volDir == null ? '无法判放量/无量' : (volDir > 0 ? '放量反包（二波候选）' : (volDir < 0 ? '无量反抽（逃命窗口）' : '量能持平（偏逃命）'))));
   } else if(brokenNow){
     stage = 'diverge';
@@ -6662,6 +6821,7 @@ function seccJudge(name, o){
       if(zbRate != null && zbRate >= SECC_RULE.zbRateChaos && forced !== 'chaos') why.push('炸板率 ' + (zbRate * 100).toFixed(0) + '%（≥30%，典型试错/混沌期）');
       if(yZt === 0) why.push('昨日该板块无涨停（无持续度）');
       if(yZt === 0 && tZt >= 1 && tZt <= 3) why.push('跳跃预案：昨日空 → 今日 1-3 只，属「一日游」高发形态（标准：多数题材走不完七阶段）');
+      if(rbSolo) why.push('昨日最高标虽回封，但今日仅 ' + tZt + ' 家涨停（昨 ' + yZt + ' 家，未回升）→ 属个股行为，未形成板块回流，不判「反包」');
     }
   }
   /* ★ 2026-11-12 §305：多日家数序列 + 校验（用户要求「动态对比前几日板块的涨停情况」）。
@@ -6679,6 +6839,51 @@ function seccJudge(name, o){
     }
     if(ztS.trend === 'up') why.push(ztS.note + ' → 扩散中');
     if(ztS.jump) warns.push('家数单日跳增（' + ztS.trail + '）→ 昨日该板块几乎无涨停，扩散不具连续性，发酵/加速需次日确认');
+  }
+  /* ★ 2026-11-13 §313：跨日序列是**异步补**的（zt5Kick 按日拉历史涨停池，wb_zt5_v1 落盘）。
+     只有 2 天时前史闸 / 连降闸都不生效 → 阶段会系统性偏低：实测同一盘面里通信先判「启动」、
+     数据到货后变「退潮」。缺数 ≠ 新题材，必须如实提示，不许静默给出偏低的阶段。 */
+  if(!ztS || ztS.n < 3){
+    warns.push('近 5 日涨停家数序列只取到 ' + ((ztS && ztS.n) || 0) + ' 天（历史涨停池仍在补拉）'
+      + '→ 前史峰值闸 / 连降闸本次未生效，阶段可能偏低（缺数 ≠ 新题材）；数据到货后自动重算');
+  }
+  /* ★ 2026-11-13 §312：前史峰值闸 —— 必须在宽度否决**之前**跑。
+     顺序理由：宽度否决只作用于「向上三档」，而这里要先把「前史高潮后的回抽」从向上档摘出去；
+     摘出去之后（→ 反包 / 退潮），宽度否决自然不再重复改判，why 里也不会出现
+     「先落回启动、又说不是启动」的自相矛盾。 */
+  if(ztS && ztS.seq && ztS.seq.length >= 3){
+    var hg = null;
+    try{ hg = seccHistGate(stage, ztS); }catch(eHG){ hg = null; }
+    if(hg && hg.why){
+      why.push(hg.why + (hg.stage !== stage ? '（' + SECC_STAGES[stage].label + ' → ' + SECC_STAGES[hg.stage].label + '）' : ''));
+      stage = hg.stage;
+    }
+  }
+  /* ★ 2026-11-13 §311：板块宽度否决（只降不升）。
+     向上档（确认 / 发酵 / 加速）要求「板块同步上涨」—— 锚点表原文：确认期「中军放量站稳 MA20、
+     初步多头排列、同步上涨（主线成立硬验证）」；发酵期「赚钱效应扩散、板块内部轮动上涨」。
+     中军站 MA20 无稳定量化源，但「板块是否同步上涨」有现成读数：成分股上涨占比 + 中位股。
+     实测反例（用户报障）：农林牧渔 涨停 3 家判「确认」，可只有 37.5% 成分股上涨、中位 −0.64%、
+     跌停 2 家（百洋股份 = 昨日涨停股今日跌停）→ 涨停是孤军拉升，板块整体在跌，不是主线分水岭。
+     两个条件必须同时满足才算背离（单看上涨占比会误杀「跌多但中位为正 = 权重股拖累」的板块）。
+     取不到宽度 → 不否决，只在依据里注明闸未生效（缺失 ≠ 通过）。 */
+  if(stage === 'confirm' || stage === 'ferment' || stage === 'accel'){
+    var wB = null;
+    try{ wB = seccWidthBreach(o.upN, o.dnN, o.med); }catch(eWB){ wB = null; }
+    if(wB && wB.breach){
+      why.push('板块宽度不配合：成分股仅 ' + wB.upPct.toFixed(0) + '% 上涨、中位股 ' + wB.med.toFixed(2) + '%'
+        + '（阈：上涨 ≤' + SECC_RULE.widthUpPct + '% 且 中位 ≤' + SECC_RULE.widthMed + '%）'
+        + '→ 涨停是孤军拉升、板块整体未同步，' + SECC_STAGES[stage].label + '期要求「中军同步上涨 / 赚钱效应扩散」→ 不成立，落回「启动（试错）」');
+      stage = 'start';
+    } else if(!wB){
+      warns.push('板块宽度未取到（成分股快照未就绪）→ §311 宽度否决闸本次未生效；阶段仍按涨停锚点给出，需人工核对板块是否同步上涨');
+    }
+  }
+  /* ★ 2026-11-13 §311：昨日涨停池未就绪时，yZt / yMax / 断板 / 晋级率 / 退潮判定全部建立在空池上 ——
+     那是「没取到」，不是「昨日 0 家」。如实登记，避免把缺失读成事实（实测：农林牧渔昨日池晚到 20 秒，
+     期间阶段从「退潮」漂成「启动」，卡面却没有任何提示）。数据到货后指纹变化会自动重算。 */
+  if(typeof D !== 'undefined' && D && D.poolOk && !D.poolOk.prev){
+    warns.push('昨日涨停池未就绪（接口未返回）→「昨涨停 / 断板 / 晋级率 / 退潮」等跨日判断暂不成立，阶段仅供参考；数据到货后自动重算');
   }
   /* 锚点表阈值未满足 → 打 ⚠ 角标：标准照抄用户上传文件，差多少如实标出，不偷偷放宽 */
   if(stage === 'ferment'){
@@ -6704,6 +6909,10 @@ function seccJudge(name, o){
   if(stage === 'diverge' && zb === 0) warns.push('本次断板日未同步出现炸板潮（锚点表分歧期特征之一）→ 需人工核对');
   if(stage === 'rebound' && volDir == null) warns.push('反包期「放量 vs 无量」缺跨日成交额快照（wb_secsnap）→ 无法自动区分二波/逃命，需人工核对');
   if(stage === 'ebb' && dt === 0) warns.push('本次未见板块内跌停（锚点表退潮特征之一）→ 需人工核对');
+  /* ★ 2026-11-13 §313：跌停出现了，但家数没减 —— 这是「内部撕裂（分歧）」不是「退潮」。
+     旧口径只要 dt>0 就判退潮（且文案还写「家数萎缩」），实测农林牧渔 昨 2 → 今 3 家（还在扩散）
+     只因 2 家跌停被判退潮，卡面自相矛盾。现在如实提示，不偷换成退潮结论。 */
+  if(dt > 0 && !ebbHit) warns.push('板块内出现跌停 ' + dt + ' 家，但涨停家数未减少（昨 ' + yZt + ' → 今 ' + tZt + '）→ 属板块内部撕裂（分歧），不判退潮；仓位按分歧处理：只做最强、不碰跟风');
   if(prevRec == null && broken) warns.push('昨日最高标已断板，但缺前一交易日记录（首次运行 / 该板块昨日未入榜）→「反包」与「分歧」只能按盘中近似判断，建议人工核对');
   /* 阶段持续天数：与最近一段历史记录连续相同 */
   var streak = 1, i = hist.length - 1;
@@ -7166,14 +7375,26 @@ function gradeSectors(){
   /* ★ 2026-09-22：指纹里额外带上「板块宽度分注册表」的版本号 —— 成分股宽度是**异步**到货的，
      到货后必须让本轮缓存失效、用宽度重新定档；只带 RENDER_SEQ 的话会一直读到"没宽度"的旧档。 */
   var fp = RENDER_SEQ + '|' + (D.zt || []).length + '|' + (D.zb || []).length + '|' + (D.dt || []).length + '|' +
-    Object.keys(D.ztGroup || {}).length + '|' + (WT_SECB.seq || 0) + '|' + (WT_SECB.date || '');
+    Object.keys(D.ztGroup || {}).length + '|' + (WT_SECB.seq || 0) + '|' + (WT_SECB.date || '') +
+    /* ★ 2026-11-13 §311：成分股快照（上涨占比 / 中位股）是异步到货的，且现在参与「向上档宽度否决」——
+       不把它计入指纹，宽度到货后仍会读到"宽度未取到 → 闸未生效"的旧结论（与 §2026-09-22 同一个坑）。 */
+    '|' + ((typeof WT_UD !== 'undefined' && WT_UD.done) ? 'U1' : 'U0');
   if(GS_C.fp === fp) return GS_C.v;
   var zc = ztCountBySector();
   var zbc = {}, dtc = {};
   /* ★ 2026-10-09：键过主题层（themeKey）—— zc（ztCountBySector）键 = D.ztGroup 主题键，
-     zbc/dtc 若仍用 ind2C 原始行业键，「锂电池 vs 电池」「传媒 vs 出版」这类合并家族会数成 0。 */
-  D.zb.forEach(function(x){ var k = themeKey(x.hybk) || '其他'; zbc[k] = (zbc[k] || 0) + 1; });
-  D.dt.forEach(function(x){ var k = themeKey(x.hybk) || '其他'; dtc[k] = (dtc[k] || 0) + 1; });
+     zbc/dtc 若仍用 ind2C 原始行业键，「锂电池 vs 电池」「传媒 vs 出版」这类合并家族会数成 0。
+     ★ 2026-11-13 §311：themeKey 仍**不同尺** —— 它是「行业名过主题层」，而 zc 的键是
+     `secIndOf(code, hybk)`（F10 行业优先）。实测农林牧渔：D.dt 里百洋股份(饲料)、金健米业(农产品加)
+     themeKey 落到各自的键上，农林牧渔的跌停数读成 0，而涨停家数读成 3 → 「3 家涨停 + 0 家跌停」的假象，
+     连「板块内出现跌停 → 退潮」这条链也一起失效。现与 zc 同尺：有 code 走 secIndOf，无 code 才回落 themeKey。 */
+  var indKeyOf = function(x){
+    var k = null;
+    try{ k = secIndOf(x.c, x.hybk); }catch(eK){ k = null; }
+    return k || themeKey(x.hybk) || '其他';
+  };
+  D.zb.forEach(function(x){ var k = indKeyOf(x); zbc[k] = (zbc[k] || 0) + 1; });
+  D.dt.forEach(function(x){ var k = indKeyOf(x); dtc[k] = (dtc[k] || 0) + 1; });
   var newsSec = newsSectorHits();
   var out = [];
   Object.keys(zc).forEach(function(name){
@@ -7220,6 +7441,12 @@ function gradeSectors(){
        （防止将来放宽结构口径后被小样本骗到），不是主要判据。
        风险否决**不再改等级** → 独立标记 g.veto / g.vetoWhy（界面 ⛔，判定链一票否决），见 secRiskVeto。 */
     var LVORD = { S: 3, A: 2, B: 1, C: 0 };
+    /* ★ 2026-11-13 §313 复核记录（**结论：不改**，保留速查表口径）：
+       曾试过「家数 ≥6 且无连板 → 升 A」，理由是七阶段引擎的 `ztFermentSolo: 6` 允许家数独力支撑发酵。
+       但「板块分级速查」写得很明确：A 的前提是「梯队单薄但**有高标**」，首板集群（≥3 家无高度）归 B。
+       等级衡量的是**梯队结构**，家数在卡头 meta / 列名里已单独给出 —— 两个维度不该混。
+       故保持「结构档 + 催化上限 + 家数上限」三取更严，全 B 是当日真实结构（12 张卡无一张完整梯队），不是分级失灵。 */
+    var LVORD = { S: 3, A: 2, B: 1, C: 0 };
     var structLvl = full ? 'S' : ((hi && (mid || fir)) ? 'A' : 'B');
     ladder = full ? '完整梯队' : ((hi && (mid || fir)) ? '梯队偏单薄'
       : (hi ? '活口轮动' : (firstCnt >= 3 ? '首板集群' : (stocks.length >= 2 ? '零散脉冲（2 家）' : '孤股（1 家）'))));
@@ -7251,8 +7478,15 @@ function gradeSectors(){
        原实现对 S 级还豁免了"出现跌停"，与"安全类指标必须是硬闸门"的通则冲突，一并去掉。口径见 secRiskVeto） */
     var rv = secRiskVeto(name, { zt: stocks.length, zb: zbc[name] || 0, dt: dtc[name] || 0 });
     if(rv.veto) why += '；⛔ ' + rv.why;
+    /* ★ 2026-11-13 §311：把成分股快照的「上涨占比 / 中位股」交给七阶段引擎做向上档质量闸。
+       取不到（wtUdRowOf 未就绪 / 该板块无成分股）→ 传 null，引擎侧不否决（缺失 ≠ 通过，也 ≠ 否定）。
+       与「📊 成分股」「宽度」列同一份数据（wtUdRowOf），不另取数、不另立口径。 */
+    var udW = null;
+    try{ udW = (typeof wtUdRowOf === 'function') ? wtUdRowOf(name) : null; }catch(eUW){ udW = null; }
     out.push({ name: name, zt: stocks.length, maxLbc: maxLbc, zb: zbc[name] || 0, dt: dtc[name] || 0,
       ladder: ladder, cata: cataType, grade: grade, why: why, f3: f3, f62: f62, secc: null,
+      upN: (udW && udW.up != null) ? udW.up : null, dnN: (udW && udW.dn != null) ? udW.dn : null,
+      med: (udW && udW.med != null && isFinite(udW.med)) ? udW.med : null,
       veto: rv.veto, vetoWhy: rv.why,
       bok: bsc.ok, bscore: bsc.total, b1: bsc.b1, b2: bsc.b2, b3: bsc.b3, bp5: bsc.p5, bs5: bsc.s5, bn: bsc.n, bstale: bsc.stale });
   });
@@ -33867,6 +34101,326 @@ function wtBigUpLineHtml(name){
   return '<div class="wt-tc-big" title="' + esc(tip) + '"><span class="wt-tc-bgn">🚀 涨&gt;5% ' + numTxt + '</span>'
     + (chips ? '　' + chips : '') + more + info + '</div>';
 }
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ★ 2026-11-13 §311（用户要求：三类卡「轮动支线」对应的板块，补充赚亏钱效应）
+   ───────────────────────────────────────────────────────────────────────────────
+   为什么涨停家数不够：涨停家数只回答「今天有多少钱在做多」，回答不了「昨天做多的人今天赚没赚」。
+   同一个板块 3 家涨停，若昨日涨停股今日全线大面 → 打板资金在亏钱，接力意愿会迅速消失，
+   今天的 3 家首板大概率是最后一波（用户截图农林牧渔正是：3 家涨停，可昨涨停的百洋股份今日跌停）。
+   数据源：`g.secc.t1v`（seccJudge 里 t1Verify 的结果，D.prevQ = 昨日涨停股今日行情），
+   与「昨涨停 N 家」「晋级率」**同一批票**，不另取数、不另立口径。
+   ── 判定（亏钱优先：均值会被一只涨停拉平，掩盖大面）──
+     · 亏钱：大面率 ≥40%（跌 ≥5%）或 今均 ≤ −1%  → 打板资金整体在亏
+     · 赚钱：今均 ≥ +1.5% 且 红盘率 ≥60% 且 大面率 ≤20%
+     · 其余：分化（有赚有亏，看个股不看板块）
+   ── ★ 2026-11-13 §314 两条补丁（用户报障：汽车产业链「赚钱」）──
+     ① 样本闸：昨日只有 1 只涨停票 → 不给赚钱/亏钱结论，只印「样本不足」+ 事实读数。
+        原因：n=1 时红盘率必然 0% 或 100%、均值就是那一只的涨跌，这是「一只票的兑现」，
+        不是「板块赚亏效应」。实测 2026-11-13：汽车产业链 n=1（天普股份 4 板 +10.00%）判「赚钱」，
+        而该板块 284 只成分股 涨 36 / 跌 246、中位 −1.69%、跌停 3 家 —— 一张卡上两个相反结论。
+        反向同样要修：轻工家居 n=1（天安新材 −5.93%）原判「亏钱」，也是拿一只票给板块定性。
+     ② 背离披露：判定「赚钱」但板块整体明显走弱（上涨占比 ≤40% 且 中位 ≤−1%）→ 追加「· 板块背离」，
+        结论只对昨涨停那一小撮成立，不许被读成「这个板块在赚钱」。
+   缺数（昨日无涨停 / D.prevQ 未就绪）→ 整行不出（缺失 ≠ 0，与「📊 成分股」「🚀 涨>5%」同策略）。
+   ── ★ 2026-11-13 §315：按全网口径补「中位溢价」与「开盘溢价」两条 ──
+     用户要求：搜索全网「板块赚亏钱效应判断策略」，完善现有结果（只显示结论，不写出依据）。
+     全网五源（东财板块赚钱效应 / 约投顾 / 韭研公社 / 格隆汇 / 知数Talk）收敛出三条被本台漏掉的：
+     ① **中位数**比均值抗极端值（「溢价率取中位数更能避免个别极端值干扰」）→ 纳入判定，见 SECC_RULE.earnMedDn/Up；
+     ② 溢价有两条口径：**开盘溢价（竞价）** 与 **收盘溢价（全天）**，方向看前者、强度看后者；
+        D.prevQ 自带 openPrem（今开/昨收−1），零新增请求；
+     ③ 两者之差 = **开盘后承接**：竞价抢筹却被砸（高开走弱）= 诱多失败；低开被买回（低开走强）= 分歧转一致。
+        逐只相减再取均值（不拿两个均值相减：样本集可能不同），只作披露标记，不改赚钱/亏钱结论。
+     口径先剔 ST / 新股 / 一字板 的要求本台天然满足：样本 = 昨日涨停池 ∩ 今日有行情，
+     一字板在「竞价溢价」口径里必然顶格（+10%/+20%），不参与日内承接标记（intra 只对有开、有现价的票算）。
+   不参与四指标打分、不发买卖信号、不进钉钉推送。
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function wtEarnJudge(t, o){
+  if(!t || !t.n || t.avg == null || !isFinite(t.avg)) return null;
+  var n = +t.n, avg = +t.avg;
+  var vN = (t.vN == null || !isFinite(t.vN) || +t.vN <= 0) ? n : +t.vN;   /* 有效行情样本（redRate 的分母）
+     —— 老口径用 n 反推红盘家数，缺行情时少报（§314 顺手修） */
+  var mi = (t.mian == null) ? null : +t.mian;
+  var miRate = (mi == null || !vN) ? null : (mi / vN);
+  var redN = (t.redRate == null) ? null : Math.round(t.redRate * vN);
+  /* §315：中位溢价 / 开盘（竞价）溢价 / 开盘后承接 —— 全部取「取不到就是 null」，缺失绝不折成 0 */
+  var med = (t.med == null || !isFinite(t.med)) ? null : +t.med;
+  var openAvg = (t.openAvg == null || !isFinite(t.openAvg)) ? null : +t.openAvg;
+  var intra = (t.intra == null || !isFinite(t.intra)) ? null : +t.intra;
+  var jTxt, jCls;
+  /* §314 样本闸：昨日仅 1 只涨停票 → 不给结论（红盘率必为 0%/100%，均值 = 那一只的涨跌） */
+  if(n <= 1){ jTxt = '样本不足'; jCls = 'flat'; }
+  /* 亏钱优先：均值会被一只涨停拉平（实测 +0.03% 的均值背后是一半票在跌停），先看大面率。
+     §315 增「中位 ≤ −1%」同列否决：均值被拉平而中位说真话，正是中位数该上场的地方。 */
+  else if((miRate != null && miRate >= 0.4) || avg <= -1
+    || (med != null && med <= SECC_RULE.earnMedDn)){ jTxt = '亏钱'; jCls = 'dn'; }
+  /* §315 赚钱加「中位 ≥ +0.5%」：均值 ≥1.5% 但中位不足 = 只有少数票在涨，不许叫「板块赚钱」 */
+  else if(avg >= 1.5 && (t.redRate == null || t.redRate >= 0.6) && (miRate == null || miRate <= 0.2)
+    && (med == null || med >= SECC_RULE.earnMedUp)){ jTxt = '赚钱'; jCls = 'up'; }
+  else { jTxt = '分化'; jCls = 'flat'; }
+  /* §315 日内承接（只作披露，不改上面结论）：竞价抢筹 → 开盘被砸 / 低开被买回，两种都是「开场判断被盘中改写」。
+     ⚠️ n ≤1 一律不贴：那是「一只票的日内走势」，与 §314「一只票不给板块定性」同一条纪律
+     （实测 轻工家居 昨涨停 1 只 −5.93%，若贴「高开走弱」就等于用独苗的盘中节奏解释整个板块）。 */
+  var itra = null;
+  if(n > 1 && openAvg != null && intra != null){
+    if(openAvg >= SECC_RULE.earnIntraOpen && intra <= -SECC_RULE.earnIntra)
+      itra = { k: 'weak', txt: '高开走弱', cls: 'dn', openAvg: openAvg, intra: intra };
+    else if(openAvg <= SECC_RULE.earnIntraOpenLo && intra >= SECC_RULE.earnIntra)
+      itra = { k: 'strong', txt: '低开走强', cls: 'up', openAvg: openAvg, intra: intra };
+  }
+  var dv = wtEarnDiverge(o);
+  var diverge = !!(dv && dv.diverge && jTxt === '赚钱');   /* 只在「赚钱」时披露：亏钱与板块同跌是共振，不用提示 */
+  return { n: n, vN: vN, avg: avg, mi: mi, miRate: miRate, redN: redN,
+    med: med, openAvg: openAvg, intra: intra, itra: itra,
+    jTxt: jTxt, jCls: jCls, diverge: diverge, dv: dv };
+}
+/* §314：赚亏结论与板块整体是否背离（纯函数，取不到宽度 → null = 不判，缺失 ≠ 通过也 ≠ 否定） */
+function wtEarnDiverge(o){
+  if(!o) return null;
+  var u = (o.up == null) ? null : +o.up, d = (o.dn == null) ? null : +o.dn;
+  var med = (o.med == null) ? null : +o.med;
+  if(u == null || d == null || !isFinite(u) || !isFinite(d) || (u + d) <= 0) return null;
+  if(med == null || !isFinite(med)) return null;
+  var upPct = u / (u + d) * 100;
+  return { diverge: (upPct <= SECC_RULE.earnDivergeUp && med <= SECC_RULE.earnDivergeMed),
+    upPct: upPct, med: med };
+}
+function wtEarnLineHtml(name, g){
+  /* 昨日涨停池未就绪（page 刚打开 / 接口失败）→ 不出行。
+     实测坑：只等到 D.prev 到货一半时，农林牧渔的「昨涨停」读成 1 只（实际 2 只），
+     均涨 +10.08%（实际两只平均 +0.03%，另一只跌停）——半成品读数比留白更有害。 */
+  if(typeof D !== 'undefined' && D && D.poolOk && !D.poolOk.prev) return '';
+  var t = (g && g.secc && g.secc.t1v) ? g.secc.t1v : null;
+  /* §314：板块宽度取「📊 成分股 / 宽度」同一份读数（wtUdRowOf），不另取数；取不到 → 不判背离 */
+  var ud = null;
+  try{ ud = (typeof wtUdRowOf === 'function') ? wtUdRowOf(name) : null; }catch(eU){ ud = null; }
+  var e = null;
+  try{ e = wtEarnJudge(t, ud); }catch(eJ){ e = null; }
+  if(!e) return '';
+  var n = e.n, vN = e.vN, avg = e.avg, mi = e.mi, redN = e.redN, jTxt = e.jTxt, jCls = e.jCls;
+  var avgCls = (avg > 0 ? 'up' : (avg < 0 ? 'dn' : 'flat'));
+  var avgTxt = (avg >= 0 ? '+' : '') + avg.toFixed(2) + '%';
+  /* §315：中位 / 开盘溢价 / 开盘后承接（取不到 → 相关片段整段不出，绝不折成 0） */
+  var med = e.med, openAvg = e.openAvg, intra = e.intra, itra = e.itra;
+  var medTxt = (med == null) ? '' : ((med >= 0 ? '+' : '') + med.toFixed(2) + '%');
+  var medCls = (med == null) ? 'flat' : (med > 0 ? 'up' : (med < 0 ? 'dn' : 'flat'));
+  var tip = '【赚亏钱效应】口径：该板块「昨日涨停的那 ' + n + ' 只票」今日的平均涨幅 ' + avgTxt
+    + (medTxt ? '、中位 ' + medTxt : '')
+    + (redN == null ? '' : '、红盘 ' + redN + '/' + vN)
+    + (mi == null ? '' : '、其中跌 ≥5%（大面）' + mi + ' 只')
+    + '。数据源 = 昨日涨停池 + 今日行情（D.prevQ），与「昨涨停 ' + n + ' 家」「晋级率」同一批票，不另取数。'
+    + '｜判定：大面率 ≥40% 或 今均 ≤−1% 或 中位 ≤' + SECC_RULE.earnMedDn + '% → 亏钱；'
+    + '今均 ≥+1.5% 且 红盘率 ≥60% 且 大面率 ≤20% 且 中位 ≥+' + SECC_RULE.earnMedUp + '% → 赚钱；其余 → 分化。'
+    + (medTxt ? '｜【为什么要中位】均值会被一只涨停拉平（5 只票里 1 只 +10% 就能把 −1.5% 的均值抬成 +0.8%），'
+        + '中位取「排中间那一个」，极端值动不了它；所以亏钱看中位 ≤' + SECC_RULE.earnMedDn + '%、'
+        + '赚钱要求中位 ≥+' + SECC_RULE.earnMedUp + '%，两边都堵住「一只票定板块」。' : '')
+
+    + '｜为什么亏钱优先：平均涨幅会被一只涨停拉平（今天 +0.03% 的均值背后可能是一半票在跌停），'
+    + '打板资金的真实体感看红盘率与大面率，不看均值。'
+    + (n <= 1
+      ? '｜【样本不足】昨日该板块只有 1 只涨停票：红盘率只可能是 0% 或 100%、均值就是那一只的涨跌，'
+        + '这是「一只票的兑现」，不是「板块赚亏效应」（可能是独苗 / 新股 / 停牌复牌），'
+        + '所以不给赚钱 / 亏钱结论，只保留事实读数。'
+      : (n <= 2 ? '｜【小样本】昨日仅 2 只涨停票，结论仅供参考。' : ''))
+    + (vN < n ? '｜有效行情 ' + vN + '/' + n + ' 只（其余无今日行情，未计入均值与红盘率）。' : '')
+    + (itra
+      ? '｜【' + itra.txt + '】昨日这批票开盘溢价（今开/昨收）均值 '
+        + (openAvg >= 0 ? '+' : '') + openAvg.toFixed(2) + '%，开盘后到当前又走了 '
+        + (intra >= 0 ? '+' : '') + intra.toFixed(2) + 'pp。'
+        + (itra.k === 'weak'
+          ? '也就是竞价是被抢筹的，但开盘后被持续卖出 —— 高开没有承接，是诱多失败最典型的形态，'
+            + '别用竞价的高开去解释现在的走势。'
+          : '也就是竞价是低开 / 被砸的，但开盘后被资金买回 —— 低开没有引发抛压，分歧转一致，'
+            + '比竞价就高开更扎实（高开容易被兑现，低开走强是被砸出来的承接）。')
+        + '（阈：开盘溢价 ≥+' + SECC_RULE.earnIntraOpen + '% 且 承接 ≤−' + SECC_RULE.earnIntra + 'pp → 高开走弱；'
+        + '开盘溢价 ≤' + SECC_RULE.earnIntraOpenLo + '% 且 承接 ≥+' + SECC_RULE.earnIntra + 'pp → 低开走强。'
+        + '本标记只作披露，不改上面的赚 / 亏结论。）'
+      : '')
+    + (e.diverge && e.dv
+      ? '｜【板块背离】昨涨停这批票在赚（今均 ' + avgTxt + '），但板块整体在跌：'
+        + '上涨占比仅 ' + e.dv.upPct.toFixed(0) + '%、中位股 ' + e.dv.med.toFixed(2) + '%'
+        + '（阈：上涨 ≤' + SECC_RULE.earnDivergeUp + '% 且 中位 ≤' + SECC_RULE.earnDivergeMed + '%）。'
+        + '说明是少数票被资金抱团（独苗 / 高标行情），不是板块赚钱效应 —— 板块内多数票在亏，'
+        + '跟风盘没有承接，别把它读成「这个方向在赚钱」。'
+      : '')
+    + '｜只作情绪读数，不参与四指标打分、不发买卖信号、不进钉钉推送。';
+  return '<div class="wt-tc-earn" title="' + esc(tip) + '"><span class="flat">💰 赚亏效应 </span>'
+    + '<b class="' + jCls + '">' + jTxt + '</b>'
+    + '<span class="flat" style="font-size:10.5px">　昨涨停 ' + n + ' 只 → 今均 </span>'
+    + '<b class="' + avgCls + '">' + avgTxt + '</b>'
+    /* §315：中位（结论驱动量，必须上正文；与今均并列才看得出「是不是被一只票拉平的」） */
+    + (medTxt ? '<span class="flat" style="font-size:10.5px">　中 </span>'
+        + '<b class="' + medCls + '">' + medTxt + '</b>' : '')
+    + (redN == null ? '' : '<span class="flat" style="font-size:10.5px">　红 ' + redN + '/' + vN + '</span>')
+    + (mi ? '<span class="dn" style="font-size:10.5px">　大面 ' + mi + '</span>' : '')
+    /* §315：日内承接标记（「高开走弱 / 低开走强」）—— 只印结论词，判据在整行悬停里 */
+    + (itra ? '<span class="' + itra.cls + '" style="font-size:10.5px">　· ' + itra.txt + '</span>' : '')
+    + (e.diverge && e.dv ? '<span class="yel" style="font-size:10.5px" title="'
+        + esc('昨涨停这批票在赚、板块整体在跌（上涨 ' + e.dv.upPct.toFixed(0) + '%、中位 '
+          + e.dv.med.toFixed(2) + '%）→ 少数票抱团，不是板块赚钱效应。判据与阈值见整行悬停。') + '">　· 板块背离</span>' : '')
+    + '</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ★ 2026-11-13 §315（用户要求）：集合竞价「板块强势异动」→ 二、主线板块三类卡
+   ───────────────────────────────────────────────────────────────────────────────
+   用户原话：「集合竞价阶段如何判断板块存在强势异动有哪些策略，实时在二、主线板块
+   （三类卡 · 蒸馏自复盘 skill）对应的板块显示出来 …… 以上的策略只显示判断的结果，
+   不要写出依据，保持页面整洁」
+   ── 全网口径（五源：同花顺竞价框架 / 东财财富号《集合竞价找主线》/ 约投顾 /
+      九方智投 / 头条打板手册），收敛为四条被本行采用的：──
+     ① 只看 9:20-9:25 的不可撤单段：9:15-9:20 可撤单 = 演戏区，挂单不作数。
+        → 本行**只读今开**（9:25 撮合结果），天生绕开演戏区；快照 9:25 定格后不再变。
+     ② 同板块「三只以上同步高开」才算板块效应；单只高开 = 个股行为，一日游概率高。
+        → 阈值 nStrong = 3（与 7.37 竞价定选、§23 竞价异动聚类同一把尺）。
+     ③ 高开 3%~7% 是主流「真抢筹」带，≥5% 为强高开；低于 2% 属噪声、超 9% 易开盘兑现。
+        → 两级门槛 gapLo=2（有效高开）/ gapHi=5（强高开），与 JJ_RULE.focusGap/focusHi 完全同尺。
+     ④ 板块内部分高开、部分低开 = 分歧（观察高开能否带动修复），不是共振。
+        → 用「低开家数」交叉否决：低开 ≥ 高开 时不给「强势异动」。
+   ── 为什么不看「高开家数占比」（这条必须写死，否则一定会有人加回去）──
+     涨幅榜按涨幅取前 N 行（clist pz 上限 100 × 分页），平开与小幅高开的票天然不在样本里，
+     分母被截断 → 占比系统性虚高，同一个板块在行情好/坏日子会给出矛盾的强弱。
+     而「高开 ≥2% 家数」「≥5% 家数」「低开 ≥2% 家数」三个**绝对家数**在两个榜单里都是完整的
+     （涨幅榜前 N 覆盖所有 ≥2% 的票，跌幅榜前 N 覆盖所有 ≤−2% 的票）→ 只用绝对家数，不用占比。
+   ── 量能（竞价额）的硬边界 ──
+     f6 只有 9:25-9:30 定格窗口取到的才是竞价额；开盘后补取的 f6 已混入连续竞价成交额。
+     → amt 仅在「快照确属 9:25 定格」时参与判定与展示，否则整条量能依据不出现（绝不拿全天额冒充）。
+   ── 展示纪律（用户本轮硬要求）──
+     正文只印**结论 + 2~3 个数字**；为什么这样判、阈值多少、数据怎么来的，全部收进整行 title。
+     缺数（当日无竞价快照 / 榜单未取到 / 快照非当日）→ 整行不出（缺失 ≠ 0，与「💰 赚亏效应」同策略）。
+   只作情绪读数，不参与四指标打分、不发买卖信号、不进钉钉推送。
+   ═══════════════════════════════════════════════════════════════════════════════ */
+var WT_AUC_RULE = {
+  gapLo: 2,      /* 有效高开下沿（%）：低于 2% 属噪声，与 JJ_RULE.focusGap 同尺 */
+  gapHi: 5,      /* 强高开下沿（%）：3%~7% 为真抢筹带，取 5% 作「强」的分界 */
+  nStrong: 3,    /* 同板块同步高开家数下限：三只以上才算板块效应（单只 = 个股行为） */
+  nMid: 2,       /* 分歧判定的最小样本（少于 2 家谈不上「部分高开部分低开」） */
+  amtMinWan: 5000 /* 板块竞价额合计（万元）—— 仅 9:25 定格窗口有效，作「强势」的一个加分项 */
+};
+/* 当日竞价快照：优先「已定格」的那份（9:25 后落盘，今开全天不变），竞价进行中退到内存实时快照 */
+function wtAucSnap(){
+  try{
+    var g = jjSnapGet(D.date);
+    if(g && g.snap && g.snap.aucSec) return g.snap;
+  }catch(eS1){ }
+  try{
+    var s = (typeof JJ !== 'undefined' && JJ) ? JJ.snap : null;
+    if(s && s.aucSec && s.auc && s.auc.day && s.auc.day === D.date) return s;
+  }catch(eS2){ }
+  return null;
+}
+/* 板块名 → 竞价聚合行。卡名走 secIndOf（东财二级行业全称），竞聚集类键走 themeKey(f100)，
+   两把尺需要一次归一才同键（历史坑：家用电器 ↔ 厨卫电器，§305）。 */
+function wtAucOf(name){
+  var s = wtAucSnap();
+  if(!s || !s.aucSec || !name) return null;
+  /* 归属日必须与展示日一致：否则就是「拿上一交易日的竞价冒充今天」（缺失 ≠ 借用） */
+  if(D && D.date && s.auc && s.auc.day && s.auc.day !== D.date) return null;
+  if(!s.dataOk || !s.dataOk.zt) return null;        /* 涨幅榜未取到 → 家数无意义，不出行 */
+  var m = s.aucSec, o = m[name];
+  if(!o){
+    var tk = '';
+    try{ tk = themeKey(name) || ''; }catch(eT){ tk = ''; }
+    if(tk && m[tk]) o = m[tk];
+  }
+  if(!o){
+    try{
+      var ks = Object.keys(m);
+      for(var i = 0; i < ks.length; i++){ if(themeKey(ks[i]) === themeKey(name)){ o = m[ks[i]]; break; } }
+    }catch(eR){ }
+  }
+  /* 该板块一只票都没进榜 → 就是「没有高开」（榜单是完整的，见头注释）→ 返回空行照常出结论 */
+  if(!o) return { hi: [], dn: 0, zt: 0, amt: 0, hit: false };
+  return { hi: o.hi || [], dn: +o.dn || 0, zt: +o.zt || 0, amt: +o.amt || 0, hit: true };
+}
+/* 纯函数：竞价聚合行 → 分档结论。amtOk=false（非 9:25 定格）时 amt 一律不参与判定。 */
+function wtAucJudge(o, amtOk){
+  if(!o) return null;
+  var hi = (o.hi || []).slice();
+  hi.sort(function(a, b){ return a - b; });
+  var n = hi.length, dn = +o.dn || 0, zt = +o.zt || 0;
+  var amt = amtOk ? (+o.amt || 0) : null;
+  var hi5 = 0, i;
+  for(i = 0; i < n; i++){ if(hi[i] >= WT_AUC_RULE.gapHi) hi5++; }
+  var med = null;
+  if(n) med = (n % 2) ? hi[(n - 1) / 2] : (Math.round((hi[n / 2 - 1] + hi[n / 2]) / 2 * 100) / 100);
+  var mx = n ? hi[n - 1] : null;
+  var k, txt, cls;
+  if(n >= WT_AUC_RULE.nStrong && dn < n){
+    /* 强度三选一即「强势」：有 ≥5% 强高开 / 有竞价涨停 / 竞价额过线。都没有 → 只是「异动」。 */
+    var strong = (hi5 >= 1 || zt >= 1 || (amt != null && amt >= WT_AUC_RULE.amtMinWan * 10000));
+    if(strong){ k = 'strong'; txt = '强势异动'; cls = 'up'; }
+    else { k = 'watch'; txt = '异动'; cls = 'up'; }
+  }
+  else if((n >= WT_AUC_RULE.nMid && dn >= WT_AUC_RULE.nMid) || (n >= 1 && dn > n)){
+    k = 'split'; txt = '分歧异动'; cls = 'flat';
+  }
+  else if(n === 1){ k = 'solo'; txt = '单只高开'; cls = 'flat'; }
+  else { k = 'none'; txt = '无异动'; cls = 'flat'; }
+  return { k: k, txt: txt, cls: cls, n: n, hi5: hi5, dn: dn, zt: zt, med: med, mx: mx, amt: amt };
+}
+function wtAucLineHtml(name){
+  var o = null, j = null, s = null;
+  try{ o = wtAucOf(name); }catch(e1){ return ''; }
+  if(!o) return '';
+  try{ s = wtAucSnap(); }catch(e2){ s = null; }
+  /* ★ 只有 9:25-9:30 定格窗口取到的快照才是「真竞价口径」：
+     彼时榜单按 f3 排序 = 按高开幅度排序，涨/跌幅榜前 N 恰好覆盖所有 ≥2% / ≤−2% 的票，家数是**完整**的。
+     9:32 后才打开页面（jjTick 补取一次）或开盘后补算时，榜单按**当前涨幅**排序 ——
+     竞价高开但盘中回落的票会被排到跌幅榜、竞价低开但盘中拉起的票会被排到涨幅榜，
+     家数因此系统性偏低/偏高，只能当下限看。这一点必须标出来，不能让「补算」冒充「定格」。 */
+  var phk = (s && s.ph) ? s.ph.k : '';
+  var fin = (phk === 'final');       /* 9:25-9:30 定格窗口：真竞价口径 */
+  var fake = (phk === 'fake');       /* 9:15-9:20 可撤单（演戏区）：数字会变，不作决策依据 */
+  var amtOk = fin;    /* 竞价额同一条边界：非定格窗口的 f6 已混入连续竞价成交额 */
+  try{ j = wtAucJudge(o, amtOk); }catch(e3){ return ''; }
+  if(!j) return '';
+  var pctTxt = function(v){ return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
+  var amtTxt = (j.amt == null) ? '' : (j.amt >= 1e8 ? (j.amt / 1e8).toFixed(2) + ' 亿' : (j.amt / 1e4).toFixed(0) + ' 万');
+  var tip = '【集合竞价 · 板块强势异动】口径：只看 9:20-9:25 不可撤单段撮合出的今开'
+    + '（9:15-9:20 可撤单属演戏区，挂单不作数）；今开/昨收全天不变，故本行在任何时刻打开都忠实竞价时点。'
+    + '｜本板块读数：高开 ≥' + WT_AUC_RULE.gapLo + '% ' + j.n + ' 家'
+    + '（其中 ≥' + WT_AUC_RULE.gapHi + '% 强高开 ' + j.hi5 + ' 家）'
+    + '、竞价涨停 ' + j.zt + ' 家、低开 ≥' + WT_AUC_RULE.gapLo + '% ' + j.dn + ' 家'
+    + (j.med == null ? '' : '、高开中位 ' + pctTxt(j.med))
+    + (j.mx == null ? '' : '、最高 ' + pctTxt(j.mx))
+    + (amtTxt ? '、竞价额合计 ' + amtTxt : '')
+    + '。｜判定：同板块 ≥' + WT_AUC_RULE.nStrong + ' 只同步高开 = 板块效应（三源共识：单只高开是个股行为，一日游概率高）；'
+    + '再看强度 —— 有 ≥' + WT_AUC_RULE.gapHi + '% 强高开 / 有竞价涨停 / 竞价额 ≥' + WT_AUC_RULE.amtMinWan + ' 万，'
+    + '三者有一即「强势异动」，都没有只算「异动」。'
+    + '低开家数 ≥ 高开家数，或高开 ≥2 家同时低开 ≥2 家 → 判「分歧异动」（板块内部分歧，不是共振）。'
+    + '只有 1 只高开 → 「单只高开」，不代表方向。｜为什么不用「高开家数占比」：涨幅榜按涨幅取前 N 行，'
+    + '平开与小幅高开的票天然不在样本里，分母被截断会让占比系统性虚高；'
+    + '而 ≥2% / ≥5% / 低开 ≤−2% 三个绝对家数在两个榜单里都是完整的，所以只用绝对家数。'
+    + (amtOk
+      ? '｜量能口径：本快照取自 9:25 定格窗口，f6 即真竞价额，可直接用。'
+      : '｜量能口径：本快照不是 9:25 定格窗口取的（f6 已混入连续竞价成交额）→ 竞价额不参与判定、不展示。')
+    + (fin ? '' : (fake
+        ? '｜【演戏区】现在是 9:15-9:20，委托可撤单，这一段的高开随时会被撤掉（全网口径一致：只看 9:20-9:25 不可撤单段）。'
+          + '本节数字会随采样跳动，只作观察，不作决策依据。'
+        : '｜【补算】本快照不是 9:25 定格窗口取的：榜单按当前涨幅排序，'
+          + '「竞价高开但盘中回落」的票会排到跌幅榜、「竞价低开但盘中拉起」的票会排到涨幅榜，'
+          + '所以上面的家数是近似值（只能当下限看），不是 9:25 那一刻的完整计数。'
+          + '要拿定格口径，需在交易日 9:25-9:30 之间打开过页面（快照会在那一刻落盘并复用）。'))
+    + '｜数据源 = 当日竞价快照（jjBuild 的板块高开聚类），与 §23 竞价异动聚类同一把尺，零额外请求。'
+    + '｜只作情绪读数，不参与四指标打分、不发买卖信号、不进钉钉推送。';
+  /* 正文：结论 → 家数 → 中位（→ 竞价涨停）—— 最多三个数字，其余全在 title */
+  var num = '<span class="wt-tc-aucn">';
+  return '<div class="wt-tc-auc" title="' + esc(tip) + '"><span class="flat">🔔 竞价 </span>'
+    + '<b class="' + j.cls + '">' + j.txt + '</b>'
+    + (j.k === 'none' ? ''
+      : (j.k === 'split'
+        ? '<span class="flat" style="font-size:10.5px">　高开 ' + j.n + ' / 低开 ' + j.dn + ' 家</span>'
+        : '<span class="flat" style="font-size:10.5px">　高开 </span>' + num + j.n + ' 家</span>'
+          + (j.med == null ? '' : '<span class="flat" style="font-size:10.5px">　中 </span>' + num + pctTxt(j.med) + '</span>')
+          + (j.zt >= 1 ? '<span class="flat" style="font-size:10.5px">　竞价涨停 </span>' + num + j.zt + '</span>' : '')
+      ))
+    /* 口径小标：正文只留两个字，解释在整行悬停里（与 §306/§310b 同一减噪纪律）
+       演戏区（9:15-9:20 可撤单）必须与「补算」分开标 —— 一个是"数据会变"，一个是"样本被截断"，
+       混成一个词会让用户以为演戏区的高开是可信的近似值。 */
+    + (fin ? '' : '<span class="wt-tc-wtag">' + (fake ? '演戏' : '补算') + '</span>')
+    + '</div>';
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    ★ 2026-11-08 §291（用户要求）：二、主线板块三类卡 —— 板块涨跌幅 + 板块内重要 ETF 涨跌
@@ -35068,16 +35622,28 @@ function wtNineResoHtml() {
   return h;
 }
 /* ==================================================================================
-   十一、个股资金主战场（成交额 TOP10 × 主力净流入 TOP10）· 十二、外盘温度计 · 十三、全市场涨幅>5% 统计（行业分布）
+   十一、个股资金主战场（量比 / 换手率 / 成交额 / 主力净流入 各前 20）· 十二、外盘温度计 · 十三、全市场涨幅>5% 统计（行业分布）
    2026-09-23 新增（用户需求：实时盯盘增加成交额前 10 / 净流入前 10 的分析与逻辑判断；
    以及美股 / 日韩 / 港股 的涨跌、重要行业与个股分析）
    ----------------------------------------------------------------------------------
-   【为什么不用东财】push2 / push2delay 家族在本机不可达（clist 全挂）→ 改用实测可达的两条通道：
-     · 成交额榜（新浪 Market_Center.getHQNodeData，sort=amount）：实测 **ACAO:\*** → fetch 直连可用；
+   【为什么不用东财】push2 / push2delay 家族在本机不可达（clist 全挂）→ 改用实测可达的通道：
+     · 成交额榜 / 换手率榜（新浪 Market_Center.getHQNodeData，sort=amount / sort=turnoverratio）：
+       实测 **ACAO:\*** → fetch 直连可用，且两个 sort **都真实生效**（返回单调递减，2026-11-14 逐条验证）；
        ⚠ 响应是 GBK → 必须 arrayBuffer + TextDecoder('gbk')，否则股票名乱码。
-     · 资金流榜（新浪 MoneyFlow.ssl_bkzj_ssggzj，sort=r0_net）：实测 **无 ACAO** → fetch 会被 CORS 拦，
+       ⚠ 单页 num 上限实测 **100**（num=200 也只回 100 条）→ poolN 定为 100。
+     · 资金流榜（新浪 MoneyFlow.ssl_bkzj_ssggzj，§316 起 sort=**netamount**）：实测 **无 ACAO** → fetch 会被 CORS 拦，
        必须走 **jsonp_v2 注入**（api/jsonp_v2.php/var%20NAME=/Svc.Method?args → 注入后读 window[NAME]）。
        这条写法与本文件既有的 sinaKlineBars 同一路（script 注入，无 Origin 限制）。
+       ⚠ 该榜是**全市场含 ETF/LOF/债券**的榜：实测 sort=netamount 榜首是 `sh511010 国债ETF国泰`（净流入 15.1 亿），
+         故四榜统一过 wtxIsAShare()，否则 ETF 申购会被当成个股主力买入。
+     · 量比（腾讯 qt.gtimg.cn，批量）：本机**唯一**可得的量比源，字段在第 49 位
+       （用「涨停价 = 昨收 × 1.1 / 1.2 / 1.3」交叉定位过：沈鼓 2.60 / 安达 1.89 / 宇特 1.17 全部吻合）。
+       ⚠ 本机**没有全市场量比排序接口**：东财 clist(fid=f10)、腾讯 proxy 排行、雪球 screener、
+         同花顺 data.* 实测全部网络层不可达（20~130ms 硬失败）；新浪 hs_a 的 20 个返回字段里**根本没有量比**，
+         且未知 sort 值（ratio / volratio / liangbi）会**静默退化为按代码升序**（920000/920001…），
+         绝不能拿它充作量比榜。→ 量比榜只能在「候选池 = 成交额前 poolN ∪ 换手率前 poolN」内排序，
+         界面必须写明这是池口径；池外不进榜是事实边界，不是漏算，更不许估算补位。
+       ⚠ 新股上市首日 / 停牌无 5 日均量 → 接口回 0.00 或 -1，一律视为**缺失**，不得当"量比 0"参与排序。
      · 外盘（腾讯 qt.gtimg.cn，一次批量）：实测 **ACAO:\*** 且**无需 Referer** → fetch 直连可用；
        覆盖 美股指数(usDJI/usIXIC/usINX/usNDX) + 港股指数(hkHSI/hkHSTECH) + 行业锚
        (usSOXX 费半 / usSMH 半导体 / usXBI 生物医药 / usXOP 油气 / usKWEB 中概 / usFXI 中国大盘) +
@@ -35092,20 +35658,27 @@ function wtNineResoHtml() {
         涨+大额流入＝量价资金三共振（主线候选）｜涨+弱流入＝推动力不足（观察）｜
         涨+流出＝价涨钱不认/拉高派发（不追）｜平+大额流入＝潜收集（等催化）｜
         跌+流入＝逆势吸筹（需辨位置，不抢）｜跌+流出＝量价资金双杀（回避）。
-     B. 双榜共振 = 既在成交额 TOP10、又在净流入 TOP10 → 当日资金主战场（最强）；成交额 TOP 里净流出的 = 出货区。
+     B. 多榜共振（§316）= 同一只票同时出现在「量比 / 换手率 / 成交额 / 主力净流入」四个前 20 榜里的 ≥2 个
+        → 当日资金主战场（上榜越多越强）；成交额前 20 里**净流出**的 = 出货区，不接。
+        （旧口径「双榜共振＝成交额 ∩ 净流入」保留为 M.resonance 字段，仅供推送摘要与出货区判定兼容。）
      C. 外盘「非对称联动」：**外盘跌 → A 股跟随概率高**（硬约束，早盘防低开）；
         **外盘涨 → 只给开盘情绪**（软刺激，高开低走风险，要看 10:00 后内资是否接力）。
         传导分档：|涨跌| ≥3% 完整传导 ｜ 1~3% 部分传导 ｜ <1% 落地即兑现（不可下注）。
         映射：费半→半导体链；纳指/纳指100→AI算力·光通信；XBI→创新药；XOP→油气链；KWEB/FXI→中概·港股映射；
         EWJ/EWY→亚太先行（日韩比 A 股早开盘，是当日盘前最接近的先行指标）。
-   【请求预算】每 3 分钟最多 3 个请求（成交额榜 1 + 资金流榜 1 + 外盘 1），全部走 netSlot 并发闸门；
-     失败后 60 秒内不重试（失败节流）。
+   【请求预算】§316 起每 3 分钟最多 23 个请求（新浪 8：成交额榜 / 换手率榜 / 净流入榜 ×3 页 / 净流出榜 ×3 页 +
+     腾讯量比批量约 5：候选池 ≈250 只、50/批 + 单只补净额 ≤10：`MoneyFlow.ssl_qsfx_zjlrqs`），
+     **全部串行**（同域并行会被 reset）并逐批走 netSlot；
+     失败后按次退避重试（3 次 / 2 次），整体仍失败则 60 秒内不重试（失败节流）。
    ================================================================================== */
 var WTX_RULE = {
   ttl: 180000,         /* 数据 TTL：2026-09-23 用户统一要求 —— 盯盘全卡 3 分钟自动刷新（原 60 秒） */
   failCool: 60000,     /* 失败节流 */
-  n: 10,               /* 榜单取前 10（用户口径） */
-  poolN: 30,           /* 拉取条数（比展示多，用于"双榜交集"与"出货区"判定） */
+  n: 20,               /* 榜单取前 20（§316 用户口径：量比/换手率/成交额/主力净流入 各前 20） */
+  poolN: 100,          /* 拉取条数（新浪单页上限实测 100；四榜 TOP20 + 候选池都取自这里） */
+  flowPages: 3,        /* 资金流榜每个方向拉几页（§316-B：1 页只覆盖换手率 TOP20 的 5/20，3 页 15/20，5 页 17/20 饱和） */
+  singleMax: 10,       /* 四榜仍缺净额的票，逐只补查的上限（单只接口 1 请求/只） */
+  vrBatch: 50,         /* 量比批量取数：腾讯 qt.gtimg.cn 每批代码数（实测 50/批稳定） */
   strongRatio: 0.05,   /* 净额/成交额 ≥5% → 资金信号有效（<5% 视为推动力不足） */
   bigNet: 1e8,         /* 单只净流入 ≥1 亿 视为大资金级 */
   transmitFull: 3,     /* 外盘传导分档：≥3% 完整传导 */
@@ -35142,7 +35715,7 @@ var WTX_GLOBAL = [
   { c: 'hk01810', n: '小米集团', grp: '港股龙头', map: '' }
 ];
 var WTX = {
-  fund: { at: 0, err: '', busy: false, lastTry: 0, rankAmt: null, rankFlow: null },
+  fund: { at: 0, err: '', busy: false, lastTry: 0, rankAmt: null, rankTurn: null, rankFlow: null, rankOut: null, vrMap: null, vrAt: 0, vrErr: '', flowExtra: null },
   glob: { at: 0, err: '', busy: false, lastTry: 0, list: null }
 };
 /* 非交易时间提示条（2026-09-23 建立 · 2026-09-29 改口径）：各模块顶部统一说明「当前是收盘口径」。
@@ -35197,30 +35770,223 @@ function wtxJsonpVar(url, varName, timeout){
     });
   });
 }
+/* ---------- A 股口径（§316 新增，四榜同尺） ----------
+   为什么必须过滤：成交额榜走 node=hs_a（本就是纯 A 股），但**资金流榜是全市场含 ETF/LOF/债券**的榜 ——
+   2026-11-14 实测 `sort=netamount` 榜首是 `sh511010 国债ETF国泰`（净流入 15.1 亿），
+   混进「主力净流入」榜会把 ETF 申购当成个股主力买入，整张榜失去意义。故四榜统一按代码段过滤。 */
+function wtxIsAShare(code){
+  var c = String(code || '').replace(/^(sh|sz|bj)/i, '');
+  if(!/^\d{6}$/.test(c)) return false;
+  /* 沪 60x（主板）/68x（科创）｜深 00x（主板+中小）/30x（创业）｜北 43x·83x·87x·88x·92x
+     —— sh5xxxxx（ETF/LOF）、sh11/12（可转债/国债）、sz15/16/18（基金）全部落空 */
+  return /^(60|68|00|30|43|83|87|88|92)/.test(c);
+}
+/* 量比批量取数（§316）：本机唯一可达的量比源是腾讯 qt.gtimg.cn 单只/批量行情（第 49 位）。
+   ⚠ 本机**没有**任何"量比排序"接口可用 —— 东财 clist(fid=f10)、腾讯 proxy 排行、
+     雪球 screener、同花顺 data.* 实测全部网络层不可达（20~130ms 硬失败）。
+     所以量比榜只能在"候选池内"排序（池 = 成交额前 poolN ∪ 换手率前 poolN），
+     这一点必须在界面上如实写明，绝不能把池内排序说成全市场量比榜。 */
+function wtxVrFetch(codes){
+  var list = (codes || []).slice(), chunks = [], i;
+  for(i = 0; i < list.length; i += WTX_RULE.vrBatch) chunks.push(list.slice(i, i + WTX_RULE.vrBatch));
+  if(!chunks.length) return Promise.resolve({ map: {}, ok: 0, err: '' });
+  return wtxSeqRun(chunks.map(function(ck){
+    return function(){
+      return wtxRetry(function(){
+        return wtxGetText('https://qt.gtimg.cn/q=' + ck.join(','), 12000).then(function(t){
+          var m = {}, n = 0;
+          String(t || '').split('\n').forEach(function(line){
+            var mt = /v_(sh|sz|bj)(\d{6})="([^"]*)"/i.exec(line);
+            if(!mt) return;
+          var p = mt[3].split('~');
+          if(p.length < 50) return;
+          var vr = num(p[49]);                 /* 49 = 量比（用 涨停价=昨收×1.1/1.2/1.3 交叉定位过） */
+          var tn = num(p[38]);                 /* 38 = 换手率（实测 52.21 与新浪 turnoverratio 52.21413 同值） */
+          /* 新股上市首日 / 停牌无 5 日均量 → 接口回 0.00 或 -1，**视为缺失**，不得当「量比 0」参与排序 */
+          m[(mt[1] + mt[2]).toLowerCase()] = {
+            vr: (vr != null && vr > 0) ? vr : null,
+            turn: (tn != null && tn > 0) ? tn : null
+          };
+          n++;
+          });
+          return n ? { map: m, ok: n, err: '' } : null;   /* 一条都没解析出来 → 当失败重试 */
+        }).catch(function(){ return null; });
+      }, 2, 300).then(function(v){ return v || { map: {}, ok: 0, err: '腾讯批量行情未返回' }; });
+    };
+  }), 250).then(function(rs){
+    var map = {}, ok = 0, err = '';
+    rs.forEach(function(r){ ok += r.ok; if(r.err && !err) err = r.err; for(var k in r.map) map[k] = r.map[k]; });
+    return { map: map, ok: ok, err: ok ? '' : (err || '量比接口未返回数据') };
+  });
+}
+/* 串行执行器（§316）：新浪同域**并行会被 reset**，实测「3 条并行」首轮 2/3 失败，
+   而「3 条串行 + 600ms 间隔」连续 3 轮 9/9 全成功 → 本区所有新浪请求一律走这里，不许 Promise.all。 */
+function wtxSeqRun(tasks, gap){
+  var out = [], i = 0, ms = (gap == null ? 600 : gap);
+  var step = function(){
+    if(i >= tasks.length) return Promise.resolve(out);
+    var k = i++;
+    return tasks[k]().then(function(v){
+      out[k] = v;
+      if(k >= tasks.length - 1) return out;
+      return new Promise(function(r){ setTimeout(r, ms); }).then(step);
+    });
+  };
+  return step();
+}
+/* 取数重试（§316）：新浪排行 / 资金流 / 腾讯批量在本机都会**随机丢包**（不是限流 ——
+   2026-11-14 实测间隔 300ms / 900ms / 1800ms 三组采样，失败率都约 20~30%，且与间隔无关）。
+   旧代码一次失败就留空，四榜里会随机少一张榜。这里统一「拿到有效结果才算成功」，否则退避重试。 */
+function wtxRetry(fn, tries, base){
+  var n = (tries == null ? 3 : tries), ms = base == null ? 450 : base;
+  var once = function(k){
+    return fn().then(function(v){
+      if(v) return v;
+      if(k <= 1) return null;
+      return new Promise(function(r){ setTimeout(r, ms * (n - k + 1)); }).then(function(){ return once(k - 1); });
+    });
+  };
+  return once(n);
+}
+function wtxSinaArr(url){
+  return wtxGetText(url, 12000).then(function(t){
+    var a = null; try { a = JSON.parse(t); } catch (e) { }
+    return (Array.isArray(a) && a.length) ? a : null;
+  }).catch(function(){ return null; });
+}
+/* 单只资金流补查（§316-B）：排行榜只按净额排序、只覆盖两端，换手率/量比榜的小票
+   净额常常排在几百名之后（实测换手率 TOP20 只覆盖 5/20，加深到 3 页也只有 15/20）。
+   新浪的单只接口 `MoneyFlow.ssl_qsfx_zjlrqs` 走 jsonp_v2 可用（fetch 会被 CORS 拦），
+   返回**日线**资金流，取 a[0] 即最近一个交易日。 */
+function wtxNetOne(sym){
+  var url = 'https://vip.stock.finance.sina.com.cn/quotes_service/api/jsonp_v2.php/var%20wtxOne=' +
+    '/MoneyFlow.ssl_qsfx_zjlrqs?page=1&num=2&sort=opendate&asc=0&daima=' + sym;
+  return wtxRetry(function(){ return wtxJsonpVar(url, 'wtxOne', 10000); }, 2).then(function(a){
+    if(!a || !a.length) return null;
+    var r = a[0] || {};
+    var od = String(r.opendate || '').replace(/-/g, '');
+    var today = dstr(new Date());
+    /* ⚠ 这是「日线」接口：当日行要收盘后才落库。**今天是交易日但 opendate 不是今天 → 宁可留白**，
+       绝不把上一个交易日的净额当成今天的（缺失 ≠ 有数）。今天不是交易日时取最近交易日，与榜单同源。 */
+    var isDay = true;
+    try { isDay = wtIsTradeDay(today); } catch (e) { }
+    if (isDay && od !== today) return null;
+    var net = num(r.netamount);
+    if (net == null) return null;
+    return { sym: sym, net: net, ratio: num(r.ratioamount) };
+  });
+}
+/* 四榜里仍缺净额的票逐只补（上限 singleMax，串行 250ms）。补完写 F.flowExtra，由 model 合并。
+   ⚠ 必须先把上一轮的 flowExtra 清空再建模型，否则「已补过的票」会被当成已覆盖，永远不再补。 */
+function wtxNetFill(){
+  var F = WTX.fund;
+  F.flowExtra = {};
+  var M;
+  try { M = wtxFundModel(); } catch (e) { return Promise.resolve(); }
+  var need = [], seen = {};
+  [M.vrRows, M.turnRows, M.topAmt, M.inRows].forEach(function(L){
+    (L || []).forEach(function(r){ if(r.net == null && !seen[r.sym]){ seen[r.sym] = 1; need.push(r.sym); } });
+  });
+  need = need.slice(0, WTX_RULE.singleMax || 10);
+  if(!need.length) return Promise.resolve();
+  return wtxSeqRun(need.map(function(sym){
+    return function(){ return wtxNetOne(sym); };
+  }), 250).then(function(list){
+    var ex = {};
+    (list || []).forEach(function(x){ if(x && x.sym && x.net != null) ex[x.sym] = x; });
+    F.flowExtra = ex;
+  });
+}
 /* ---------- 数据层 ---------- */
 function wtxFundLoad(force){
   var F = WTX.fund, now = Date.now();
   if(F.busy) return;
   /* 非交易时间（收盘口径）：内存已有数据即不再重复取（从未取到过则允许一次，避免夜间打开页面永远"加载中"）。
-     ⚠️ 2026-09-29 取消「数据固定」后本条语义不变 —— 它约束的是同一会话内的重复请求，不是禁止取数。 */
-  if(!force && !wtTrading(wtDate()) && F.at) return;
-  if(!force && F.at && now - F.at < WTX_RULE.ttl) return;
+     ⚠️ 2026-09-29 取消「数据固定」后本条语义不变 —— 它约束的是同一会话内的重复请求，不是禁止取数。
+     ⚠️ §316：加 `!F.partial` —— 这条 return 比 TTL 更早拦住，若不放开，非交易日只要有一张榜取崩，
+        整晚就停在「少一张榜」上（新浪本机随机丢包约 20~30%，实测撞到过）。 */
+  if(!force && !wtTrading(wtDate()) && F.at && !F.partial) return;
+  if(!force && F.at && now - F.at < WTX_RULE.ttl){
+    /* §316 缺榜补取：上一轮有榜缺失 → 10 秒后允许整轮重取一次，最多 3 次（防止通道真的挂了时反复打） */
+    if(!(F.partial && (F.heal || 0) < 3 && now - F.at > 10000)) return;
+  }
   if(!force && F.lastTry && now - F.lastTry < WTX_RULE.failCool && !F.at) return;   /* 失败节流 */
-  F.busy = true; F.lastTry = now; F.err = '';
-  var rankUrl = 'https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeData' +
-    '?page=1&num=' + WTX_RULE.poolN + '&sort=amount&asc=0&node=hs_a&symbol=&_s_r_a=page';
+  /* §316-C 首屏让路：页面刚打开时 refreshAll / 涨停池 / K 线会同时打新浪，
+     本区再来 8 条串行请求 → 第一条（成交额榜）极易被 reset（实测开局失败率明显高于稳态）。
+     首次取数延后 3.5 秒，避开洪峰；force（探针/手刷）不受限。 */
+  if(!F.bootAt) F.bootAt = now;
+  if(!force && !F.at && now - F.bootAt < 3500) return;
+  F.busy = true; F.lastTry = now; F.err = ''; F.vrErr = '';
+  var rankBase = 'https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeData';
+  var amtUrl = rankBase + '?page=1&num=' + WTX_RULE.poolN + '&sort=amount&asc=0&node=hs_a&symbol=&_s_r_a=page';
+  var turnUrl = rankBase + '?page=1&num=' + WTX_RULE.poolN + '&sort=turnoverratio&asc=0&node=hs_a&symbol=&_s_r_a=page';
+  /* ⚠ §316：排序字段由 r0_net（超大单净额）改为 **netamount（主力净额）** —— 榜上展示与合计用的都是 netamount，
+     旧写法「按 r0_net 排、按 netamount 展示」会让「净流入 TOP20」名不副实（实测两者顺序不同：国债ETF r0 第一但 net 第二）。 */
   var flowUrl = 'https://vip.stock.finance.sina.com.cn/quotes_service/api/jsonp_v2.php/var%20wtxMfList=' +
-    '/MoneyFlow.ssl_bkzj_ssggzj?page=1&num=' + WTX_RULE.poolN + '&sort=r0_net&asc=0&bankuai=&shangzhang=';
-  Promise.all([
-    wtxGetText(rankUrl, 12000).then(function(t){ try{ return JSON.parse(t); }catch(e){ return null; } }).catch(function(){ return null; }),
-    wtxJsonpVar(flowUrl, 'wtxMfList', 12000)
-  ]).then(function(rs){
-    var amt = rs[0], flow = rs[1];
+    '/MoneyFlow.ssl_bkzj_ssggzj?page=1&num=' + WTX_RULE.poolN + '&sort=netamount&asc=0&bankuai=&shangzhang=';
+  /* ⚠ §316：**净流出方向也必须拉**（asc=1）。只拉净流入方向的话，成交额榜里的大跌股
+     （净流出、不在净流入榜里）资金列全部读成「—」→「成交额 TOP20 里净流出 N 只」恒等于 0，
+     出货区判定直接失效（2026-11-14 实测：中际旭创 258 亿成交 / 新易盛 196 亿 / 寒武纪 160 亿全读空）。
+     ⚠ §316-B：**每个方向要拉多页**。排行榜按净额排序、只覆盖两端，换手率 / 量比榜的小票净额常排在几百名后 ——
+     实测 1 页只覆盖换手率 TOP20 的 5/20（② 榜整列「净额 —」），3 页 15/20，5 页 17/20 后饱和。 */
+  var flowPages = WTX_RULE.flowPages || 1;
+  var mkFlowUrl = function(asc, pg){
+    var v = asc ? 'wtxMfOut' : 'wtxMfList';
+    return 'https://vip.stock.finance.sina.com.cn/quotes_service/api/jsonp_v2.php/var%20' + v + '=' +
+      '/MoneyFlow.ssl_bkzj_ssggzj?page=' + pg + '&num=' + WTX_RULE.poolN + '&sort=netamount&asc=' + asc + '&bankuai=&shangzhang=';
+  };
+  var jget = function(u){
+    /* 新浪本机随机丢包 20~30%：给 5 次机会（0 / 0.7 / 2.1 / 4.2 / 7.0 秒），覆盖首屏那几秒的拥塞窗口 */
+    return wtxRetry(function(){ return wtxSinaArr(u); }, 5, 700);
+  };
+  var fget = function(u, v){
+    return wtxRetry(function(){ return wtxJsonpVar(u, v, 12000); }, 2);
+  };
+  /* 全部**串行**取（并行会被 reset：实测 3 条并行首轮 2/3 失败，串行 9/9 成功） */
+  var tasks = [
+    function(){ return jget(amtUrl); },
+    function(){ return jget(turnUrl); }
+  ];
+  (function(){ for(var p = 1; p <= flowPages; p++){ (function(pg){ tasks.push(function(){ return fget(mkFlowUrl(0, pg), 'wtxMfList'); }); })(p); } })();
+  (function(){ for(var p = 1; p <= flowPages; p++){ (function(pg){ tasks.push(function(){ return fget(mkFlowUrl(1, pg), 'wtxMfOut'); }); })(p); } })();
+  wtxSeqRun(tasks).then(function(rs){
+    var amt = rs[0], turn = rs[1];
+    var dedupe = function(list){
+      var m = {}, o = [];
+      (list || []).forEach(function(x){ var k = String(x.symbol || '').toLowerCase(); if(k && !m[k]){ m[k] = 1; o.push(x); } });
+      return o;
+    };
+    var flow = [], out = [], allPages = true, i;
+    for(i = 2; i < 2 + flowPages; i++){ if(!rs[i]) allPages = false; flow = flow.concat(rs[i] || []); }
+    for(i = 2 + flowPages; i < 2 + 2 * flowPages; i++){ if(!rs[i]) allPages = false; out = out.concat(rs[i] || []); }
+    flow = dedupe(flow); out = dedupe(out);
     if(Array.isArray(amt) && amt.length) F.rankAmt = amt;
-    if(Array.isArray(flow) && flow.length) F.rankFlow = flow;
-    if(!F.rankAmt && !F.rankFlow) F.err = '两个榜单都没取到（新浪排行/资金流榜不可达或被限流）';
-    else if(!F.rankAmt) F.err = '成交额榜取数失败（资金流榜正常）';
-    else if(!F.rankFlow) F.err = '资金流榜取数失败（成交额榜正常）';
+    if(Array.isArray(turn) && turn.length) F.rankTurn = turn;
+    if(flow.length) F.rankFlow = flow;
+    if(out.length) F.rankOut = out;
+    if(!F.rankAmt && !F.rankTurn && !F.rankFlow) F.err = '三个榜单都没取到（新浪排行/资金流榜不可达或被限流）';
+    else if(!F.rankAmt) F.err = '成交额榜取数失败（其余榜正常）';
+    else if(!F.rankTurn) F.err = '换手率榜取数失败（其余榜正常）';
+    else if(!F.rankFlow) F.err = '资金流榜取数失败（其余榜正常）';
+    /* §316 记账：四张榜齐全（含每一页）才算完整；缺任何一张标 partial，下一个 tick 15 秒后自动补取（最多 3 次） */
+    F.partial = !(amt && turn && allPages);
+    F.heal = F.partial ? ((F.heal || 0) + 1) : 0;
+    /* 量比候选池 = 成交额前 poolN ∪ 换手率前 poolN ∪ 净流入前 poolN（只 A 股，去重）→ 腾讯批量取量比 / 换手
+       ⚠ 净流入榜必须算进来：④ 榜的票若不在前两榜，取不到量比就会印「—」（模型侧同理，见 wtxFundModel putFlow） */
+    var pool = [], seen = {};
+    (amt || []).concat(turn || [], flow || []).forEach(function(x){
+      if(!x || !x.symbol) return;
+      var k = String(x.symbol).toLowerCase();
+      if(seen[k] || !wtxIsAShare(k)) return;
+      seen[k] = 1; pool.push(k);
+    });
+    return wtxVrFetch(pool).then(function(vr){
+      F.vrMap = vr.map; F.vrAt = Date.now();
+      F.vrErr = vr.ok ? '' : (vr.err || '量比未取到（腾讯批量行情不可达）');
+      /* §316-B：四榜里仍缺净额的票逐只补（换手率/量比榜的小票排不进净额榜两端） */
+      return wtxNetFill();
+    });
+  }).then(function(){
     F.at = Date.now();
     wtxPaint();
   }).catch(function(e){
@@ -35298,41 +36064,127 @@ function wtxFundState(x){
     return { k: 'kill', t: '量价资金双杀', cls: 'down', logic: '跌 + 净流出 ＝ 资金离场，趋势转弱', do: '回避' };
   return { k: 'mix', t: '多空拉锯', cls: 'flat', logic: '价格与资金方向不一致且幅度小', do: '不预设方向' };
 }
-/* 两个榜单合并成"主战场"数据集（按 symbol 交集判定共振 / 出货） */
+/* 四榜合并成"资金主战场"数据集（§316：量比 / 换手率 / 成交额 / 主力净流入 各前 N）
+   结构：先建「候选池」（成交额前 poolN ∪ 换手率前 poolN，只 A 股），把三张新浪榜 + 腾讯量比
+   按 symbol 合并成「一行一票」的完整记录；四个榜各自从同一批记录里切片，
+   所以同一只票在四个榜里的 涨跌 / 成交 / 换手 / 净额 / 量比 读数一定一致（不会出现两榜互相打架）。 */
 function wtxFundModel(){
-  var F = WTX.fund, amt = F.rankAmt || [], flow = F.rankFlow || [];
+  var F = WTX.fund;
   var norm = function(s){ return String(s || '').toLowerCase(); };
+  var c6 = function(s){ return String(s || '').replace(/^(sh|sz|bj)/i, ''); };
+  var okRow = function(x){ return x && x.symbol && wtxIsAShare(x.symbol); };
+  var amt = (F.rankAmt || []).filter(okRow);
+  var turn = (F.rankTurn || []).filter(okRow);
+  var flow = (F.rankFlow || []).filter(okRow);
+  var flowOut = (F.rankOut || []).filter(okRow);
+  var vrMap = F.vrMap || {};
   var flowMap = {};
-  flow.forEach(function(x){ if(x && x.symbol) flowMap[norm(x.symbol)] = x; });
-  var amtMap = {};
-  amt.forEach(function(x){ if(x && x.symbol) amtMap[norm(x.symbol)] = x; });
-  var keyList = Object.keys(amtMap).slice(0, WTX_RULE.poolN);
-  var rows = keyList.map(function(k){
-    var a = amtMap[k], f = flowMap[k] || null;
-    var net = f ? num(f.netamount) : null;              /* 主力净额（元；inamount-outamount 口径） */
-    var netR0 = f ? num(f.r0_net) : null;               /* 超大单净额 */
-    var amount = num(a.amount);
-    var ratio = (f && num(f.ratioamount) != null) ? num(f.ratioamount) : (net != null && amount ? net / amount : null);
-    return { sym: a.symbol, code: String(a.code || '').replace(/^(sh|sz|bj)/i, ''), name: a.name, amount: amount,
-      chg: num(a.changepercent), turnover: num(a.turnoverratio), price: num(a.trade),
-      net: net, netR0: netR0, ratio: ratio, hasFlow: !!f };
+  /* 资金数据按「净流入前 100 ∪ 净流出前 100」合并：净流出榜先入、净流入榜覆盖
+     （同一只票两榜都收录时 netamount 相同，取哪一份都一样）。只拉一个方向会让
+     成交额榜里的大跌股全读成「—」，「出货区」判定永久为 0。 */
+  flowOut.forEach(function(x){ flowMap[norm(x.symbol)] = x; });
+  flow.forEach(function(x){ flowMap[norm(x.symbol)] = x; });
+  /* 候选池：成交额榜 ∪ 换手率榜，**字段级合并且只补空格、不覆盖** ——
+     成交额榜带宽高字段（amount / changepercent / turnoverratio / trade）视为权威源，
+     换手率榜只补「成交额榜没覆盖到的票」及其缺失字段。
+     ⚠ 不许「后来者覆盖」：同一只票两榜数值本就相同，谁覆盖谁都不改变读数，
+       但一旦上游两榜某一刻不同步，覆盖会让换手率榜显示成成交额榜那一份（单测 §316 ⑦ 钉死）。 */
+  var pool = {}, order = [];
+  var put = function(a){
+    var k = norm(a.symbol), p = pool[k];
+    if(!p){
+      p = pool[k] = { sym: a.symbol, code: c6(a.symbol), name: a.name, amount: null, chg: null,
+        turnover: null, price: null, net: null, netR0: null, ratio: null, vr: null, hasFlow: false };
+      order.push(k);
+    }
+    var v;
+    if(p.amount == null && (v = num(a.amount)) != null) p.amount = v;
+    if(p.chg == null && (v = num(a.changepercent)) != null) p.chg = v;
+    if(p.turnover == null && (v = num(a.turnoverratio)) != null) p.turnover = v;
+    if(p.price == null && (v = num(a.trade)) != null) p.price = v;
+    if(!p.name && a.name) p.name = a.name;
+  };
+  amt.forEach(put);
+  turn.forEach(put);
+  /* 资金流榜（净流入前 poolN）也并入池 —— 两个好处：
+     ① ④ 榜的票几乎都能查到量比 / 换手（否则 20 只里有 3~5 只印「—」，看着像坏数据）；
+     ② ① 量比榜的候选池随之变大（净流入大的活跃票本就该进量比候选）。
+     净流出方向不并入：那些票清一色是大成交额票，必然已在成交额前 poolN 里，重复并入只多花腾讯请求。 */
+  var putFlow = function(f){
+    var k = norm(f.symbol), p = pool[k], v;
+    if(!p){
+      p = pool[k] = { sym: f.symbol, code: c6(f.symbol), name: f.name, amount: null, chg: null,
+        turnover: null, price: null, net: null, netR0: null, ratio: null, vr: null, hasFlow: false };
+      order.push(k);
+    }
+    if(p.amount == null && (v = num(f.amount)) != null) p.amount = v;
+    /* MoneyFlow 的 changeratio 是**小数比率**（0.1 = +10%），×100 才是百分比 —— 见下方 inRows 同款注释 */
+    if(p.chg == null && (v = num(f.changeratio)) != null) p.chg = v * 100;
+    if(!p.name && f.name) p.name = f.name;
+  };
+  flow.forEach(putFlow);
+  var extra = F.flowExtra || {};   /* §316-B：四榜缺净额的票，逐只补回来的结果（wtxNetFill 写） */
+  order.forEach(function(k){
+    var p = pool[k], f = flowMap[k] || null;
+    var ex = extra[k] || null;
+    var q = vrMap[k];
+    /* vrMap 兼容两种形态：{vr,turn}（生产）/ 纯数字（历史单测夹具） */
+    var vq = (q == null) ? null : ((typeof q === 'object') ? q : { vr: q, turn: null });
+    p.hasFlow = !!f || !!(ex && ex.net != null);
+    p.net = f ? num(f.netamount) : (ex ? ex.net : null);
+    p.netR0 = f ? num(f.r0_net) : null;
+    p.ratio = (f && num(f.ratioamount) != null) ? num(f.ratioamount)
+      : ((ex && ex.ratio != null) ? ex.ratio : (p.net != null && p.amount ? p.net / p.amount : null));
+    p.vr = (vq && vq.vr != null) ? vq.vr : null;
+    /* 换手率：优先用新浪排行自带的（amt / turn 两榜都有），缺失时用腾讯第 38 位补 */
+    if(p.turnover == null && vq && vq.turn != null) p.turnover = vq.turn;
   });
-  /* 净流入榜（按主力净额降序，只取净流入为正的前 N） */
-  var inRows = flow.slice().filter(function(x){ return num(x.netamount) > 0; }).slice(0, WTX_RULE.n).map(function(f){
-    var k = norm(f.symbol), a = amtMap[k] || null;
-    var net = num(f.netamount), amount = a ? num(a.amount) : num(f.amount);
-    return { sym: f.symbol, code: String(f.symbol || '').replace(/^(sh|sz|bj)/i, ''), name: f.name,
-      chg: num(f.changeratio), net: net, netR0: num(f.r0_net),
+  var rows = order.map(function(k){ return pool[k]; });
+  /* ① 成交额榜：服务端已按 amount 降序 */
+  var topAmt = amt.slice(0, WTX_RULE.n).map(function(a){ return pool[norm(a.symbol)]; }).filter(Boolean);
+  /* ② 换手率榜：服务端已按 turnoverratio 降序 */
+  var turnRows = turn.slice(0, WTX_RULE.n).map(function(a){ return pool[norm(a.symbol)]; }).filter(Boolean);
+  /* ③ 量比榜：只在候选池内按量比降序。⚠ 无真值（新股 0.00 / 停牌 -1）一律剔除，
+     绝不用 0 或估算值补位 —— 本机没有全市场量比排序源，池外个股不进榜是口径事实，不是漏算。 */
+  var vrRows = rows.filter(function(r){ return r.vr != null && r.vr > 0; })
+    .sort(function(a, b){ return b.vr - a.vr; }).slice(0, WTX_RULE.n);
+  /* ④ 主力净流入榜：服务端已按 netamount 降序（§316 由 r0_net 改为 netamount，与展示字段同尺） */
+  var inRows = flow.filter(function(x){ return num(x.netamount) > 0; }).slice(0, WTX_RULE.n).map(function(f){
+    var k = norm(f.symbol), p = pool[k] || null;
+    var net = num(f.netamount), amount = p ? p.amount : num(f.amount);
+    /* ⚠ 涨幅单位（2026-11-14 用户报障修正）：MoneyFlow 的 changeratio 是**小数比率**不是百分比
+       —— 实采华胜天成 0.1 = +10%、贵州茅台 0.0171953 = +1.72%、国债ETF -0.000113184 = -0.01%，
+       旧写法直接当百分比打印，净流入榜的涨幅被压小 100 倍（显示 +0.10%）。
+       池内有成交额榜的 changepercent（真百分比）时优先用它，保证四榜同源同值；否则 ×100 换算。 */
+    var cR = num(f.changeratio);
+    var chgV = (p && p.chg != null) ? p.chg : (cR == null ? null : cR * 100);
+    return { sym: f.symbol, code: c6(f.symbol), name: f.name, chg: chgV,
+      net: net, netR0: num(f.r0_net),
       ratio: num(f.ratioamount) != null ? num(f.ratioamount) : (net != null && amount ? net / amount : null),
-      amount: amount, inTop10Amt: !!a };
+      amount: amount, turnover: p ? p.turnover : null,
+      vr: p ? p.vr : null, hasFlow: true, inTopAmt: false };
   });
-  var topAmt = rows.slice(0, WTX_RULE.n);
+  /* 多榜共振：统计每只票出现在几个榜（成交额 / 换手率 / 量比 / 净流入），≥2 榜即"多榜共振" */
+  var hit = {};
+  [['成交额', topAmt], ['换手率', turnRows], ['量比', vrRows], ['净流入', inRows]].forEach(function(b){
+    b[1].forEach(function(r){
+      var h = hit[r.sym] || (hit[r.sym] = { r: r, n: 0, ks: [] });
+      if(h.ks.indexOf(b[0]) < 0){ h.n++; h.ks.push(b[0]); }
+    });
+  });
+  var multi = Object.keys(hit).map(function(k){ return hit[k]; })
+    .filter(function(h){ return h.n >= 2; })
+    .sort(function(a, b){ return b.n - a.n || (b.r.amount || 0) - (a.r.amount || 0); });
+  /* 兼容旧口径（推送摘要 + 出货区判定用）：双榜共振＝成交额 ∩ 净流入 */
   var resonance = topAmt.filter(function(r){ return r.net != null && r.net > 0 && r.hasFlow; })
     .filter(function(r){ return inRows.some(function(z){ return z.sym === r.sym; }); });
   var outflow = topAmt.filter(function(r){ return r.net != null && r.net < 0; });
   var sumNet = inRows.reduce(function(s, x){ return s + (x.net || 0); }, 0);
-  return { rows: rows, topAmt: topAmt, inRows: inRows, resonance: resonance, outflow: outflow, sumNet: sumNet,
-    at: F.at, err: F.err, hasFlow: flow.length > 0, hasAmt: amt.length > 0 };
+  return { rows: rows, topAmt: topAmt, turnRows: turnRows, vrRows: vrRows, inRows: inRows,
+    multi: multi, resonance: resonance, outflow: outflow, sumNet: sumNet,
+    at: F.at, err: F.err, vrErr: F.vrErr || '',
+    hasAmt: amt.length > 0, hasTurn: turn.length > 0, hasFlow: flow.length > 0 || flowOut.length > 0,
+    hasVr: vrRows.length > 0 };
 }
 /* ---------- 分析层 B：外盘传导与映射 ---------- */
 function wtxTransmit(pct){
@@ -35366,72 +36218,94 @@ function wtxSignal(grpCode, mapObj, pct, isA){
   return { code: grpCode, map: mapObj, pct: pct, side: (pct == null ? 'flat' : (pct >= 0.3 ? 'up' : (pct <= -0.3 ? 'down' : 'flat'))) };
 }
 /* ---------- 渲染层 ---------- */
+/* 行渲染（§316 四榜共用）：一行一票。主指标随榜前置，其余副指标固定顺序 ——
+   同一只票在四个榜里的 涨跌 / 成交 / 换手 / 量比 / 净额 一定同源同值，不会两榜打架。
+   ⚠ 资金列缺失只印「净额 —」且**不贴六态判定**：新浪资金流榜只覆盖净流入 TOP100，
+     池内其余个股本就没有资金数据，逐行刷「资金数据缺失」会把 80 行变成同一种噪音（缺失≠0，留白即可）。 */
+function wtFundRow(r, i, kind){
+  var st = wtxFundState(r);
+  var sc = st.cls === 'up' ? 'up' : st.cls === 'down' ? 'dn' : st.cls === 'warn' ? 'warn' : 'chg';
+  var seg = {};
+  seg.vr = (r.vr == null) ? '<span class="wt-flat">量比 —</span>'
+    : '量比 <b class="' + (r.vr >= 2 ? 'wt-up' : 'wt-flat') + ' mono">' + r.vr.toFixed(2) + '</b>';
+  seg.turn = (r.turnover == null) ? '<span class="wt-flat">换手 —</span>'
+    : '换手 <span class="mono">' + r.turnover.toFixed(1) + '%</span>';
+  seg.amt = '成交 <span class="mono">' + wtYi(r.amount) + '</span>';
+  seg.pct = '<span class="' + (r.chg > 0 ? 'wt-up' : (r.chg < 0 ? 'wt-dn' : 'wt-flat')) + '">' + wtPct(r.chg) + '</span>';
+  seg.net = (r.net == null) ? '<span class="wt-flat">净额 —</span>'
+    : '净额 <span class="' + (r.net > 0 ? 'wt-up' : (r.net < 0 ? 'wt-dn' : 'wt-flat')) + ' mono">' + wtYi(r.net) + '</span>' +
+      (r.ratio == null ? '' : '<span class="wt-flat">（占成交 ' + (r.ratio * 100).toFixed(1) + '%）</span>');
+  var ord = kind === 'vr' ? ['vr', 'amt', 'pct', 'turn', 'net']
+    : kind === 'turn' ? ['turn', 'amt', 'pct', 'vr', 'net']
+    : kind === 'flow' ? ['net', 'pct', 'amt', 'turn', 'vr']
+    : ['amt', 'pct', 'turn', 'vr', 'net'];
+  var tail = (st.k === 'nodata') ? '' :
+    '　→ <b class="wt-' + sc + '">' + esc(st.t) + '</b><span class="wt-flat">：' + esc(st.do) + '</span>';
+  /* ★ 2026-11-14 §316-C：个股名 / 代码可点跳生命周期台「个股诊断」——
+     复用 WBB 全局委托（data-wbbjump → window.open(WBB.LC_URL + '?code=' + code)），不是新机制；
+     生命周期台 ?code= 落地会自动填 #stockInput + 切诊断页 + runSearch（§277-FIX）。 */
+  return '<div class="wt-line">' + (i + 1) + '. <b data-wbbjump="' + esc(r.code) + '" title="点击打开生命周期工作台 · 个股诊断">' + esc(r.name) + '</b>' + wtIndTag(r.code) +
+    ' <span class="wt-flat" data-wbbjump="' + esc(r.code) + '" title="点击打开生命周期工作台 · 个股诊断">' + esc(r.code) + '</span>　' + ord.map(function(k){ return seg[k]; }).join(' · ') + tail + '</div>';
+}
+function wtFundBlock(title, list, kind, emptyTip){
+  if(!list || !list.length)
+    return '<div style="margin-top:10px"><b class="wt-up">' + title + '</b></div>' +
+      '<div class="wt-note" style="color:#94a3b8">' + esc(emptyTip || '未取到数据（—）') + '</div>';
+  return '<div style="margin-top:10px"><b class="wt-up">' + title + '</b>' +
+    '<span class="wt-flat">　共 ' + list.length + ' 只</span></div>' +
+    '<div style="margin-top:4px;line-height:2;font-size:12.5px">' +
+    list.map(function(r, i){ return wtFundRow(r, i, kind); }).join('') + '</div>';
+}
 function wtFundHtml(){
   var M = wtxFundModel();
-  var h = '<h3>三、个股资金主战场 —— 成交额 TOP10 × 主力净流入 TOP10（通道：新浪排行 / 资金流榜，实测本机可达）</h3>' + wtxFrozenBar(WTX.fund.at);
-  if(!M.hasAmt && !M.hasFlow){
+  var h = '<h3>三、个股资金主战场 —— 量比 / 换手率 / 成交额 / 主力净流入 · 各前 20' +
+    '（通道：新浪排行 ×4 + 腾讯量比批量，实测本机可达）</h3>' + wtxFrozenBar(WTX.fund.at);
+  if(!M.hasAmt && !M.hasTurn && !M.hasFlow){
     h += '<div class="wt-modwait">榜单数据加载中…' + (M.err ? '（' + esc(M.err) + '）' : '') +
-      '（东财 clist 在本机不可达，本区改用新浪两条通道，每 3 分钟自动刷新一次）</div>';
+      '（东财 clist 在本机不可达，本区改用新浪三条排行 + 腾讯量比批量，每 3 分钟自动刷新一次）</div>';
     return h;
   }
-  /* ★ 2026-10-09：资金榜股票不在涨停池时行业四路可能全空 → 一次性 F10 批量反查补齐（去重防风暴） */
+  /* ★ 2026-10-09：资金榜股票不在涨停池时行业四路可能全空 → 一次性 F10 批量反查补齐（去重防风暴）
+     §316：四榜共 80 个位次都要行业 tag，统一去重后一次投喂（WTX_IND_REQ 会话级去重，不会风暴） */
   try {
     var indCodes = [];
-    M.topAmt.forEach(function (r) { indCodes.push(r.code); });
-    M.inRows.forEach(function (r) { indCodes.push(r.code); });
+    [M.topAmt, M.turnRows, M.vrRows, M.inRows].forEach(function (L) {
+      (L || []).forEach(function (r) { indCodes.push(r.code); });
+    });
     wtxIndKick(indCodes);
   } catch (eWIK) { }
   /* 结论行 */
   var vv = [];
-  if(M.resonance.length){
-    vv.push('<b class="wt-up">双榜共振 ' + M.resonance.length + ' 只</b>：' +
-      M.resonance.slice(0, 4).map(function(r){ return '<b>' + esc(r.name) + '</b>' + wtIndTag(r.code) + '（' + wtYi(r.amount) + '·净' + wtYi(r.net) + '）'; }).join('、') +
-      ' —— 既是成交额主战场、又有真金白银净流入 ＝ <b>当日最强方向</b>');
+  if(M.multi.length){
+    vv.push('<b class="wt-up">多榜共振 ' + M.multi.length + ' 只</b>：' +
+      M.multi.slice(0, 4).map(function(x){ return '<b data-wbbjump="' + esc(x.r.code) + '" title="点击打开生命周期工作台 · 个股诊断">' + esc(x.r.name) + '</b>' + wtIndTag(x.r.code) +
+        '<span class="wt-flat">（' + esc(x.ks.join('·')) + '）</span>'; }).join('、'));
   } else if(M.hasAmt && M.hasFlow){
-    vv.push('<b class="wt-warn">双榜无交集</b>：成交额 TOP10 与净流入 TOP10 未重合 → 资金分散，无单点主战场（不宜重仓押单一方向）');
+    vv.push('<b class="wt-warn">四榜无交叉</b>：量比 / 换手率 / 成交额 / 净流入 前 20 互不重合 → 资金分散，无单点主战场');
   }
   if(M.outflow.length){
-    vv.push('<b class="wt-dn">成交额 TOP10 里净流出 ' + M.outflow.length + ' 只</b>：' +
-      M.outflow.slice(0, 5).map(function(r){ return esc(r.name) + wtIndTag(r.code) + '（' + wtYi(r.net) + '）'; }).join('、') + ' —— 高成交＋净流出 ＝ <b>出货区</b>，不接');
+    vv.push('<b class="wt-dn">成交额 TOP20 里净流出 ' + M.outflow.length + ' 只</b>：' +
+      M.outflow.slice(0, 5).map(function(r){ return '<b data-wbbjump="' + esc(r.code) + '" title="点击打开生命周期工作台 · 个股诊断">' + esc(r.name) + '</b>' + wtIndTag(r.code) + '（' + wtYi(r.net) + '）'; }).join('、') + ' —— 出货区，不接');
   }
-  if(M.inRows.length) vv.push('净流入 TOP10 合计 <b>' + wtYi(M.sumNet) + '</b>（主力大单口径估算，仅作强度参考）');
+  if(M.inRows.length) vv.push('净流入 TOP20 合计 <b>' + wtYi(M.sumNet) + '</b>（主力大单口径估算）');
   if(vv.length) h += '<div class="wt-msg up">' + vv.map(function(x){ return '· ' + x; }).join('<br>') + '</div>';
-  /* 成交额 TOP10 表 → 2026-09-27（用户要求）：表格改文字，一行一只；「判定逻辑」列属判断依据，只留 标签 + 操作 */
-  if(M.hasAmt){
-    h += '<div style="margin-top:6px"><b class="wt-up">① 成交额 TOP' + Math.min(WTX_RULE.n, M.topAmt.length) + '（当日资金主战场）</b></div>' +
-      '<div style="margin-top:4px;line-height:2;font-size:12.5px">' +
-      M.topAmt.map(function(r, i){
-        var st = wtxFundState(r);
-        var sc = st.cls === 'up' ? 'up' : st.cls === 'down' ? 'dn' : st.cls === 'warn' ? 'warn' : 'chg';
-        return '<div class="wt-line">' + (i + 1) + '. <b>' + esc(r.name) + '</b>' + wtIndTag(r.code) + ' <span class="wt-flat">' + esc(r.code) + '</span>' +
-          '　成交 <span class="mono">' + wtYi(r.amount) + '</span> · ' +
-          '<span class="' + (r.chg > 0 ? 'wt-up' : (r.chg < 0 ? 'wt-dn' : 'wt-flat')) + '">' + wtPct(r.chg) + '</span>' +
-          (r.turnover == null ? '' : ' · 换手 ' + r.turnover.toFixed(1) + '%') +
-          ' · 净额 ' + (r.hasFlow ? '<span class="' + (r.net > 0 ? 'wt-up' : 'wt-dn') + ' mono">' + wtYi(r.net) + '</span>' + (r.ratio == null ? '' : '（占成交 ' + (r.ratio * 100).toFixed(1) + '%）') : '<span class="wt-flat">—（两榜覆盖不同）</span>') +
-          '　→ <b class="wt-' + sc + '">' + esc(st.t) + '</b><span class="wt-flat">：' + esc(st.do) + '</span></div>';
-      }).join('') + '</div>';
-  }
-  /* 净流入 TOP10 表 → 同日改文字 */
-  if(M.hasFlow){
-    h += '<div style="margin-top:10px"><b class="wt-up">② 主力净流入 TOP' + Math.min(WTX_RULE.n, M.inRows.length) + '（钱去了哪）</b>' +
-      '<span class="wt-flat">　排序：新浪 r0_net（超大单净额）降序</span></div>' +
-      '<div style="margin-top:4px;line-height:2;font-size:12.5px">' +
-      M.inRows.map(function(r, i){
-        var st = wtxFundState(r);
-        var sc = st.cls === 'up' ? 'up' : st.cls === 'down' ? 'dn' : st.cls === 'warn' ? 'warn' : 'chg';
-        return '<div class="wt-line">' + (i + 1) + '. <b>' + esc(r.name) + '</b>' + wtIndTag(r.code) + ' <span class="wt-flat">' + esc(r.code) + '</span>' +
-          '　净流入 <span class="wt-up mono">' + wtYi(r.net) + '</span> · ' +
-          '<span class="' + (r.chg > 0 ? 'wt-up' : (r.chg < 0 ? 'wt-dn' : 'wt-flat')) + '">' + wtPct(r.chg) + '</span>' +
-          (r.ratio == null ? '' : ' · 占成交 ' + (r.ratio * 100).toFixed(1) + '%') +
-          (r.inTop10Amt ? ' · <span class="wt-up">✔ 双榜共振</span>' : '') +
-          '　→ <b class="wt-' + sc + '">' + esc(st.t) + '</b><span class="wt-flat">：' + esc(st.do) + '</span></div>';
-      }).join('') + '</div>';
-  }
-  h += '<div class="wt-note">📐 口径与边界：① 成交额榜＝新浪沪深 A 股按成交额降序（亿元=元/1e8）；' +
-    '② 主力净额/净额占比＝新浪资金流榜（超大单口径估算，<b>大单拆分/对倒会失真</b>，故本区一律「资金 × 价格」交叉判定，不单看净额）；' +
-    '③ 判定阈值：净额占成交额 ≥5% 才算「资金信号有效」（检索口径：＜5% 有效性大幅下降）；' +
-    '④ <b>未纳入</b>北向资金 / 龙虎榜 / 两融（本机无稳定源）—— 这三项是权威交叉验证项，缺它们时结论可信度按「中」看待；' +
-    '⑤ 数据时点 ' + (M.at ? new Date(M.at).toTimeString().slice(0, 8) : '—') + '，每 3 分钟自动刷新。</div>';
+  /* 四榜（§316 用户口径：量比 / 换手率 / 成交额 / 主力净流入 各前 20，一行一只） */
+  h += wtFundBlock('① 量比 TOP' + WTX_RULE.n + '（相对 5 日均量的放量强度）', M.vrRows, 'vr',
+    M.vrErr ? ('量比未取到（' + M.vrErr + '）—— 本榜暂缺，不估数') : '候选池内暂无量比数据（—）');
+  h += wtFundBlock('② 换手率 TOP' + WTX_RULE.n + '（筹码一日换手）', M.turnRows, 'turn', '换手率榜未取到（—）');
+  h += wtFundBlock('③ 成交额 TOP' + WTX_RULE.n + '（当日资金主战场）', M.topAmt, 'amt', '成交额榜未取到（—）');
+  h += wtFundBlock('④ 主力净流入 TOP' + WTX_RULE.n + '（钱去了哪）', M.inRows, 'flow', '资金流榜未取到（—）');
+  h += '<div class="wt-note">📐 口径与边界：① <b>量比</b>＝腾讯行情「量比」字段（相对过去 5 日均量的放量倍数，64=新股/停牌已剔除，不印 0）；' +
+    '本机<b>没有全市场量比排序接口</b>（东财 clist、腾讯排行、雪球 screener、同花顺 data 实测全部不可达），' +
+    '故量比榜在<b>候选池＝成交额前 ' + WTX_RULE.poolN + ' ∪ 换手率前 ' + WTX_RULE.poolN + ' ∪ 净流入前 ' + WTX_RULE.poolN + '</b> 内排序，池外个股未参与 —— 这是口径边界，不是漏算。' +
+    '② 换手率榜＝新浪沪深 A 股按换手率降序（<b>含北交所</b>，30% 涨跌幅、换手率天然偏高）。' +
+    '③ 成交额榜＝新浪沪深 A 股按成交额降序（亿元=元/1e8）。' +
+    '④ 主力净额/占比＝新浪资金流榜（超大单口径估算，<b>大单拆分/对倒会失真</b>，故一律「资金 × 价格」交叉判定）；' +
+    '榜单已剔除 ETF/LOF/债券（实测资金流榜首常是国债 ETF），只留 A 股个股；' +
+    '资金列＝资金流榜两端各 ' + (WTX_RULE.poolN * (WTX_RULE.flowPages || 1)) + ' 名，仍取不到的票再逐只补查（≤' + WTX_RULE.singleMax + ' 只），补不到的印「—」不作资金结论。' +
+    '⑤ 判定阈值：净额占成交额 ≥5% 才算「资金信号有效」。' +
+    '⑥ <b>未纳入</b>北向资金 / 龙虎榜 / 两融（本机无稳定源）—— 缺它们时结论可信度按「中」看待。' +
+    '⑦ 数据时点 ' + (M.at ? new Date(M.at).toTimeString().slice(0, 8) : '—') + '，每 3 分钟自动刷新（本区最多 23 个请求，串行）。</div>';
   return h;
 }
 function wtGlobalHtml(){
@@ -36059,37 +36933,85 @@ function wtVerdictText(s) {
                              + benign（分歧三看是否良性）+ volDir（反包放量/无量）
    信号语义配色（与全站一致）：real=红(偏多可参与) / mid=黄(中性观望) / trap=绿(风险回避)。
    注意：这里的「退潮绿」是**风险语义色**，与数值涨跌的「跌绿」同源但语义不同，只动语义层。 */
+/* ★ 2026-11-13 §313（用户要求「分析板块分级标准有无错误」）—— 分类改为**阶段驱动**。
+   旧实现有三处标准错误（每条都有当日实测卡面证据）：
+     ① **风险否决抢在最前**：`if (g.veto) return trap` 排在阶段映射之前。`secRiskVeto` 的「板块内出现跌停」
+        是**绝对家数**（dt > 0 即否决），于是 传媒（122 只成分股、8 家涨停、13 家涨>5%）只因 1 家跌停，
+        整张卡挂「退潮风险」；汽车产业链（6 家涨停、4 板）同理。1 家拖垮 8 家 = 否决权失衡。
+     ② **分类自己又判一套**：`zt>0 && zb>=zt` 归退潮 —— 软件算力（2 家涨停 2 家炸板）、轻工家居（1 家 + 67% 炸板）
+        被判「退潮风险」，可它们的阶段是「启动」：还没涨过的板块谈不上「退潮」。
+        项目纪律是「同一个判断只有一个来源」，阶段既然只读 g.secc，分类就必须由 g.secc 映射，不能二次判定。
+     ③ **反包缺数当放量**：`(vd == null || vd > 0) → 真主线` —— 缺跨日成交额快照时 vd 为 null，
+        被当成「放量二波」直接进「可重点参与」。缺失 ≠ 通过（§305 以来一贯纪律）。
+   新口径：**阶段 → 基线分类**（唯一状态源），风险否决只做**降级**（real → mid），绝不反向翻成退潮。
+      · 退潮（ebb）                → 🚩 退潮风险
+      · 分歧（diverge）良性/恶性    → 良性：真主线（高低切仍在主线内）｜恶性：退潮风险
+      · 反包（rebound）放量/无量/未知 → 放量：真主线（二波候选）｜无量：退潮风险｜未知：轮动（二波待确认）
+      · 发酵 / 加速（ferment/accel） → 真主线（要求 ≥3 家涨停 + 等级 S/A）
+      · 确认（confirm）             → 等级 S/A 且 ≥3 家：真主线；否则轮动（次日再验）
+      · 启动（start）               → 轮动支线（试错）
+      · 无阶段判定                   → 回落家数：≥1 家 → 轮动，0 家 → 不构成主线
+   风险否决（g.veto）只把「真主线」降为「轮动支线」，理由里写明 ⛔ 原文 —— 涨停还在，不判退潮。 */
 function wtClassifySector(g) {
   if (!g) return { cls: 'mid', tag: '轮动支线', why: '无板块数据' };
   var key = (g.secc && g.secc.key) || '';
+  var sLb = (g.secc && g.secc.label) || '无周期判定';
   var grade = g.grade || 'B';
   var zt = g.zt || 0, zb = g.zb || 0;
-  /* ① 风险否决 / 退潮：直接归 trap（最高优先级，先排雷） */
-  if (g.veto) return { cls: 'trap', tag: '退潮风险', why: '⛔ ' + (g.vetoWhy || '风险否决') };
-  if (key === 'ebb') return { cls: 'trap', tag: '退潮风险', why: '情绪周期：退潮（家数萎缩 / 高位断板 / 板块内补跌）' };
-  /* ② 分歧：良性（龙头扛住 + 留活口）仍可算真主线；恶性（龙头未扛住 / 无活口）按退潮 */
-  if (key === 'diverge') {
-    var benign = g.secc && g.secc.benign;
-    return benign
-      ? { cls: 'real', tag: '真主线', why: '分歧（良性）：龙头扛住 + 留活口，主线未瓦解 → 高低切仍在主线内' }
-      : { cls: 'trap', tag: '退潮风险', why: '恶性分歧：龙头未扛住 / 无活口 → 按退潮处理（只卖不买）' };
+  var strong = (grade === 'S' || grade === 'A');
+  var vd = (g.secc && g.secc.volDir != null) ? (+g.secc.volDir) : null;
+  var out = null;
+  if (key === 'ebb') {
+    /* 退潮依据用「读数」拼，不复述 why[0] —— why[0] 是锚点行（如「涨停 1 家 / 最高 3 板（启动带）」），
+       而退潮往往是**后面**的前史闸 / 连降闸改判出来的，直接取第一条会印出与结论相反的文案（通信实测）。 */
+    var ebz = [];
+    var etr = (g.secc && g.secc.ztTrend && g.secc.ztTrend.trail) ? g.secc.ztTrend.trail : null;
+    if (etr) ebz.push('家数 ' + etr);
+    else if (g.secc && g.secc.yZt != null && g.secc.tZt != null) ebz.push('昨 ' + g.secc.yZt + ' 家 → 今 ' + g.secc.tZt + ' 家');
+    if (g.secc && g.secc.dt) ebz.push('跌停 ' + g.secc.dt + ' 家');
+    if (g.secc && g.secc.broken) ebz.push('最高标断板');
+    if (g.secc && g.secc.zbRate != null && g.secc.zbRate >= SECC_RULE.zbRateChaos) ebz.push('炸板率 ' + Math.round(g.secc.zbRate * 100) + '%');
+    out = { cls: 'trap', tag: '退潮风险', why: '阶段「退潮」：' + (ebz.length ? ebz.join('，') : '家数萎缩 / 高位断板 / 板块内补跌') };
+  } else if (key === 'diverge') {
+    out = (g.secc && g.secc.benign)
+      ? { cls: 'real', tag: '真主线', why: '阶段「分歧」· 良性：龙头扛住 + 留活口，主线未瓦解 → 高低切仍在主线内' }
+      : { cls: 'trap', tag: '退潮风险', why: '阶段「分歧」· 恶性：龙头未扛住 / 无活口 → 按退潮处理（只卖不买）' };
+  } else if (key === 'rebound') {
+    if (vd == null) {
+      out = { cls: 'mid', tag: '轮动支线',
+        why: '阶段「反包」· 量能未知（缺跨日成交额快照 wb_secsnap）→ 二波待确认，按试错对待（缺数 ≠ 放量，不默认升主线）' };
+    } else if (vd > 0) {
+      out = { cls: 'real', tag: '真主线',
+        why: '阶段「反包」· 放量收复（' + (g.secc && g.secc.boost != null ? g.secc.boost.toFixed(2) + '× 自身近期均量' : '—') + '）→ 二波候选' };
+    } else {
+      out = { cls: 'trap', tag: '退潮风险', why: '阶段「反包」· 无量反抽 → 逃命窗口（放量收复才升格为二波）' };
+    }
+  } else if (key === 'ferment' || key === 'accel') {
+    out = (zt >= 3 && strong)
+      ? { cls: 'real', tag: '真主线', why: sLb + '期 · ' + (g.ladder || '') + ' · ' + zt + ' 家涨停 · ' + grade + ' 级' }
+      : { cls: 'mid', tag: '轮动支线',
+        why: sLb + '期但强度不足（涨停 ' + zt + ' 家 / ' + grade + ' 级）→ 只做龙头，不按主线加仓' };
+  } else if (key === 'confirm') {
+    out = (zt >= 3 && strong)
+      ? { cls: 'real', tag: '真主线', why: '确认期 · ' + (g.ladder || '') + ' · ' + grade + ' 级（次日不破则主线成立）' }
+      : { cls: 'mid', tag: '轮动支线', why: '确认期待验（涨停 ' + zt + ' 家 / ' + grade + ' 级）→ 不确认，按试错对待' };
+  } else if (key === 'start') {
+    out = { cls: 'mid', tag: '轮动支线', why: (g.ladder || '') + ' · 启动（试错） · ' + grade + ' 级' };
+  } else if (zt >= 1) {
+    out = { cls: 'mid', tag: '轮动支线', why: (g.ladder || '') + ' · 无周期判定 · ' + grade + ' 级' };
+  } else {
+    out = { cls: 'mid', tag: '轮动支线', why: '涨停稀少 / 脉冲，不构成主线' };
   }
-  /* ③ 炸板 ≥ 涨停：封板质量差、资金分歧大 → 退潮风险 */
-  if (zt > 0 && zb >= zt) return { cls: 'trap', tag: '退潮风险', why: '炸板 ' + zb + ' 家 ≥ 涨停 ' + zt + ' 家（封板质量差，资金分歧大）' };
-  /* ④ 反包：放量二波候选可归真主线；无量逃命按退潮 */
-  if (key === 'rebound') {
-    var vd = g.secc && g.secc.volDir;
-    return (vd == null || vd > 0)
-      ? { cls: 'real', tag: '真主线', why: '反包（放量 / 二波候选）：资金回流，老龙头回封' }
-      : { cls: 'trap', tag: '退潮风险', why: '反包但无量（逃命窗口）→ 按退潮处理' };
+  /* 风险否决：只降级，不改方向。涨停家数还在（zt≥1）就说明多头仍在场，不能因炸板率/个别跌停判「退潮」。 */
+  if (g.veto) {
+    if (out.cls === 'real') {
+      out.cls = 'mid'; out.tag = '轮动支线';
+      out.why += '｜⛔ ' + (g.vetoWhy || '风险否决') + ' → 降为观察（涨停仍在，不判退潮）';
+    } else if (out.cls === 'mid') {
+      out.why += '｜⛔ ' + (g.vetoWhy || '风险否决') + '（只提示不升格退潮）';
+    }
   }
-  /* ⑤ 真主线：早中期周期（启动/确认/发酵/加速）+ 强等级（S/A）+ 足够宽度（≥3 家涨停） */
-  var earlyMid = (key === 'start' || key === 'confirm' || key === 'ferment' || key === 'accel');
-  if (earlyMid && (grade === 'S' || grade === 'A') && zt >= 3)
-    return { cls: 'real', tag: '真主线', why: (g.ladder || '') + ' · ' + (g.secc ? g.secc.label : '') + ' · ' + grade + ' 级' };
-  /* ⑥ 其余有涨停的 → 轮动支线（试错 / 观望） */
-  if (zt >= 1) return { cls: 'mid', tag: '轮动支线', why: (g.ladder || '') + ' · ' + (g.secc ? g.secc.label : '无周期判定') + ' · ' + grade + ' 级' };
-  return { cls: 'mid', tag: '轮动支线', why: '涨停稀少 / 脉冲，不构成主线' };
+  return out;
 }
 
 /* ★ 2026-10-28（用户要求）：板块「10 个交易日内最高板高度」+ 板块内实时连板梯队。
@@ -36606,6 +37528,13 @@ function wtMainLineCardsHtml() {
       (function () { try { return wtUdLineHtml(g.name, true); } catch (eUDl) { return ''; } })() +
       /* ★ 2026-11-12 §307：成分股中涨幅 >5% 的家数 + 名单（与上一行同一份快照、同一把尺） */
       (function () { try { return wtBigUpLineHtml(g.name); } catch (eB5) { return ''; } })() +
+      /* ★ 2026-11-13 §311（用户要求）：💰 赚亏钱效应 —— 昨日涨停股今日平均涨幅 / 红盘率 / 大面数。
+         与「昨涨停 N 家」「晋级率」同一批票（g.secc.t1v），回答「昨天做多的人今天赚没赚」。 */
+      (function () { try { return wtEarnLineHtml(g.name, g); } catch (eER) { return ''; } })() +
+      /* ★ 2026-11-13 §315（用户要求）：🔔 集合竞价板块强势异动 —— 9:25 今开口径（今开/昨收全天不变），
+         与 §23 竞价异动聚类同一把尺、零新增请求。放在赚亏效应之后：两行都是「情绪读数」同组，
+         且不拆散 meta（涨停家数）↔ ⚠ 风险股家数 这一对多空并排（§306）。 */
+      (function () { try { return wtAucLineHtml(g.name); } catch (eAU) { return ''; } })() +
       /* ★ 2026-11-08 §287：交易日 10 点量比>5 个股清单 + 逐只涨跌幅（与上一行同一份成分股快照）。
          同策略：读数层出任何异常都只留白，**绝不把整列卡片打空**。 */
       (function () { try { return wtV10LineHtml(g.name, true); } catch (eV10l) { return ''; } })() +
@@ -44814,27 +45743,55 @@ function jjBuild(prev, zb, iq, pq, up, dn){
         只存不展示，不得用于任何阈值判断。
      落进快照：9:25 定格后 jjTick 不再重算 → 收盘后打开看到的仍是竞价时点的判断，
      绝不被收盘涨停池（7/6/6 那种）污染。行业键与 locSec 归一口径一致。 */
-  var af = {}, afList = [];
+  var af = {}, afList = [], afAll = {};
   (up || []).forEach(function(x){
     var o1 = num(x.f17), o2 = num(x.f18);
     if(o1 == null || o2 == null || o2 <= 0) return;
     /* ⚠️ 必须取整到 0.01%：浮点误差会让 (10.2-10.0)/10.0*100 = 1.999…99 < 2，
        「整 2% 高开」被门槛误杀 → 同板块少一只就掉到 focusN 之下 → 整组方向凭空消失。 */
     var gap = Math.round((o1 - o2) / o2 * 10000) / 100;
-    if(gap < JJ_RULE.focusGap) return;
     if(jjIsNewListed(x.f14)) return;
     var code = String(x.f12), sec = locSec(code, x.f100);
     if(sec === '—') return;
+    /* ★★ 2026-11-13 §315：全板块聚合（afAll）—— 上面 af 只留前 4 组（§23 展示用），
+       而三类卡有 12 张，必须每个板块都能查到自己那一行，否则绝大多数卡查不到 = 永远留白。
+       只累加**绝对家数**（≥gapLo / ≥gapHi）与低开家数，不存占比：
+       涨幅榜按涨幅取前 N 行，平开与小幅高开的票不在样本里 → 分母被截断，占比会系统性虚高。
+       amt 只对高开股累加（f6 仅 9:25 定格窗口是竞价额，判据层另有 amtOk 闸门）。 */
+    var q = afAll[sec];
+    if(!q) q = afAll[sec] = { hi: [], dn: 0, zt: 0, amt: 0 };
+    if(gap >= WT_AUC_RULE.gapLo){ q.hi.push(gap); q.amt += (num(x.f6) || 0); }
+    if(gap < JJ_RULE.focusGap) return;
     var o = af[sec];
     if(!o) o = af[sec] = { name: sec, n: 0, hi: 0, max: 0, amt: 0, zt: 0 };
     o.n++; o.amt += (num(x.f6) || 0);
     if(gap >= JJ_RULE.focusHi) o.hi++;
     if(gap > o.max) o.max = gap;
   });
-  ztList.forEach(function(x){ if(af[x.sec]) af[x.sec].zt++; });
+  /* ★ §315：低开侧补齐（跌幅榜前 N 覆盖所有 ≤−gapLo 的票，是完整的）
+     —— 「板块内部分高开部分低开 = 分歧」这条判据只用高开家数做不到，必须有低开家数交叉否决。 */
+  (dn || []).forEach(function(x){
+    if(jjIsNewListed(x.f14)) return;
+    var o1 = num(x.f17), o2 = num(x.f18);
+    if(o1 == null || o2 == null || o2 <= 0) return;
+    var gap = Math.round((o1 - o2) / o2 * 10000) / 100;
+    if(gap > -WT_AUC_RULE.gapLo) return;
+    var sec = locSec(String(x.f12), x.f100);
+    if(sec === '—') return;
+    var q = afAll[sec];
+    if(!q) q = afAll[sec] = { hi: [], dn: 0, zt: 0, amt: 0 };
+    q.dn++;
+  });
+  ztList.forEach(function(x){
+    if(af[x.sec]) af[x.sec].zt++;
+    if(afAll[x.sec]) afAll[x.sec].zt++;
+  });
   Object.keys(af).forEach(function(k){ if(af[k].n >= JJ_RULE.focusN) afList.push(af[k]); });
   afList.sort(function(a, b){ return b.n - a.n || b.hi - a.hi || b.max - a.max; });
   s.aucFocus = afList.slice(0, 4);
+  /* ★ §315：全板块聚合落进快照。必须**无条件**赋对象（哪怕空 {}）——
+     jjTick 的旧快照升级判据是 `aucSec === undefined`，写成「有才赋」会让空聚类的快照每次刷新都被判成旧版。 */
+  s.aucSec = afAll;
   var r = s.dtCnt > 0 ? (s.ztCnt / s.dtCnt) : (s.ztCnt > 0 ? Infinity : null);
   s.ratio = r;
   s.ratioTxt = (r == null) ? '—' : (s.dtCnt === 0 ? (s.ztCnt + ':0') : (s.ztCnt + ':' + s.dtCnt + '（' + r.toFixed(1) + ':1）'));
@@ -45119,8 +46076,12 @@ function jjTick(){
     try{ captureM730Auc(); }catch(eA){}                /* 7.30 竞价量采集（9:25-9:30 窗口 · 30s 节流，自带守卫）—— 2026-09-27 恢复自动驱动 */
     var s0 = jjSnapGet(today);
     /* ★ 2026-09-29：旧版快照升级 —— 快照定格时还没有「竞价异动聚类」字段（aucFocus），
-       视为缺字段而非当日已定格 → 重算一次补齐（今开/昨收全天不变 → 补算忠实竞价时点）。 */
-    var stale = !!(s0 && s0.snap && s0.snap.aucFocus === undefined && s0.snap.date === today);
+       视为缺字段而非当日已定格 → 重算一次补齐（今开/昨收全天不变 → 补算忠实竞价时点）。
+       ★ 2026-11-13 §315：同一钩子扩到 aucSec（全板块高开聚合，三类卡 12 张卡都要用）。
+       缺 aucSec 的快照（本版之前落的盘）→ 当日补算一次，不必等到下一个交易日才有竞价行；
+       补算不覆盖旧快照（失败仍照常展示旧快照），只是多试一次取数。 */
+    var stale = !!(s0 && s0.snap && s0.snap.date === today
+      && (s0.snap.aucFocus === undefined || s0.snap.aucSec === undefined));
     if((s0 && !stale) || (JJ.fixed && !stale)) return; /* 当日已定格 → 不再取数 */
     var n = zelHm(hmNow()); if(isNaN(n) || n < 915) return;
     /* ★ 2026-09-30：9:25 准点产出「竞价异动分析」（不等 15 秒采样节流碰巧落在定格窗口）。
@@ -47442,22 +48403,23 @@ function rcWtSection(){
     h += '<p class="m11s-p"><span class="m11s-h-hard">实时盯盘 · 龙头梯队：</span><b>' + esc(s.leader.n) + '</b>（' + s.leader.lbc + ' 板）' +
       (others ? '；同板梯队：' + others : '') + '。</p>';
   }
-  /* ④ 个股资金主战场（十一） */
+  /* ④ 个股资金主战场（十一 · §316 四榜：量比 / 换手率 / 成交额 / 净流入 各前 20） */
   try{
     var MF = wtxFundModel();
-      if(MF.hasAmt || MF.hasFlow){
+      if(MF.hasAmt || MF.hasTurn || MF.hasFlow){
         var parts = [];
-        if(MF.resonance.length) parts.push('双榜共振（成交额×净流入）<b>' + MF.resonance.length + ' 只</b>：' +
-          MF.resonance.slice(0, 4).map(function(r){ return '<b>' + esc(r.name) + '</b>(成交 ' + wtYi(r.amount) + ' · 净 ' + wtYi(r.net) + ')'; }).join('、') +
+        if(MF.multi.length) parts.push('多榜共振（量比/换手/成交/净流入 前20 交叉）<b>' + MF.multi.length + ' 只</b>：' +
+          MF.multi.slice(0, 4).map(function(x){ return '<b>' + esc(x.r.name) + '</b>(' + esc(x.ks.join('·')) + ')'; }).join('、') +
           ' —— 当日资金最强共识');
-        if(MF.outflow.length) parts.push('成交额 TOP10 里净流出 ' + MF.outflow.length + ' 只（' +
+        if(MF.outflow.length) parts.push('成交额 TOP20 里净流出 ' + MF.outflow.length + ' 只（' +
           MF.outflow.slice(0, 3).map(function(r){ return esc(r.name); }).join('、') + '）—— 高成交+净流出 = 出货区，不接');
-        if(MF.inRows.length) parts.push('净流入 TOP 合计 ' + wtYi(MF.sumNet));
+        if(MF.inRows.length) parts.push('净流入 TOP20 合计 ' + wtYi(MF.sumNet));
+        if(MF.vrRows.length) parts.push('量比榜首 <b>' + esc(MF.vrRows[0].name) + '</b>（量比 ' + MF.vrRows[0].vr.toFixed(2) + '）');
         if(parts.length){
           have++;
-          if(MF.resonance.length) V.push('资金最强共识 <b>' + esc(MF.resonance[0].name) + '</b>（成交 ' + wtYi(MF.resonance[0].amount) + ' · 净 ' + wtYi(MF.resonance[0].net) + '）' +
+          if(MF.multi.length) V.push('资金最强共识 <b>' + esc(MF.multi[0].r.name) + '</b>（' + esc(MF.multi[0].ks.join('·')) + ' 共振）' +
             (MF.outflow.length ? '；高成交+净流出 ' + MF.outflow.length + ' 只 = 出货区不接' : '；无出货区'));
-          else V.push('无双榜共振个股 → 资金没有形成单票共识');
+          else V.push('四榜无交叉 → 资金没有形成单票共识');
           h += '<p class="m11s-p"><span class="m11s-h-dir">实时盯盘 · 个股资金主战场：</span>' + parts.join('；') + '。</p>';
         }
       }

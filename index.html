@@ -1605,6 +1605,22 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
   #wtop .wt-cp-tb td.ok { color:#6ee7b7; }
   #wtop .wt-cp-tb td.no { color:#ff9f97; }
   #wtop .wt-cp-note { font-size:11px; color:#94a3b8; line-height:1.7; margin-top:6px; }
+  #wtop .wt-cp-blank { font-size:10.5px; color:#94a3b8; line-height:1.7; margin-top:7px; border-top:1px dashed rgba(148,163,184,.16); padding-top:6px; }
+  /* §336c 四步执行器 */
+  #wtop .wt-fse-h { font-size:11.5px; font-weight:700; color:#e2e8f0; margin:8px 0 3px; }
+  #wtop .wt-fse-it { font-size:11px; line-height:1.6; padding:2px 0; border-top:1px dashed rgba(148,163,184,.12); color:#cbd5e1; }
+  #wtop .wt-fse-it:first-of-type { border-top:0; }
+  #wtop .wt-fse-rk { display:inline-block; min-width:14px; height:14px; line-height:14px; text-align:center; font-size:9.5px; font-weight:800; color:#94a3b8; background:rgba(148,163,184,.16); border-radius:3px; margin-right:5px; }
+  #wtop .wt-fse-n { font-weight:700; color:#e2e8f0; }
+  #wtop .wt-fse-c { font-size:10px; color:#94a3b8; font-family:ui-monospace,Consolas,monospace; margin-left:3px; }
+  #wtop .wt-fse-tag { display:inline-block; font-size:10px; padding:0 5px; border-radius:4px; margin:0 3px 0 4px; background:rgba(148,163,184,.14); color:#cbd5e1; }
+  #wtop .wt-fse-tag.up { background:rgba(240,69,58,.16); color:#ff9f97; }
+  #wtop .wt-fse-tag.dn { background:rgba(16,185,129,.16); color:#6ee7b7; }
+  #wtop .wt-fse-tag.warn { background:rgba(251,191,36,.14); color:#fbbf24; }
+  #wtop .wt-fse-row { font-size:11px; color:#cbd5e1; line-height:1.7; padding:2px 0; border-top:1px dashed rgba(148,163,184,.12); }
+  #wtop .wt-fse-row:first-of-type { border-top:0; }
+  #wtop .wt-fse-sec { font-weight:700; color:#e2e8f0; }
+  #wtop .wt-fse-meta { color:#94a3b8; }
 
   /* ★ 2026-11-16 §335：三类卡「该板块全部涨停个股」清单行 */
   #wtop .wt-ztstk { font-size:11px; line-height:1.75; margin:5px 0; padding:5px 8px; border-radius:6px;
@@ -37549,15 +37565,15 @@ function wtCoreGateHtml(raw) {
 }
 /* 四步漏斗 + 三类票 + 龙头观 + 反向声音：静态核验定稿，不读实时数、不重复卡内已有的数字 */
 function wtCorePlaybookHtml() {
-  return '<details class="wt-cp-det"><summary>📖 选核心策略定稿：四步漏斗 · 五类辨识度形态 · 三类票 · 龙头观（全网三轮核验 · 点开）</summary><div>'
+  return '<details class="wt-cp-det"><summary>📖 选核心策略定稿：四步漏斗 · 五类辨识度形态 · 四步执行器（实时） · 三类票 · 龙头观（全网三轮核验 · 点开）</summary><div>'
     + '<div class="wt-cp-lead">核心一句话：<b>选核心不是看单票「感觉」，而是在板块内做横向 / 纵向 / 梯队三层比较</b>；涨幅只作排序，不作买入标准。'
-    + '　下方每一行都可在<b>本工作区三类卡现有读数</b>里找到对应的数（分类看 c.tag、身位看「10日高 N 板」+ 梯队、中军看成分股快照、负反馈看「⚠ 风险股」行）——'
+    + '　下方每一行的<b>可对应读数</b>见表（分类看 c.tag、身位看「10日高 N 板」+ 梯队、中军看成分股快照、负反馈看「⚠ 风险股」行）。⚠ 诚实口径：本工作区按涨停池聚类，<b>没有 5 日 / 10 日涨幅榜</b>——①「涨幅榜排序」半步与「二波绕异动 / 趋势爬坡」、③「封单质量 / 带动性 / 换手」、④「被重点监控 / 发函」均无卡内读数，需人工比对榜单 / 盘口 / 公告；②中军判断由 📊 成分股 + 宽度替代 10 日榜（同一目的、不同工具）。卡内只覆盖板位 / 封板时间 / 梯队 / 中军 / 负反馈维度。'
     + '本层不另算一套、不重复印数，只给方法论与读法。</div>'
     + '<div class="wt-cp-tb"><table><thead><tr><th>步骤</th><th>做什么</th><th>本卡对应读数</th><th>核验</th></tr></thead><tbody>'
-    + '<tr><td>① 5 日榜看形态</td><td>涨幅榜前 20~30 只作排序；看几天几板 / 二波绕异动 / 趋势爬坡 / 快速封板，不看涨幅高低</td><td>「10日高 N 板」+ 连板梯队 + 🔥 连N日上榜</td><td class="ok">成立</td></tr>'
+    + '<tr><td>① 5 日榜看形态</td><td>涨幅榜前 20~30 只作排序；看几天几板 / 二波绕异动 / 趋势爬坡 / 快速封板，不看涨幅高低</td><td>涨停股全列（板位徽标＋首封时间）＋ 连板梯队 ＋ 10日高 N 板　⚠ 涨幅榜本工作区未取；绕异动 / 爬坡形态无卡内读数，需人工比对</td><td class="ok">成立</td></tr>'
     + '<tr><td>② 10 日榜交叉 + 中军</td><td>补入大市值趋势票（中军）；中军不参与的方向按支线降一档</td><td>📊 成分股涨跌比 / 中位股 + 宽度（中军定生死 §309）</td><td class="ok">成立</td></tr>'
-    + '<tr><td>③ 连板梯队定位身位</td><td>画天梯，横向比首封时间 / 封单质量 / 带动性 / 换手</td><td>卡内连板梯队 + 🪜 晋级率 + 🔔 竞价异动</td><td class="ok">成立</td></tr>'
-    + '<tr><td>④ 跌幅榜反向排雷</td><td>一字跌停 / 被重点监控 / 隔日大面者入回避池，不因涨得多进核心池</td><td>⚠ 风险股 N 家（跌停/大面/核按钮）+ 二·C 今日领跌</td><td class="ok">成立</td></tr>'
+    + '<tr><td>③ 连板梯队定位身位</td><td>画天梯，横向比首封时间 / 封单质量 / 带动性 / 换手</td><td>卡内连板梯队 + 🪜 晋级率 + 🔔 竞价异动 + 涨停股全列首封时间　⚠ 封单质量 / 带动性 / 换手无卡内读数，需人工盘口比对</td><td class="ok">成立</td></tr>'
+    + '<tr><td>④ 跌幅榜反向排雷</td><td>一字跌停 / 被重点监控 / 隔日大面者入回避池，不因涨得多进核心池</td><td>⚠ 风险股 N 家（跌停 / 大面 / 核按钮 / 跌幅&gt;7%，去重）+ 二·C 今日领跌　⚠ 「被重点监控 / 发函」公告类卡内无，需人工查公告</td><td class="ok">成立</td></tr>'
     + '</tbody></table></div>'
     + '<div class="wt-cp-tb"><table><thead><tr><th>辨识度形态</th><th>成立条件</th><th>失效条件（红线）</th><th>核验</th></tr></thead><tbody>'
     + '<tr><td>四天三板及以上</td><td>3 板定龙：仍封 + 带动 2板/1板梯队 + 换手 5~20%</td><td>梯队断层、上层独苗、中层批量跌停</td><td class="ok">成立</td></tr>'
@@ -37573,10 +37589,167 @@ function wtCorePlaybookHtml() {
     + '<div class="wt-cp-lead"><b>龙头观（动态，不是名单）：</b>当前龙头 + 潜在接班者同池观察；卡位三步＝老龙炸板跳水 → 后排快速拉升 → 后排牢牢封板且不再跟随跳水。'
     + '龙头断板且无新补涨龙接力＝行情结束，两者一并移出。高位板以短线博弈资金为主、封单结构脆弱，大盘转弱时易被砸（不写「全是做 T 资金」）。</div>'
     + '<div class="wt-cp-note">⚠ 反向声音：「胜率 90%」「次日 75%」等数字无样本期/滑点口径，未采信；秒板买不到、竞价滑点、T+1 兑现是结构性约束；'
-    + '刻意压价规避异动属监管灰色地带，只作现象解读不作策略依据。谐音人名（返利/大圣/华智/流金等）未能核实代码，一律留白不配对。'
+    + '刻意压价规避异动属监管灰色地带，只作现象解读不作策略依据。口述谐音已逐只核实代码（文投控股600715、凯撒文化002425 等 13 只，明细见研报）；上海华氏/华字/创新药具体票/湖北20cm 未能核实或口径不符，维持留白。'
     + '　本层只读展示、不构成投资建议。</div>'
     + '</div></details>';
 }
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ★ 2026-11-16 §336c（用户要求）：「严格按照做什么的内容执行」——四步执行器。
+   把四步漏斗表「做什么」列里卡内有读数的半步逐条执行：
+     ① 涨停榜前 20~30 只作排序（板位高→低、首封早→晚，不看涨幅高低）；
+        打卡内可判的两类辨识度标：N板（几天几板）/ 快速板（首封≤10:30，与定稿表「10:30 前封板」同口径）；
+        二波绕异动 / 趋势爬坡无卡内读数 → 不判定（显式留白披露）。
+     ② 中军交叉：宽度 p5≥55%（§309 承接口径）→「中军候选」；否则「支线」；
+        家数趋势↓（7.5 secc.ztTrend 同尺）→ 提示按支线降一档；市值 / 10日榜未取 → 候选≠中军判定。
+     ③ 身位天梯：每板块龙头（最高板·最早首封）＋梯队分布＋10日高，横向可比首封时间。
+     ④ 负反馈排雷：m5RiskMap()（⚠ 风险股同一把尺）＋卡内跌停 → 标注；公告监控类卡内无 → 需人工。
+   纪律：只用卡内同源数据、不新增取数；缺数留白不编 0；只读执行层，
+     不改打分、不发买卖信号、不进钉钉。
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function wtFourStepExecHtml() {
+  var snap = (typeof WT !== 'undefined' && WT.snap) ? WT.snap : null;
+  var secs = (snap && snap.sectors) ? snap.sectors.slice(0, 12) : [];
+  if (!secs.length) return '';
+  var F = (typeof fmtFbt === 'function') ? fmtFbt : function (v) { return (v == null) ? '—' : String(v); };
+  var GSM = {};
+  try { (typeof wtGrades === 'function' ? (wtGrades() || []) : []).forEach(function (x) { if (x && x.name) GSM[x.name] = x; }); } catch (eG) { }
+  var RKM = null;
+  try { RKM = (typeof m5RiskMap === 'function') ? m5RiskMap() : null; } catch (eR) { RKM = null; }
+  /* ② 中军交叉：宽度 p5≥55%（§309 承接口径）；宽度缺 → 留白不判 */
+  function midTag(name) {
+    var b = null;
+    try { b = (typeof wtUdRowOf === 'function') ? wtUdRowOf(name) : null; } catch (eU) { b = null; }
+    var tr = null;
+    try { var G = GSM[name]; if (G && G.secc && G.secc.ztTrend) tr = G.secc.ztTrend.trend; } catch (eT) { tr = null; }
+    var dnTxt = (tr === 'down') ? ' · 家数趋势↓降一档' : '';
+    if (b && b.p5 != null) {
+      var p = Math.round(b.p5);
+      return { mid: p >= 55, txt: (p >= 55 ? '中军候选' : '支线') + '（宽度 ' + p + '%）' + dnTxt };
+    }
+    return { mid: null, txt: '宽度—' + (tr === 'down' ? ' · 家数趋势↓' : '') };
+  }
+  /* 板位→首封 排序（fbt 缺失排最后），与做什么①同尺 */
+  function byBoardFbt(a, b) {
+    if (b.lbc !== a.lbc) return b.lbc - a.lbc;
+    var fa = (a.fbt == null) ? 999999 : a.fbt, fb = (b.fbt == null) ? 999999 : b.fbt;
+    return fa - fb;
+  }
+  function ladderTxt(rows) {
+    var cnt = {};
+    rows.forEach(function (z) { cnt[z.lbc] = (cnt[z.lbc] || 0) + 1; });
+    return Object.keys(cnt).map(Number).sort(function (x, y) { return y - x; })
+      .map(function (l) { return (l >= 2 ? l + '板×' + cnt[l] : '首板×' + cnt[l]); }).join(' ');
+  }
+  var all = [], nRow = 0;
+  secs.forEach(function (sg) {
+    var rows = sg.rows || [];
+    nRow += rows.length;
+    rows.forEach(function (z) {
+      if (!z) return;
+      all.push({ c: z.c || '', n: z.n || '', lbc: (+z.lbc || 1), fbt: (z.fbt == null ? null : +z.fbt), sec: sg.name || '' });
+    });
+  });
+  all.sort(byBoardFbt);
+  var h = '<details class="wt-cp-det"><summary>⚙ 四步执行器 · 严格按「做什么」列执行（实时读卡内同源数据 · 点开）</summary><div>'
+    + '<div class="wt-cp-lead">执行口径：①涨停榜前 30 只作排序＝板位高→低、首封早→晚（不看涨幅）；②宽度≥55% → 中军候选（§309 承接口径），中军不参与的方向按支线降一档；'
+    + '③天梯＝每板块龙头（最高板·最早首封）＋梯队＋10日高；④⚠ 风险股（m5RiskMap 同一把尺）＋跌停入回避标注。'
+    + '<b>卡内无读数的半步不判定、显式留白</b>（见底部披露）。</div>';
+  /* ① 当日强势 */
+  h += '<div class="wt-fse-h">① 当日强势 · 涨停池前 30（板位→首封，不看涨幅）</div>';
+  if (!nRow) {
+    h += '<div class="wt-cp-note">涨停池个股明细未取到（本机行情接口受限是常态）→ ①③ 执行结果留白，不编造。</div>';
+  } else {
+    all.slice(0, 30).forEach(function (z, i) {
+      var tags = '';
+      if (z.lbc >= 2) tags += '<span class="wt-fse-tag up">' + z.lbc + '板</span>';
+      if (z.fbt != null && z.fbt <= 103000) tags += '<span class="wt-fse-tag up">快速板</span>';
+      if (RKM && RKM[z.sec] && RKM[z.sec].n) tags += '<span class="wt-fse-tag warn">⚠板块负反馈</span>';
+      h += '<div class="wt-fse-it"><span class="wt-fse-rk">' + (i + 1) + '</span>'
+        + '<span class="wt-fse-n">' + esc(z.n || '—') + '</span>'
+        + (z.c ? '<span class="wt-fse-c">' + esc(String(z.c).replace(/^(sh|sz|bj)/i, '')) + '</span>' : '')
+        + tags
+        + '<span class="wt-fse-meta">　' + esc(z.sec || '—') + ' · 首封 ' + esc(F(z.fbt)) + '</span>'
+        + '</div>';
+    });
+  }
+  /* ② 中军交叉（板块级，宽度口径） */
+  h += '<div class="wt-fse-h">② 中军交叉 · 宽度≥55% → 中军候选；中军不参与的方向按支线降一档</div>';
+  secs.forEach(function (sg) {
+    var m = midTag(sg.name);
+    h += '<div class="wt-fse-row"><span class="wt-fse-sec">' + esc(sg.name) + '</span>'
+      + '<span class="wt-fse-tag' + (m.mid === true ? ' up' : '') + '">' + esc(m.txt) + '</span>'
+      + '</div>';
+  });
+  /* ③ 身位天梯 */
+  h += '<div class="wt-fse-h">③ 身位天梯 · 每板块龙头（最高板·最早首封）＋梯队＋10日高</div>';
+  if (!nRow) {
+    h += '<div class="wt-cp-note">个股明细未取到 → 天梯留白。</div>';
+  } else {
+    secs.forEach(function (sg) {
+      var rows = (sg.rows || []).map(function (z) {
+        return z ? { n: z.n || '', lbc: (+z.lbc || 1), fbt: (z.fbt == null ? null : +z.fbt) } : null;
+      }).filter(function (x) { return !!x; });
+      if (!rows.length) return;
+      rows.sort(byBoardFbt);
+      var top = rows[0];
+      var tMax = (+sg.maxLbc || 0);
+      var m10 = tMax;
+      try { m10 = (typeof secMaxLbc10d === 'function') ? secMaxLbc10d(sg.name, tMax) : tMax; } catch (eM) { m10 = tMax; }
+      var m = midTag(sg.name);
+      var bits = [];
+      if (sg.zb) bits.push('炸板 ' + sg.zb);
+      if (sg.dt) bits.push('跌停 ' + sg.dt);
+      var k = RKM ? RKM[sg.name] : null;
+      if (k && k.n) bits.push('⚠ 风险股 ' + k.n);
+      h += '<div class="wt-fse-row"><span class="wt-fse-sec">' + esc(sg.name) + '</span>'
+        + '<span class="wt-fse-tag' + (m.mid === true ? ' up' : '') + '">' + esc(m.txt) + '</span>'
+        + '　龙头 ' + esc(top.n || '—') + '（' + top.lbc + '板 · 首封 ' + esc(F(top.fbt)) + '）'
+        + '　<span class="wt-fse-meta">梯队 ' + esc(ladderTxt(rows)) + ' ｜ 10日高 ' + m10 + ' 板' + (m10 !== tMax ? '（今日 ' + tMax + '）' : '')
+        + (bits.length ? ' ｜ ' + esc(bits.join(' · ')) : '') + '</span>'
+        + '</div>';
+    });
+  }
+  /* ④ 负反馈排雷 */
+  h += '<div class="wt-fse-h">④ 负反馈排雷 · ⚠ 风险股（同一把尺）＋ 跌停 → 回避标注</div>';
+  if (RKM == null) {
+    h += '<div class="wt-cp-note">风险引擎不可用（mrUniverse 未就绪）→ ④ 留白，不编造。</div>';
+  } else {
+    var neg = [];
+    secs.forEach(function (sg) {
+      var k = RKM[sg.name];
+      var dt = (sg.dt != null) ? +sg.dt : 0;
+      if ((k && k.n) || dt > 0) neg.push({ name: sg.name, k: k, dt: dt });
+    });
+    if (!neg.length) {
+      h += '<div class="wt-cp-note">当前 12 板块口径下未发现 ⚠ 风险股 / 跌停（真实零，非缺数）。</div>';
+    } else {
+      neg.forEach(function (x) {
+        var parts = [];
+        if (x.k) {
+          if (x.k.dt) parts.push('跌停 ' + x.k.dt);
+          if (x.k.face) parts.push('大面 ' + x.k.face);
+          if (x.k.nuke) parts.push('核按钮 ' + x.k.nuke);
+          if (x.k.minZdp != null) parts.push('最深 ' + (x.k.minZdp > 0 ? '+' : '') + (Math.round(x.k.minZdp * 10) / 10) + '%');
+        }
+        if (x.dt > 0 && !(x.k && x.k.dt)) parts.push('卡内跌停 ' + x.dt);
+        h += '<div class="wt-fse-row"><span class="wt-fse-sec">' + esc(x.name) + '</span>'
+          + '<span class="wt-fse-tag dn">' + esc(parts.join(' · ') || '负反馈') + '</span>'
+          + (x.k && x.k.names && x.k.names.length ? '<span class="wt-fse-meta">　代表：' + esc(x.k.names.join('、')) + '</span>' : '')
+          + '</div>';
+      });
+    }
+  }
+  /* 不可执行半步：固定披露，需人工 */
+  h += '<div class="wt-cp-blank">不可执行半步（卡内无读数 → 留白需人工，绝不编造）：'
+    + '① 二波绕异动 / 趋势爬坡形态判定、5日 / 10日涨幅榜（本工作区未取）；'
+    + '② 大市值筛选（市值未取）——中军候选≠中军判定，以 📊 成分股 / §309 为准；'
+    + '③ 封单质量 / 带动性 / 换手（需人工盘口）；'
+    + '④ 被重点监控 / 发函公告（需人工查公告）。'
+    + '　执行层只读、不新增取数、不改四指标打分、不发买卖信号、不进钉钉。</div>';
+  h += '</div></details>';
+  return h;
+}
+
 /* 顶层入口：拼装闸门条 + 折叠定稿；任何异常只留白 */
 function wtCorePickHtml() {
   var raw = null;
@@ -37585,7 +37758,9 @@ function wtCorePickHtml() {
   try { gate = wtCoreGateHtml(raw); } catch (eG) { gate = ''; }
   var play = '';
   try { play = wtCorePlaybookHtml(); } catch (eP) { play = ''; }
-  return '<div class="wt-cp">' + gate + play + '</div>';
+  var exec = '';
+  try { exec = wtFourStepExecHtml(); } catch (eX) { exec = ''; }
+  return '<div class="wt-cp">' + gate + play + exec + '</div>';
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

@@ -1574,6 +1574,50 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
 .tm-pfoot{font-size:10.5px;color:#64748b;margin-top:4px;line-height:1.5}
 .tm-pno{font-size:12px;color:#94a3b8}
 
+
+  /* ★ 2026-11-16 §334：主线选核心 · 策略观察层（只读，环境闸门 + 折叠策略定稿）。
+     信号语义：进攻=红 / 防守=黄 / 空仓=绿（与全站 wt-msg.up/.warn/.dn 同源）；不新增判据、不进打分。 */
+  #wtop .wt-cp { margin:8px 0 4px; }
+  #wtop .wt-cp-gate { border:1px solid #233047; border-left:3px solid #64748b; border-radius:8px; padding:8px 11px; margin:6px 0; background:rgba(15,23,42,.55); }
+  #wtop .wt-cp-gate.attack { border-left-color:#f0453a; background:rgba(240,69,58,.08); }
+  #wtop .wt-cp-gate.defend { border-left-color:#fbbf24; background:rgba(251,191,36,.07); }
+  #wtop .wt-cp-gate.empty  { border-left-color:#10b981; background:rgba(16,185,129,.08); }
+  #wtop .wt-cp-gate.na     { border-left-color:#64748b; }
+  #wtop .wt-cp-gate-h { font-size:12.5px; font-weight:700; color:#e2e8f0; margin-bottom:5px; }
+  #wtop .wt-cp-src { font-size:10.5px; color:#94a3b8; font-weight:400; margin-left:8px; }
+  #wtop .wt-cp-gate-b { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  #wtop .wt-cp-badge { display:inline-block; font-size:12px; font-weight:800; padding:2px 10px; border-radius:999px; white-space:nowrap; border:1px solid #475569; color:#cbd5e1; }
+  #wtop .wt-cp-badge.up   { color:#ff9f97; border-color:#f0453a; background:rgba(240,69,58,.14); }
+  #wtop .wt-cp-badge.mid  { color:#fbbf24; border-color:#fbbf24; background:rgba(251,191,36,.12); }
+  #wtop .wt-cp-badge.dn   { color:#6ee7b7; border-color:#10b981; background:rgba(16,185,129,.13); }
+  #wtop .wt-cp-badge.na   { color:#94a3b8; }
+  #wtop .wt-cp-evid { font-size:11.5px; color:#cbd5e1; }
+  #wtop .wt-cp-gate-note { font-size:11px; color:#94a3b8; line-height:1.7; margin-top:5px; }
+  #wtop .wt-cp-na { color:#fbbf24; }
+  #wtop .wt-cp-det { margin:6px 0 2px; border:1px solid rgba(148,163,184,.2); border-radius:8px; background:rgba(148,163,184,.04); }
+  #wtop .wt-cp-det > summary { cursor:pointer; font-size:11.5px; color:#cbd5e1; padding:6px 10px; font-weight:600; }
+  #wtop .wt-cp-det > div { padding:2px 11px 10px; }
+  #wtop .wt-cp-lead { font-size:12px; color:#e2e8f0; line-height:1.75; margin:6px 0; }
+  #wtop .wt-cp-tb { overflow-x:auto; margin:6px 0; }
+  #wtop .wt-cp-tb table { width:100%; font-size:11.5px; border-collapse:collapse; }
+  #wtop .wt-cp-tb th, #wtop .wt-cp-tb td { padding:4px 7px; border-bottom:1px solid rgba(148,163,184,.14); text-align:left; vertical-align:top; }
+  #wtop .wt-cp-tb th { color:#94a3b8; font-weight:600; font-size:11px; }
+  #wtop .wt-cp-tb td.ok { color:#6ee7b7; }
+  #wtop .wt-cp-tb td.no { color:#ff9f97; }
+  #wtop .wt-cp-note { font-size:11px; color:#94a3b8; line-height:1.7; margin-top:6px; }
+
+  /* ★ 2026-11-16 §335：三类卡「该板块全部涨停个股」清单行 */
+  #wtop .wt-ztstk { font-size:11px; line-height:1.75; margin:5px 0; padding:5px 8px; border-radius:6px;
+    background:rgba(240,69,58,.05); border:1px solid rgba(240,69,58,.18); }
+  #wtop .wt-ztstk-t { display:block; color:#ff9f97; font-weight:700; margin-bottom:3px; }
+  #wtop .wt-ztstk-i { display:inline-flex; align-items:center; gap:4px; margin:2px 12px 2px 0; white-space:nowrap; }
+  #wtop .wt-ztstk-i b { color:#e2e8f0; font-weight:600; }
+  #wtop .wt-ztstk-c { color:#64748b; font-family:ui-monospace,Consolas,monospace; font-size:10px; }
+  #wtop .wt-ztstk-lb { font-size:9.5px; font-weight:700; padding:0 4px; border-radius:3px; }
+  #wtop .wt-ztstk-lb.hi { color:#ff9f97; background:rgba(240,69,58,.14); }
+  #wtop .wt-ztstk-lb.mid { color:#fbbf24; background:rgba(251,191,36,.13); }
+  #wtop .wt-ztstk-lb.lo { color:#94a3b8; background:rgba(148,163,184,.1); }
+  #wtop .wt-ztstk-f { color:#64748b; font-family:ui-monospace,Consolas,monospace; font-size:10px; }
 </style>
 </head>
 <body>
@@ -36905,6 +36949,9 @@ function wtPaintMods(force) {
      jdRepaint() 内部走 setHtml（内容相同则零开销跳过），是这四块的既有登记出口 →
      接到同一条指纹门控上，保证「一、大盘与量能」随主刷新一起更新。 */
   try { jdRepaint(); } catch (eJ) { }
+  /* ★ 2026-11-16 §334：策略观察层环境闸门读 ⑥ emotion()，随主刷新一起重画（同源同源指纹门控） */
+  var cpb = $('wtCorePick');
+  if (cpb) { try { cpb.innerHTML = wtCorePickHtml(); } catch (eCP) { } }
   wtBreadthKick();     /* 前5 名单变了 / 还没拉 → 按需拉成分股；在途或已就绪时立即返回 */
 }
 function wtVerdictText(s) {
@@ -37423,6 +37470,166 @@ function wtRiskLineHtml(name, rkMap){
     + (parts.length ? '　<span class="flat">' + esc(parts.join(' / ')) + '</span>' : '')
     + nm + '</div>';
 }
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ★ 2026-11-16 §334：把「主线板块内如何筛核心」策略（全网三轮核验）蒸馏进
+     「二、主线板块（三类卡 · 蒸馏自复盘 skill）」工作区，做只读策略观察层。
+   核验结论（详见同日研报）：框架成立，但原文缺「环境闸门」→ 本次把闸门补在最前；
+   「绕异动 / 炸板反包」胜率数字无样本口径 → 只作现象解读、不作买点；三类票 + 龙头观强印证。
+   纪律：
+     · 纯渲染层，不新增判据、不重算阶段、不进四指标打分、不发买卖信号、不进钉钉；
+     · 闸门只读 ⑥ emotion().raw（唯一权威），缺数一律留白「—」，绝不印 0；
+     · 每个入口 try/catch 兜住，异常只留白，绝不打空整卡；
+     · 涨红跌绿 + 信号语义（进攻红 / 防守黄 / 空仓绿）沿用全站口径。
+   ═══════════════════════════════════════════════════════════════════════════════ */
+var WTCP_GATE = {
+  /* 环境闸门三档阈值（来源：淘股吧龙空龙体系 / 今日头条打板六步法 / 东财财富号，三轮一致） */
+  atkDt: 3, atkPromo: 50, atkLbc: 4,       /* 进攻：跌停≤3 且 晋级率≥50% 且 最高连板≥4 */
+  defDt: 8, defPromo: 20                   /* 空仓：跌停≥8 或 晋级率<20%（缺数据也归防守） */
+};
+/* 纯函数：只吃 emotion().raw 形状，返回三档闸门。null/undefined 一律视为「未取到」，不参与比较、不当 0。 */
+function wtCoreGate(r) {
+  r = r || {};
+  var R = WTCP_GATE, G = R.atkDt, P = R.atkPromo, L = R.atkLbc, G2 = R.defDt, P2 = R.defPromo;
+  var dt = (r.dt == null) ? null : Number(r.dt);
+  var promo = (r.promoPct == null) ? null : Number(r.promoPct);
+  var lbc = (r.maxLbc == null) ? null : Number(r.maxLbc);
+  var seal = (r.sealPct == null) ? null : Number(r.sealPct);
+  var zb = (seal == null) ? null : 100 - seal;                 /* 炸板率 = 100 − 封板率 */
+  var why = [], miss = [];
+  if (dt != null && !isFinite(dt)) dt = null;
+  if (promo != null && !isFinite(promo)) promo = null;
+  if (lbc != null && !isFinite(lbc)) lbc = null;
+  if (zb != null && !isFinite(zb)) zb = null;
+  if (dt == null) miss.push('跌停'); if (promo == null) miss.push('晋级率');
+  if (lbc == null) miss.push('连板高度'); if (zb == null) miss.push('封板率');
+  /* 进攻：三项全过 */
+  var atk = dt != null && promo != null && lbc != null
+    && dt <= G && promo >= P && lbc >= L;
+  if (atk) {
+    why.push('跌停 ' + dt + '≤' + G);
+    why.push('晋级率 ' + promo.toFixed(0) + '%≥' + P + '%');
+    why.push('最高 ' + lbc + ' 板≥' + L);
+    return { key: 'attack', label: '进攻 / 可重点参与', tone: 'up', why: why, miss: miss };
+  }
+  /* 空仓：跌停≥8 或 晋级率<20%（任一命中即空仓，缺项不替代） */
+  var empty = (dt != null && dt >= G2) || (promo != null && promo < P2);
+  if (empty) {
+    if (dt != null && dt >= G2) why.push('跌停 ' + dt + '≥' + G2 + ' 家');
+    if (promo != null && promo < P2) why.push('晋级率 ' + promo.toFixed(0) + '%<' + P2 + '%');
+    if (zb != null && zb >= 40) why.push('炸板率 ' + zb.toFixed(0) + '%≥40%');
+    return { key: 'empty', label: '空仓 / 只看不买', tone: 'dn', why: why, miss: miss };
+  }
+  /* 关键闸门全缺 → 不硬判、留白 */
+  if (dt == null && promo == null) return { key: 'na', label: '—', tone: 'na', why: [], miss: miss };
+  /* 其余：防守 */
+  if (dt != null) why.push('跌停 ' + dt);
+  if (promo != null) why.push('晋级率 ' + promo.toFixed(0) + '%');
+  if (lbc != null) why.push('最高 ' + lbc + ' 板');
+  if (zb != null) why.push('炸板率 ' + zb.toFixed(0) + '%');
+  return { key: 'defend', label: '防守 / 只做核心小仓', tone: 'mid', why: why, miss: miss };
+}
+/* 闸门条渲染：读 ⑥ emotion().raw；渲染异常由调用方 try/catch 兜住 */
+function wtCoreGateHtml(raw) {
+  var g = null;
+  try { g = wtCoreGate(raw); } catch (eG) { return ''; }
+  var k = g.key;
+  var ev = g.why.length ? g.why.join(' · ') : (raw && raw.dt == null && raw.promoPct == null ? '关键读数未取到' : '—');
+  var tip = '【环境闸门 · 全网三轮核验后补入的第 0 步】只用 ⑥ 情绪面板同一份读数，不新增取数、不进四指标打分、不发买卖信号、不进钉钉。'
+    + '｜进攻：跌停≤' + WTCP_GATE.atkDt + ' 且 晋级率≥' + WTCP_GATE.atkPromo + '% 且 最高连板≥' + WTCP_GATE.atkLbc + ' 板'
+    + '｜空仓：跌停≥' + WTCP_GATE.defDt + ' 或 晋级率<' + WTCP_GATE.defPromo + '%（或炸板率≥40%）'
+    + '｜其余＝防守，只做核心小仓'
+    + '｜缺项一律不参与比较、不当 0，宁可留白'
+    + (g.miss && g.miss.length ? '｜本次未取到：' + g.miss.join('、') : '')
+    + '｜依据：淘股吧龙空龙体系 / 今日头条打板六步法 / 东财财富号「联动卡位节点共振」';
+  var h = '<div class="wt-cp-gate ' + k + '" title="' + esc(tip) + '">'
+    + '<div class="wt-cp-gate-h">🎯 主线选核心 · 环境闸门<span class="wt-cp-src">只读 ⑥ 情绪 · 策略观察层 · 先定做不做，再定做哪只</span></div>'
+    + '<div class="wt-cp-gate-b"><span class="wt-cp-badge ' + g.tone + '">' + esc(g.label) + '</span>'
+    + '<span class="wt-cp-evid">' + esc(ev) + '</span></div></div>';
+  return h;
+}
+/* 四步漏斗 + 三类票 + 龙头观 + 反向声音：静态核验定稿，不读实时数、不重复卡内已有的数字 */
+function wtCorePlaybookHtml() {
+  return '<details class="wt-cp-det"><summary>📖 选核心策略定稿：四步漏斗 · 五类辨识度形态 · 三类票 · 龙头观（全网三轮核验 · 点开）</summary><div>'
+    + '<div class="wt-cp-lead">核心一句话：<b>选核心不是看单票「感觉」，而是在板块内做横向 / 纵向 / 梯队三层比较</b>；涨幅只作排序，不作买入标准。'
+    + '　下方每一行都可在<b>本工作区三类卡现有读数</b>里找到对应的数（分类看 c.tag、身位看「10日高 N 板」+ 梯队、中军看成分股快照、负反馈看「⚠ 风险股」行）——'
+    + '本层不另算一套、不重复印数，只给方法论与读法。</div>'
+    + '<div class="wt-cp-tb"><table><thead><tr><th>步骤</th><th>做什么</th><th>本卡对应读数</th><th>核验</th></tr></thead><tbody>'
+    + '<tr><td>① 5 日榜看形态</td><td>涨幅榜前 20~30 只作排序；看几天几板 / 二波绕异动 / 趋势爬坡 / 快速封板，不看涨幅高低</td><td>「10日高 N 板」+ 连板梯队 + 🔥 连N日上榜</td><td class="ok">成立</td></tr>'
+    + '<tr><td>② 10 日榜交叉 + 中军</td><td>补入大市值趋势票（中军）；中军不参与的方向按支线降一档</td><td>📊 成分股涨跌比 / 中位股 + 宽度（中军定生死 §309）</td><td class="ok">成立</td></tr>'
+    + '<tr><td>③ 连板梯队定位身位</td><td>画天梯，横向比首封时间 / 封单质量 / 带动性 / 换手</td><td>卡内连板梯队 + 🪜 晋级率 + 🔔 竞价异动</td><td class="ok">成立</td></tr>'
+    + '<tr><td>④ 跌幅榜反向排雷</td><td>一字跌停 / 被重点监控 / 隔日大面者入回避池，不因涨得多进核心池</td><td>⚠ 风险股 N 家（跌停/大面/核按钮）+ 二·C 今日领跌</td><td class="ok">成立</td></tr>'
+    + '</tbody></table></div>'
+    + '<div class="wt-cp-tb"><table><thead><tr><th>辨识度形态</th><th>成立条件</th><th>失效条件（红线）</th><th>核验</th></tr></thead><tbody>'
+    + '<tr><td>四天三板及以上</td><td>3 板定龙：仍封 + 带动 2板/1板梯队 + 换手 5~20%</td><td>梯队断层、上层独苗、中层批量跌停</td><td class="ok">成立</td></tr>'
+    + '<tr><td>二波绕异动</td><td>控制偏离值、窗口滚出后再拉</td><td>绕成功≠买入理由；内卷后仅剩 3~5 点；监管灰色地带</td><td class="no">仅现象</td></tr>'
+    + '<tr><td>趋势爬坡（容量核心）</td><td>主线第一、多头排列、分歧日抗跌、两市成交≥8000亿</td><td>跌破 10 日线不回、放量滞涨、大盘走强它走弱</td><td class="ok">成立</td></tr>'
+    + '<tr><td>早盘快速封板</td><td>10:30 前封板、封单稳、带动板块</td><td>缩量秒板/尾盘偷袭、孤板无梯队</td><td class="ok">成立</td></tr>'
+    + '<tr><td>炸板后竞价反包穿越</td><td>次日高开 2~3%、竞价量达前日 75~100%、1~2 日窗口</td><td>低开无量、反包换手>25%、缩量反包</td><td class="no">仅现象</td></tr>'
+    + '</tbody></table></div>'
+    + '<div class="wt-cp-lead"><b>三类票分清：</b><span style="color:#ff9f97">核心龙头</span>（身位最高+封单稳+带动板块，可做/优先做）· '
+    + '<span style="color:#fbbf24">中军/高辨识度助攻</span>（只小仓滚动、不追加速）· '
+    + '<span style="color:#6ee7b7">跟风杂毛</span>（低位首板、封单薄、反复开板，原则不碰；高波动套利票只可回流日埋伏、隔日冲高即走）。'
+    + '　三类卡 c.tag（真主线/轮动/退潮风险）即此三类的板块级映射。</div>'
+    + '<div class="wt-cp-lead"><b>龙头观（动态，不是名单）：</b>当前龙头 + 潜在接班者同池观察；卡位三步＝老龙炸板跳水 → 后排快速拉升 → 后排牢牢封板且不再跟随跳水。'
+    + '龙头断板且无新补涨龙接力＝行情结束，两者一并移出。高位板以短线博弈资金为主、封单结构脆弱，大盘转弱时易被砸（不写「全是做 T 资金」）。</div>'
+    + '<div class="wt-cp-note">⚠ 反向声音：「胜率 90%」「次日 75%」等数字无样本期/滑点口径，未采信；秒板买不到、竞价滑点、T+1 兑现是结构性约束；'
+    + '刻意压价规避异动属监管灰色地带，只作现象解读不作策略依据。谐音人名（返利/大圣/华智/流金等）未能核实代码，一律留白不配对。'
+    + '　本层只读展示、不构成投资建议。</div>'
+    + '</div></details>';
+}
+/* 顶层入口：拼装闸门条 + 折叠定稿；任何异常只留白 */
+function wtCorePickHtml() {
+  var raw = null;
+  try { var E = (typeof emotion === 'function') ? emotion() : null; raw = E ? E.raw : null; } catch (eE) { raw = null; }
+  var gate = '';
+  try { gate = wtCoreGateHtml(raw); } catch (eG) { gate = ''; }
+  var play = '';
+  try { play = wtCorePlaybookHtml(); } catch (eP) { play = ''; }
+  return '<div class="wt-cp">' + gate + play + '</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ★ 2026-11-16 §335（用户要求）：「二、主线板块（三类卡）」每张卡把该板块
+     **涨停的股票全部列出**（不截断、不取前 N 只）。
+   数据源 = g.rows = WT.snap.sectors[k].rows = wtAggSectors 的涨停池同行业聚类行，
+   与卡头「涨停 N 家」、梯队分布 **同一份快照、同一把尺**（个别个股字段可得才列，缺数留白）。
+   纪律：只做展示，不新增判据、不进打分、不发信号、不进钉钉；异常只留白不打空整卡。
+   ═══════════════════════════════════════════════════════════════════════════════ */
+/* 纯函数：输入一个板块的涨停池 rows（wtAggSectors 行），输出全部涨停股清单 HTML。
+   排序：板位高→低，同板按封板时间早→晚；字段缺失一律留白，不编 0、不造假。 */
+function wtZtStocksHtml(rows) {
+  if (!rows || !rows.length) return '';
+  var list = rows.slice().sort(function (a, b) {
+    var la = (+a.lbc || 1), lb = (+b.lbc || 1);
+    if (lb !== la) return lb - la;
+    var fa = (+a.fbt || 999999), fb = (+b.fbt || 999999);
+    return fa - fb;
+  });
+  var hi = 0;
+  list.forEach(function (z) { var l = (+z.lbc || 1); if (l > hi) hi = l; });
+  var h = '<div class="wt-ztstk" title="'
+    + esc('该板块全部涨停个股（共 ' + list.length + ' 只）｜数据源：今日涨停池按行业聚类（wtAggSectors，与卡头涨停家数、梯队分布同源同尺）'
+      + '｜排序：板位高→低、同板按首次封板时间早→晚｜字段（名称/板位/封板时间）取不到时留白，不编造'
+      + '｜仅展示，不参与四指标打分、不发买卖信号、不进钉钉') + '">'
+    + '<span class="wt-ztstk-t">🔴 涨停股 ' + list.length + ' 只（全部）</span>';
+  list.forEach(function (z) {
+    var code = String(z.c || '').replace(/^(sh|sz|bj)/i, '');
+    var nm = z.n || code || '—';
+    var lbc = (+z.lbc || 1);
+    var fbt = (z.fbt != null) ? fmtFbt(z.fbt) : '—';
+    var cls = lbc >= 5 ? 'hi' : (lbc >= 3 ? 'mid' : 'lo');
+    var badge = lbc >= 2 ? ('<span class="wt-ztstk-lb ' + cls + '">' + lbc + '板</span>') : '';
+    h += '<span class="wt-ztstk-i">'
+      + '<b title="' + esc('代码 ' + (code || '—')) + '">' + esc(nm) + '</b>'
+      + (code ? '<span class="wt-ztstk-c">' + esc(code) + '</span>' : '')
+      + badge
+      + '<span class="wt-ztstk-f" title="首次封板时间">' + esc(fbt) + '</span>'
+      + '</span>';
+  });
+  h += '</div>';
+  return h;
+}
+
 function wtMainLineCardsHtml() {
   var s = WT.snap;
   if (!s || !s.sectors || !s.sectors.length) return '<div class="wt-line">未取到涨停池（非交易日 / 接口受限）</div>';
@@ -37518,6 +37725,8 @@ function wtMainLineCardsHtml() {
       /* ★ 2026-11-12 §306：风险侧家数（与涨停侧家数并排看，才是这个板块的真实多空） */
       (function () { try { return wtRiskLineHtml(g.name, RKM); } catch (eRK) { return ''; } })() +
       (function () { try { return secEchelonHtml(g.name, g.rows); } catch (eEC) { return ''; } })() +
+      /* ★ 2026-11-16 §335（用户要求）：该板块涨停股票全部列出（g.rows 与卡头家数同源同尺） */
+      (function () { try { return wtZtStocksHtml(g.rows); } catch (eZS) { return ''; } })() +
       /* ★ 2026-11-05 §264l：三维共振标注行（产业逻辑=人工卡 / 板块共振+资金共振=数据驱动；缺数留白不打空整卡） */
       (function () { try { return wtDim3Html(g); } catch (eD3) { return ''; } })() +
       /* ★ 2026-10-23：板块等权指数 5 日线体检（异步取数，数据到位由 wtBreadthRepaint 重画本容器）。
@@ -40835,6 +41044,7 @@ function wtRender() {
     + 'wb_watch_v1 自选池 / wb_hold_v1 持仓（7.16 唯一源，成本留空）；与卡片 title 全量一致，'
     + '定格 / 实时行虽只显示前 8 只但入池按完整清单 · 零额外行情请求 · 入池后防守面板 3 分钟自动刷新'
     + '（或点「⟳ 刷新防守判定」）· 只读展示层动作，不参与四指标打分、不发买卖信号、不进钉钉</div></details>' +
+    '<div id="wtCorePick">' + wtCorePickHtml() + '</div>' +
     '<div id="wtMainCards">' + wtMainLineCardsHtml() + '</div>' +
     '<div id="wtMainLines">' + wtMainLinesHtml() + '</div>';
   /* 二·C 今日领跌 / 反向方向（原挂在「五、风险与操作」下，2026-10-20 该节删除后下沉至此）。
@@ -47149,13 +47359,89 @@ function jjPickHtml(s){
     '9:25 时 7.5 板块分级 / 7.34 板块强度尚未取数（依赖开盘后涨停池）→ <b>开盘后请再用 7.5 / 7.34 复核一次</b>，三者取更严者。</div>';
   return h;
 }
+/* ==== JJ-SUMMARY-BEGIN ====
+   2026-11-16 §333：集合竞价总结报告改为「九、市场复盘小结」版式。
+   纪律：只改渲染层；jjReportText 仍是纯文本单一真源；原始纯文本 id 唯一且逐字可复制。
+   注释里不写字面标签，避免静态标签配平误判。 */
+function jjSummaryKeyCls(k){
+  k = String(k || '');
+  if(/回避|风险|大面|跌停|核按钮|硬闸门|谨慎|⚠/.test(k)) return 'm11s-warn';
+  if(/推荐|可参与|继续涨停|超预期/.test(k)) return 'm11s-up-hi';
+  if(/情绪|相位|仓位|晋级率|溢价|高开率|红盘率|平均/.test(k)) return 'm11s-h-mood';
+  if(/行业|板块|主线|方向|集中度|梯队|新方向/.test(k)) return 'm11s-h-dir';
+  if(/指数|大盘|成交额|量能|数据|总数|覆盖/.test(k)) return 'm11s-h-hard';
+  if(/观察|9:30|10:00|重点跟踪|操作|次日/.test(k)) return 'm11s-h-next';
+  return 'm11s-h-logic';
+}
+function jjSummaryLineCls(s){
+  s = String(s || '');
+  if(/[⚠❌🚨]|风险|亏钱|大面|核按钮|硬闸门|不构成/.test(s)) return 'm11s-warn';
+  if(/^[✅]|推荐|可参与|继续涨停|超预期/.test(s)) return 'm11s-up-hi';
+  if(/^[🚫]|回避/.test(s)) return 'm11s-dn-hi';
+  return '';
+}
+function jjSummaryHtml(txt){
+  var lines = String(txt == null ? '' : txt).split(/\r?\n/);
+  function trim(s){ return String(s == null ? '' : s).replace(/^\s+|\s+$/g, ''); }
+  function valOf(key){
+    var p = key + '：';
+    for(var i = 0; i < lines.length; i++){
+      var t = trim(lines[i]);
+      if(t.indexOf(p) === 0) return trim(t.slice(p.length));
+    }
+    return '';
+  }
+  var conc = valOf('行业集中度'), mood = valOf('情绪定级');
+  var rec = valOf('推荐板块'), avo = valOf('回避板块');
+  var h = '<div class="m11s-wrap jj-summary-recap" style="margin-top:8px">';
+  h += '<h4 class="m11s-h3" style="font-size:13px;margin:4px 0 6px">集合竞价总结报告</h4>';
+  h += '<div class="m11s-verdict" style="border-color:#f0453a"><span class="m11s-h-verdict">📌 一句话</span>：' +
+    '<b class="m11s-h-dir">行业集中度</b> ' + esc(conc || '—') + '；' +
+    '<b class="m11s-h-mood">情绪定级</b> ' + esc(mood || '—') + '。' +
+    '<span class="vd">（下方逐段展开，判据与原始纯文本同源）</span></div>';
+  if(rec) h += '<p class="m11s-p"><span class="m11s-up-hi">✅ 推荐板块：</span>' + esc(rec) + '</p>';
+  if(avo) h += '<p class="m11s-p"><span class="m11s-dn-hi">🚫 回避板块：</span>' + esc(avo) + '</p>';
+  var sec = '', foot = '', opened = false;
+  for(var i = 0; i < lines.length; i++){
+    var raw = String(lines[i] == null ? '' : lines[i]).replace(/\s+$/, '');
+    var core = raw.replace(/^\s+/, '');
+    if(!core) continue;
+    if(/^[═=]{3,}$/.test(core)) continue;
+    var mh = core.match(/^【(.+?)】\s*(.*)$/);
+    if(mh){
+      if(opened) h += '</div>';
+      sec = trim(mh[1]); opened = true;
+      var rest = trim(mh[2]) ? ' · ' + trim(mh[2]) : '';
+      h += '<h4 class="m11s-h3" style="font-size:12.5px;margin:12px 0 6px">' + esc(sec) + esc(rest) + '</h4>';
+      h += '<div class="jj-summary-sec">';
+      continue;
+    }
+    if(!opened) continue;
+    if(sec === '结论速览' && /^(行业集中度|推荐板块|回避板块)：/.test(core)) continue;
+    if(core.indexOf('本报告仅为交易体系梳理') >= 0){ foot = core; continue; }
+    var indent = raw.length - core.length;
+    var p = core.indexOf('：');
+    var body = p > 0
+      ? '<span class="' + jjSummaryKeyCls(core.slice(0, p)) + '">' + esc(core.slice(0, p)) + '：</span>' + esc(core.slice(p + 1))
+      : esc(core);
+    h += '<p class="m11s-p ' + jjSummaryLineCls(core) + '" style="margin-left:' + Math.max(0, indent - 2) * 8 + 'px">' + body + '</p>';
+  }
+  if(opened) h += '</div>';
+  h += '<div class="m11s-note">' + esc(foot || '⚠ 本报告仅为交易体系梳理与集合竞价数据可视化，不构成任何投资建议。') + '</div>';
+  h += '<details class="m11s-fold jj-summary-raw" style="margin-top:8px">' +
+    '<summary>📄 原始纯文本（逐字同源 · 复制/核对用）</summary>' +
+    '<div class="dbody"><pre id="jjreport" style="white-space:pre;overflow:auto;max-height:300px;background:#0b1222;border:1px solid #233;border-radius:8px;padding:10px 12px;font-size:11.5px;line-height:1.55;color:#cbd5e1;margin:0">' + esc(txt) + '</pre></div></details>';
+  h += '</div>';
+  return h;
+}
 function jjReportHtml(s){
+  var txt = jjReportText(s);
   return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap">' +
     '<button onclick="jjCopy(this)" style="font-size:12px;padding:4px 12px;border-radius:6px;border:1px solid #334155;background:#0b1222;color:#cbd5e1;cursor:pointer">📋 复制报告</button>' +
-    '<span class="flat" style="font-size:11.5px">复制后可粘贴到任意记事本 / 聊天窗口（纯文本、无标签）</span></div>' +
-    '<pre id="jjreport" style="white-space:pre;overflow:auto;max-height:300px;background:#0b1222;border:1px solid #233;border-radius:8px;padding:10px 12px;font-size:11.5px;line-height:1.55;color:#cbd5e1;margin:0">' + esc(jjReportText(s)) + '</pre>';
+    '<span class="flat" style="font-size:11.5px">复盘小结版式 · 复制仍为原始纯文本（可在下方展开逐字核对）</span></div>' +
+    jjSummaryHtml(txt);
 }
-/* 7.33 的“第一个工作区”（置于卡片最顶部、相位头之后）：结论前置 —— 推荐/回避板块 + 可复制诊断报告 */
+/* ==== JJ-SUMMARY-END ==== */
 function jjTopHtml(s){
   return '<h3 style="font-size:13px;margin:12px 0 6px;color:#60a5fa">' + jjAucTag(s) + '🚩 第一工作区 · 9:25 诊断报告（原文 §9 模板 · 可直接复制 · <span style="color:#fbbf24">结论前置</span>）' +
     '<span class="flat" style="font-weight:400;font-size:11.5px"> —— 9:25 先看这里：<b style="color:#f0453a">红框＝推荐板块</b>、<b style="color:#10b981">绿框＝回避板块</b>，再看下方逐段推导</span></h3>' +
@@ -47163,6 +47449,7 @@ function jjTopHtml(s){
 }
 function jjCopy(btn){
   var el = $('jjreport'); if(!el) return;
+  if(el.closest){ var rawFold = el.closest('details'); if(rawFold) rawFold.open = true; }
   var txt = el.textContent || '';
   function done(ok){ if(!btn) return; dirtyFrom(btn); btn.textContent = ok ? '✅ 已复制' : '⚠️ 请手动选择复制'; setTimeout(function(){ dirtyFrom(btn); btn.textContent = '📋 复制报告'; }, 2200); }
   try{

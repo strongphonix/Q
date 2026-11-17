@@ -179,8 +179,10 @@ details .dbody{padding:4px 12px 12px;}
 .cyc{display:inline-flex;gap:0;border-radius:6px;overflow:hidden;border:1px solid var(--bd);margin-top:4px;}
 .cyc div{padding:4px 12px;font-size:12px;color:var(--muted);}
 .cyc div.on{font-weight:800;color:#0f172a;}
-@media(max-width:1000px){.grid4{grid-template-columns:repeat(2,1fr);}.grid3{grid-template-columns:1fr;}}
-@media(max-width:720px){.grid4,.grid2{grid-template-columns:repeat(2,1fr);}.hbar h1{font-size:16px;}.card{padding:11px;}}
+@media(max-width:1000px){.grid4{grid-template-columns:repeat(2,1fr);}.grid3{grid-template-columns:1fr;}.wrap{padding:0 10px;}}
+@media(max-width:720px){.grid4,.grid2{grid-template-columns:repeat(2,1fr);}.hbar h1{font-size:16px;}.card{padding:11px;}.wrap{padding:0 8px;}.hbar{gap:8px;}.cyc div{padding:4px 8px;}th{padding:7px 6px;}td{padding:6px 6px;}.twrap{-webkit-overflow-scrolling:touch;scrollbar-width:none;}.twrap::-webkit-scrollbar{display:none;}}
+/* §337 手机小屏（≤480）：栅格全单列，指标卡不再 165px 挤两列；宽表仍走 .twrap 横滚兜底 */
+@media(max-width:480px){.grid4,.grid3,.grid2{grid-template-columns:1fr;}.card{padding:10px;}.hbar h1{font-size:15px;}.hbar{gap:6px;}}
 /* 锚点落点偏移：页头是 position:sticky，原生 #hash 跳转会把区块顶部压在页头下面（原来写死 70px，
    实测页头 92px → 区块头被切掉一截）。改为读 CSS 变量 --hdr-off，由 JS 按页头真实高度动态写入，
    页头换行变高（窄屏 .hlinks 折行）也自动跟着变。 */
@@ -1307,6 +1309,8 @@ table.mini-tbl tr.dbg-alert-ok td,table.mini-tbl tr.dbg-alert-na td{background:t
 .hlinks a:hover{color:#60a5fa;background:rgba(96,165,250,.1)}
 .hlinks a.cur{color:#0f172a;background:#fbbf24;border-color:#f59e0b;font-weight:800}
 .hlinks .hl-gap{width:1px;background:var(--bd);margin:0 5px;flex:none;align-self:stretch}
+/* §337 手机 ≤720px：scrollspy 导航字号提到 12px（触控目标加大；须排在本块之后才能覆盖上面 11.5px） */
+@media(max-width:720px){.hlinks{font-size:12px;}.hlinks a{padding:4px 10px;}}
 
 /* ---- ④ 顶部结论条（结论前置） ---- */
 .verdict{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;background:linear-gradient(135deg,rgba(30,41,59,.95),rgba(15,23,42,.95));border:1px solid var(--bd);border-left:4px solid #64748b;border-radius:10px;padding:11px 15px;margin:12px 0 6px}

@@ -50841,6 +50841,47 @@ function tdSecMembersDedupSort(groups){
   });
   return out.sort(function(a, b){ return (b.amt || 0) - (a.amt || 0) || String(a.code).localeCompare(String(b.code)); });
 }
+/* ★ §367 RPS 合并尺：全市场扫描优先，板块内 RPS60 兜底；只做查表，零网络 */
+function tdSecRpsMap(local){
+  var out = {}, k;
+  var loc = local || {};
+  for(k in loc){ if(Object.prototype.hasOwnProperty.call(loc, k)) out[k] = loc[k]; }
+  /* RPS 在 #tdPanel IIFE 内，不是裸全局；对外只暴露 window.__RPS，故合并尺必须优先读它 */
+  var full = (typeof window !== 'undefined' && window.__RPS && window.__RPS.stk)
+    ? window.__RPS.stk
+    : ((typeof RPS !== 'undefined' && RPS.stk) ? RPS.stk : {});
+  for(k in full){ if(Object.prototype.hasOwnProperty.call(full, k)) out[k] = full[k]; }
+  return out;
+}
+/* ★ §369 快照字段回填（顶层全局，vm 单测可直调）：F10 兜底通道无 f8 换手率、ma5PoolMembers 无 lb/turn，
+   清单里价格/涨幅/量比/换手率会整列空。用页面现成 wlQuoteEM（东财 ulist，f2/f3/f8/f10/f12/f14/f15/f18）
+   按 code 只填空缺字段，绝不覆盖已有真值；取不到留 null 由渲染层印「—」，不编 0。
+   quoteFn 第二参可注入桩，真机不传走顶层 wlQuoteEM —— 零新增请求通道。 */
+function tdSecSnapFill(rows, quoteFn){
+  var all = Array.isArray(rows) ? rows : [], need = [], i;
+  for(i = 0; i < all.length; i++){
+    var r = all[i];
+    if(r && r.code && (r.price == null || r.pct == null || r.lb == null || r.turn == null)) need.push(r);
+  }
+  if(!need.length) return Promise.resolve({ q: {}, filled: 0, need: 0 });
+  var get = (typeof quoteFn === 'function') ? quoteFn
+    : ((typeof wlQuoteEM === 'function') ? wlQuoteEM : null);
+  if(!get) return Promise.resolve({ q: {}, filled: 0, need: need.length });
+  var codes = need.map(function(r){ return r.code; });
+  return Promise.resolve(get(codes)).then(function(q){
+    q = q || {}; var filled = 0;
+    need.forEach(function(r){
+      var x = q[r.code]; if(!x) return;
+      var p2 = tdSecNum(x.f2), p3 = tdSecNum(x.f3), p8 = tdSecNum(x.f8), p10 = tdSecNum(x.f10), hit = false;
+      if(r.price == null && p2  != null){ r.price = p2;  hit = true; }
+      if(r.pct   == null && p3  != null){ r.pct   = p3;  hit = true; }
+      if(r.turn  == null && p8  != null){ r.turn  = p8;  hit = true; }
+      if(r.lb    == null && p10 != null){ r.lb    = p10; hit = true; }
+      if(hit) filled++;
+    });
+    return { q: q, filled: filled, need: need.length };
+  }).catch(function(){ return { q: {}, filled: 0, need: need.length }; });
+}
 /* ★ §360 成分股清单排序纯函数（顶层全局，vm 单测可直调；只取值 + 排序，零网络零 DOM）
    与 tdSortPool 主表同源口径：数值列缺数 null 恒排尾、文本列 localeCompare('zh')、空值之间按 code 稳定不抖动。
    rpsMap 第三参可选：真机不传走全局 RPS.stk；vm 单测显式传，保证纯函数可测。 */
@@ -50853,20 +50894,20 @@ function tdSecSortVal(r, k, rpsMap){
     case 'code':  return r.code || '';
     case 'name':  return r.name || '';
     case 'sec':   return r.sec || '';
-    case 'ind':   return (x.st && x.st.ind) || '';
     case 'price': return r.price;
+    case 'pct':   return r.pct;
     case 'amt':   return r.amt;
     case 'lb':    return r.lb;
-    case 'turn':  return r.turn;
-    case 'rps':   { var m = rpsMap || ((typeof RPS !== 'undefined' && RPS.stk) ? RPS.stk : null); var rp = m ? m[r.code] : null; return (rp && rp.r60 != null) ? rp.r60 : null; }
+    case 'turn':  return r.turn;   /* §368 量比后换手率列：同请求 f8 / a[38]，缺数恒排尾 */
+    case 'rps':   { var m = rpsMap || tdSecRpsMap(null); var rp = m ? m[r.code] : null; return (rp && rp.r60 != null) ? rp.r60 : null; }   /* 合并尺内部读 window.__RPS，不裸读 IIFE 内 RPS */
     case 'b5':    return (s4.bias5 != null && !isNaN(+s4.bias5)) ? +s4.bias5 : null;   /* isFinite(null)=true 坑：先判 null */
     case 'life':  return x.lifeK != null ? x.lifeK : null;   /* §358 温斯坦 12 序；未判出 null 恒排尾 */
     case 'st':    return (x.stST && x.stST.val != null && isFinite(x.stST.val)) ? x.stST.val : null;   /* §361 SuperTrend trailing 数值；缺数恒排尾 */
     case 'mom':   return x.mom ? x.mom.g10 : null;
     case 'ma5sl': return x.ma5sl;
     case 'ma5':   return j.ma5;
-    case 'ma10':  return j.ma10;
     case 'ma20':  return j.ma20;
+    case 'ma60':  return j.ma60;   /* §368 MA10 换 MA60；同批日K不足 60 根 → null 恒排尾 */
     case 'def':   return LVL[j.lvl] != null ? LVL[j.lvl] : null;
     case 's4k':   return s4.total != null ? s4.total : null;
     case 'sig':   return j.sigs ? j.sigs.length : null;
@@ -50905,6 +50946,48 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     });
     return { all: all, bulls: bulls, bear: bear, na: na, done: done };
   }
+  /* ★ §368 第二闸门（趋势强度闸）：ST 多头后再要求 MA5 ≥ MA20 ≥ MA60。
+     选它的理由：均线结构用「点开清单已拉的日K」现算，零新增请求、无全市场扫描依赖；
+     MA60 比原 MA10 更能滤掉「ST 刚翻红、短线尚可但中期仍压在 60 日线下方」的弱反抽，
+     恰好对应截图里第一闸后仍显示较多的票；MA10 列按用户要求不再显示。
+     RPS 只作强度展示与板块内兜底，不设硬闸（全市场扫描本机不可达，不能拿缺数当 0 否决）。 */
+  function tdSecGain60(bars){
+    if(!Array.isArray(bars) || bars.length < 61) return null;
+    var p = tdSecNum(bars[bars.length - 61] && bars[bars.length - 61].c);
+    var q = tdSecNum(bars[bars.length - 1] && bars[bars.length - 1].c);
+    if(p == null || q == null || !(p > 0)) return null;
+    return (q / p - 1) * 100;
+  }
+  function tdSecLocalRps(rows){
+    var pairs = [], out = {}, i;
+    (rows || []).forEach(function(r){
+      var g = r && r.__tdx ? r.__tdx.gain60 : null;
+      if(g != null && isFinite(g)) pairs.push([r.code || '', g]);
+    });
+    if(pairs.length < 20) return out;   /* 样本闸：<20 只不冒充横截面分位，留白 */
+    pairs.sort(function(a, b){ return b[1] - a[1] || String(a[0]).localeCompare(String(b[0])); });
+    for(i = 0; i < pairs.length; i++) out[pairs[i][0]] = { key: pairs[i][0], r60: Math.round((1 - i / pairs.length) * 100), r60v: pairs[i][1] };
+    return out;
+  }
+  function tdSecGate2Of(r){
+    var x = (r && r.__tdx) || {}, j = x.j || {};
+    /* §371：只比中期/长期均线，MA5 短期回踩或缺数不再误伤第二闸 */
+    var b = j.ma20, c = j.ma60;
+    if(b == null || c == null || !isFinite(b) || !isFinite(c))
+      return { ok: false, na: true, why: '均线样本不足' };
+    var ok = b >= c;
+    return { ok: ok, na: false, why: ok ? 'MA20≥MA60' : '均线未多头排列' };
+  }
+  function tdSecGate2Filter(rows){
+    var all = Array.isArray(rows) ? rows : [], pass = [], weak = 0, na = 0;
+    all.forEach(function(r){
+      var g = tdSecGate2Of(r);
+      if(g.ok) pass.push(r); else if(g.na) na++; else weak++;
+    });
+    return { all: all, pass: pass, weak: weak, na: na };
+  }
+  /* §373（2026-11-23）：第三闸（量比≥1.25且换手≥3% 活跃闸）按用户要求整体删除（连同 §372 na 放行）——
+     量比/换手率保留为 §356/§369 展示列，不再参与任何闸门。 */
 (function(){
   'use strict';
   var TD_BUSY = false, TD_AT = 0, TD_TIMER = null;
@@ -50976,6 +51059,7 @@ function tdSecSortRows(rows, k, dir, rpsMap){
   function tdSecRepaint(){
     TD_SECM.key = ''; TD_SECM.rows = null; TD_SECM.loading = false;   /* §357：名单变了，成分股清单必须重拉 */
     TD_SECM.sortK = ''; TD_SECM.sortDir = 1; TD_SECM.tap = 0;   /* §360：名单变了 → 排序态回默认成交额降序 */
+    TD_SECM.snapN = 0;
     tdSecPaint(); tdSecMembersPaint();
     /* §362：名单变化时 details 以 open 态重建，浏览器不会再触发 toggle → 已展开则主动重拉；
        fetch 内部有「key 命中 / loading」两道闸，不会与 toggle 形成循环 */
@@ -50983,12 +51067,12 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     if(TD_LAST) tdRender(TD_LAST.pool, {}, TD_LAST.judged); else tdRun();
   }
   /* ── §357 成分股清单状态：只有 details 展开才拉数；同一天同名单缓存；不进 TD_LAST、不碰持仓池 ── */
-  var TD_SECM = { key: '', rows: null, loading: false, open: false, why: '', sortK: '', sortDir: 1, tap: 0 };
+  var TD_SECM = { key: '', rows: null, loading: false, open: false, why: '', sortK: '', sortDir: 1, tap: 0, rpsLocal: {}, snapN: 0 };
   function tdSecMembersKey(){ return tdSecCurNames().join('|') + '@' + String(D.date || ''); }
   function tdSecMembersHtml(){
     var names = tdSecCurNames(); if(!names.length) return '';
     return '<details id="tdSecMd"' + (TD_SECM.open ? ' open' : '') + '>' +
-      '<summary>📋 板块成分股清单（' + names.length + ' 个板块：' + esc(names.slice(0, 4).join('、')) + (names.length > 4 ? '…' : '') + '）— 仅 SuperTrend 多头 · 点击展开才拉取</summary>' +
+      '<summary>📋 板块成分股清单（' + names.length + ' 个板块：' + esc(names.slice(0, 4).join('、')) + (names.length > 4 ? '…' : '') + '）— 仅 SuperTrend 多头 + MA20≥MA60 · 点击展开才拉取</summary>' +
       '<div id="tdSecMdBody">' + tdSecMembersBody() + '</div></details>';
   }
   function tdSecMembersBody(){
@@ -50997,26 +51081,29 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     if(!all || !all.length) return '<div class="td-sec-note">' + esc(TD_SECM.why || '该板块未取到成分股 —— 按实留白，不编造') + '</div>';
     /* ★ 清单原始集合 = 板块全部成分股，与持仓 / 自选池无关 —— §362 渲染层仅显示 ST 多头 */
     /* §359：按防守面板同款完整列渲染；日K派生列在 TD_SECM.extra[code].__tdx 到位后显示真值 */
-    var flt = tdSecBullFilter(all);
-    var rows = flt.bulls;
+    var flt1 = tdSecBullFilter(all);
+    var flt2 = tdSecGate2Filter(flt1.bulls);
+    var flt = { all: all, bulls: flt1.bulls, pass: flt2.pass, bear: flt1.bear, na: flt1.na, weak: flt2.weak, na2: flt2.na };
+    var rows = flt.pass;
     /* §362：补齐进度按已处理的 __tdx 计（缺额票 catch 分支也会挂 __tdx）；
        不能按 stST 有效数计，否则日K取不到的票会让进度永远卡在「补齐中」 */
     var doneN = 0;
     all.forEach(function(r){ if(r && r.__tdx) doneN++; });
     var pend = all.length - doneN;
     if(!rows.length){
-      if(pend) return '<div class="td-sec-note">SuperTrend 方向计算中 ' + doneN + '/' + all.length + '，仅显示多头成分股…</div>';
-      return '<div class="td-sec-note">该板块无 SuperTrend 多头成分股（原始 ' + all.length + ' 只：空头 ' + flt.bear + ' / 取数不足 ' + flt.na + '）——按实留白，不编造。</div>';
+      if(pend) return '<div class="td-sec-note">SuperTrend 方向 / MA20≥MA60 计算中 ' + doneN + '/' + all.length + '，仅显示双闸通过的成分股…</div>';
+      return '<div class="td-sec-note">该板块无「SuperTrend 多头 + MA20≥MA60」成分股（原始 ' + all.length + ' 只：ST空头 ' + flt.bear + ' / ST取数不足 ' + flt.na + ' / 均线未多头 ' + flt.weak + ' / 均线取数不足 ' + flt.na2 + '）——按实留白，不编造。</div>';
     }
-    /* §360：25 列全可点排序；独立 class secmd-th + data-secmd-sort，不碰主表 .td-th / TD_SORT 委托 */
+    /* §368：22 列全可点排序（量比后补回换手率；均线 MA5/MA20/MA60）；独立 class secmd-th + data-secmd-sort，不碰主表 .td-th / TD_SORT 委托 */
     function thSec(label, k){
       var on = TD_SECM.sortK === k;
       return '<th class="secmd-th' + (on ? ' on' : '') + '" data-secmd-sort="' + k + '" title="点击排序：升 → 降 → 恢复默认成交额降序；空值恒排尾">' + label + (on ? (TD_SECM.sortDir > 0 ? ' ▲' : ' ▼') : '') + '</th>';
     }
+    var rpm = tdSecRpsMap(TD_SECM.rpsLocal);
     var h = '<div class="td-sec-mwrap"><table><thead><tr>' +
-      thSec('代码','code') + thSec('名称','name') + thSec('板块','sec') + thSec('行业','ind') + thSec('现价','price') + thSec('成交额','amt') + thSec('量比','lb') + thSec('换手率','turn') +
-      thSec('RPS','rps') + thSec('乖离率','b5') + thSec('生命周期','life') + thSec('SuperTrend','st') +
-      thSec('动量T/P','mom') + thSec('MA5斜率','ma5sl') + thSec('MA5','ma5') + thSec('MA10','ma10') + thSec('MA20','ma20') + thSec('防守状态','def') + thSec('四指标','s4k') +
+      thSec('代码','code') + thSec('名称','name') + thSec('板块','sec') + thSec('价格','price') + thSec('涨幅','pct') + thSec('成交额','amt') + thSec('量比','lb') + thSec('换手率','turn') +
+      thSec('RPS60','rps') + thSec('乖离率','b5') + thSec('生命周期','life') + thSec('SuperTrend','st') +
+      thSec('动量T/P','mom') + thSec('MA5斜率','ma5sl') + thSec('MA5','ma5') + thSec('MA20','ma20') + thSec('MA60','ma60') + thSec('防守状态','def') + thSec('四指标','s4k') +
       thSec('卖点信号','sig') + thSec('量能/周线/资金','vol') + thSec('板块阶段','stage') + '</tr></thead><tbody>';
     var nm = { start: '启动', confirm: '确认', ferment: '发酵', accel: '加速', diverge: '分歧', rebound: '反包', ebb: '退潮' };
     rows.forEach(function(r){
@@ -51024,14 +51111,19 @@ function tdSecSortRows(rows, k, dir, rpsMap){
       var j = x.j || {};
       var pctTxt = (r.pct == null) ? '<span style="color:#64748b">—</span>'
         : '<span class="' + (r.pct >= 0 ? 'td-up' : 'td-dn') + '">' + (r.pct >= 0 ? '+' : '') + r.pct.toFixed(2) + '%</span>';
-      /* RPS（读当日缓存 + rpsGrade 五档，与防守面板同把尺） */
-      var rp = (typeof RPS !== 'undefined' && RPS.stk) ? (RPS.stk[r.code] || {}) : {};
+      /* §367：全市场 RPS 优先；未扫描到时用同批日K算「板块内 RPS60」兜底，并在 chip 上标「板·」 */
+      var fullRp = (typeof RPS !== 'undefined' && RPS.stk) ? RPS.stk[r.code] : null;
+      var rp = rpm[r.code] || {};
+      var rpsSrc = (fullRp && (fullRp.r60 != null || fullRp.ry != null)) ? '全市场' : ((TD_SECM.rpsLocal && TD_SECM.rpsLocal[r.code]) ? '板块内' : '');
       var rpsHtml;
       if(rp.r60 == null && rp.ry == null){
-        rpsHtml = '<span style="color:#64748b" title="未取到个股 RPS —— 点上方「扫全市场 RPS」或等自动扫描">—</span>';
+        rpsHtml = '<span style="color:#64748b" title="全市场 RPS 未取到，且同批成分股日K少于 20 只 —— 按实留白，不编造">—</span>';
       } else {
         var g = rpsGrade(rp.r60);
-        rpsHtml = (g ? '<span class="td-rps ' + g.c + '" title="' + esc(g.t) + '">' + esc(g.k) + '</span>' : '') +
+        var rpsTip = rpsSrc === '板块内'
+          ? '板块内 RPS60（同批成分股日K横截面百分位，样本≥20；非全市场口径，全市场扫描到位后自动替换）：'
+          : '全市场 RPS60（东财全市场扫描）：';
+        rpsHtml = (g ? '<span class="td-rps ' + g.c + '" title="' + esc(rpsTip + g.t) + '">' + esc((rpsSrc === '板块内' ? '板·' : '') + g.k) + '</span>' : '') +
           '<span class="mono" style="font-size:11px">' + (rp.r60 != null ? rp.r60 : '—') + '/' + (rp.ry != null ? rp.ry : '—') + '</span>';
       }
       /* 乖离率 BIAS5（与 7.12 乖离率 / 防守面板 §358 同把尺） */
@@ -51069,22 +51161,22 @@ function tdSecSortRows(rows, k, dir, rpsMap){
         '<td class="mono">' + esc(r.code) + '</td>' +
         '<td><b data-wbbjump="' + esc(r.code) + '" style="cursor:pointer" title="点击打开生命周期工作台个股诊断 ' + esc(r.code) + '">' + esc(r.name || '—') + '</b></td>' +
         '<td style="color:#8d99b8">' + esc(r.sec) + '</td>' +
-        '<td style="color:#8d99b8">' + esc((x.st && x.st.ind) || '—') + '</td>' +
-        '<td class="mono">' + (r.price != null ? r.price.toFixed(2) : '—') + ' ' + pctTxt + '</td>' +
+        '<td class="mono">' + (r.price != null ? r.price.toFixed(2) : '<span style="color:#64748b">—</span>') + '</td>' +
+        '<td class="mono">' + pctTxt + '</td>' +
         '<td class="mono">' + (r.amt != null ? r.amt.toFixed(2) + '<span style="color:#8d99b8;font-size:10px"> 亿</span>' : '<span style="color:#64748b">—</span>') + '</td>' +
         '<td class="mono">' + (r.lb != null ? r.lb.toFixed(2) : '<span style="color:#64748b">—</span>') + '</td>' +
-        '<td class="mono">' + (r.turn != null ? r.turn.toFixed(2) + '<span style="color:#8d99b8;font-size:10px">%</span>' : '<span style="color:#64748b">—</span>') + '</td>' +
+        '<td class="mono">' + (r.turn != null ? r.turn.toFixed(2) + '%' : '<span style="color:#64748b">—</span>') + '</td>' +
         '<td>' + rpsHtml + '</td><td>' + b5Html + '</td>' + lifeH +
         tdStHtml(x.stST) +
         '<td>' + momHtml + '</td><td>' + slHtml + '</td>' +
-        '<td>' + fmtMa(j.ma5, j.dist5) + '</td><td>' + fmtMa(j.ma10, j.dist10) + '</td><td>' + fmtMa(j.ma20, j.dist20) + '</td>' +
+        '<td>' + fmtMa(j.ma5, j.dist5) + '</td><td>' + fmtMa(j.ma20, j.dist20) + '</td><td>' + fmtMa(j.ma60, j.dist60) + '</td>' +
         '<td><span class="td-def ' + (j.lvl || 'ln') + '">' + esc(j.lvlTxt || '—') + '</span></td>' +
         '<td>' + s4kHtml + '</td><td>' + sigsHtml + '</td><td>' + volHtml + '</td><td>' + scHtml + '</td></tr>';
     });
-    var foot = '仅显示 <b style="color:#f0453a">SuperTrend 多头</b> <b>' + rows.length + '</b> 只 / 原始 ' + all.length + ' 只（空头 ' + flt.bear + ' 只已过滤、取数不足 ' + flt.na + ' 只；<b style="color:#fcd34d">与持仓/自选池无关</b>）（默认成交额降序；§360 点表头可按任意列排序：升▲ → 降▼ → 第三击恢复默认；全局按代码去重、空值恒排尾、缺数留「—」）· 来源：板块码成分股 + 行业名 + 今日涨停池，30 分钟缓存。' +
-      '★ §359/§361：按防守面板同款完整列只读展示 —— 乖离率/生命周期/SuperTrend/动量/MA5斜率/均线/防守状态/卖点信号 复用同一把尺，点开时补拉日K分批计算' +
+    var foot = '仅显示 <b style="color:#f0453a">SuperTrend 多头 + MA20≥MA60</b> <b>' + rows.length + '</b> 只 / 原始 ' + all.length + ' 只（ST多头 ' + flt1.bulls.length + ' 只 → 第二闸过滤：均线未多头 ' + flt.weak + ' / 均线取数不足 ' + flt.na2 + '；ST空头 ' + flt.bear + ' / ST取数不足 ' + flt.na + '；<b style="color:#fcd34d">与持仓/自选池无关</b>）（默认成交额降序；§360 点表头可按任意列排序：升▲ → 降▼ → 第三击恢复默认；全局按代码去重、空值恒排尾、缺数留「—」）· 来源：板块码成分股 + 行业名 + 今日涨停池，30 分钟缓存。' +
+      '★ §359/§361/§367/§368：按防守面板同款列只读展示 —— 乖离率/生命周期/SuperTrend/动量/MA5斜率/MA5/MA20/MA60/防守状态/卖点信号 复用同一把尺，点开时补拉日K分批计算' +
       (pend ? '（<b style="color:#7dd3fc">读数补齐中 ' + doneN + '/' + all.length + '</b>）' : '（已补齐）') +
-      '；取不到的日K列如实留「—」，不当 0；不进防守判定、不发信号、不进钉钉。';
+      '；§371 第二闸只比 MA20≥MA60，MA5 短期回踩或缺数不再误伤；§373 第三闸（量比/换手活跃闸）已按用户要求删除（连同 §372 na 放行），量比/换手率仅作展示列不参与闸门；RPS60 全市场扫描优先，未到时用同批日K算板块内百分位（标「板·」，样本≥20，不冒充全市场）；价/涨幅/量比/换手率按 code 走同一批东财 ulist 只填空缺 ' + (TD_SECM.snapN || 0) + ' 只（F10 兜底无 f8 换手 —— 不覆盖已有真值）；取不到的列如实留「—」，不当 0；不进防守判定、不发信号、不进钉钉。';
     return h + '</tbody></table></div><div class="td-sec-note">' + foot + '</div>';
   }
   /* §359：点开清单后分批补拉成分股日K + 复用防守面板同一把尺算完整列（klineBarsL 自带 30min 缓存 + 熔断） */
@@ -51095,8 +51187,10 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     var i = 0, B = 6;
     (function step(){
       if(i >= todo.length){
+        /* §367：同批日K → 板块内 RPS60（样本≥20）；全市场 RPS 到位后自动让位 */
+        TD_SECM.rpsLocal = tdSecLocalRps(TD_SECM.rows);
         /* §360：派生列（s4k / 动量 / 生命周期…）补值后重排一次（只跳一次），让排序与补齐的真值一致 */
-        if(TD_SECM.sortK && TD_SECM.rows && TD_SECM.rows.length) TD_SECM.rows = tdSecSortRows(TD_SECM.rows, TD_SECM.sortK, TD_SECM.sortDir);
+        if(TD_SECM.sortK && TD_SECM.rows && TD_SECM.rows.length) TD_SECM.rows = tdSecSortRows(TD_SECM.rows, TD_SECM.sortK, TD_SECM.sortDir, tdSecRpsMap(TD_SECM.rpsLocal));
         tdSecMembersPaintBody();
         if(typeof lifeQueue === 'function') lifeQueue();
         return;
@@ -51113,9 +51207,18 @@ function tdSecSortRows(rows, k, dir, rpsMap){
           x.s4k = tdS4kOf(bars, r.code);
           x.stST = tdSuperTrendOf(bars);   /* §361：复用点开时已拉的日K，零新增请求 */
           x.mom = tdMomOf(bars);
+          x.gain60 = tdSecGain60(bars);    /* §367：同批日K算 60 日涨幅，供板块内 RPS60 兜底，零新增请求 */
           var q = null;
           if(r.price != null && isFinite(+r.price)) q = { price: +r.price, open: +r.price, high: +r.price, low: +r.price, vol: 0 };
           x.j = tdJudge({ code: r.code, name: r.name, ind: st.ind, theme: st.theme, price: r.price, pct: r.pct }, bars, q);
+          /* §368：MA60 与 MA5/MA20 同源（同批日K + 当日快照价），不足 60 根留 null，不拿 0 冒充 */
+          try{
+            var _cl60 = (bars || []).map(function(b){ return b.c; });
+            var _ma60s = tdMa(_cl60, 60);
+            x.j.ma60 = _ma60s.length ? _ma60s[_ma60s.length - 1] : null;
+            x.j.dist60 = (x.j.ma60 != null && isFinite(x.j.ma60) && r.price != null && isFinite(+r.price))
+              ? ((+r.price / x.j.ma60 - 1) * 100) : null;
+          }catch(eM60){ x.j.ma60 = null; x.j.dist60 = null; }
           /* §360 生命周期排序键：与 §358 防守面板同款 lifeJudgeC → 温斯坦 12 序；只服务表头排序，零新增请求 */
           x.lifeK = null;   /* §360：判不出就是 null（排序恒排尾），不拿 9 冒充真阶段 */
           try{
@@ -51154,7 +51257,7 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     /* ★ 命中缓存直接 return：重建 details 本身会异步触发 toggle，若再 paint 会无限重绘 */
     if(TD_SECM.key === key && TD_SECM.rows) return;
     if(TD_SECM.loading) return;
-    TD_SECM.loading = true; TD_SECM.key = key; TD_SECM.rows = null; TD_SECM.why = '';
+    TD_SECM.loading = true; TD_SECM.key = key; TD_SECM.rows = null; TD_SECM.why = ''; TD_SECM.rpsLocal = {};
     tdSecMembersPaint();
     Promise.all(names.map(function(nm){
       var bk = '';
@@ -51176,11 +51279,18 @@ function tdSecSortRows(rows, k, dir, rpsMap){
       });
     })).then(function(groups){
       TD_SECM.rows = tdSecMembersDedupSort(groups);
-      if(TD_SECM.sortK && TD_SECM.rows.length) TD_SECM.rows = tdSecSortRows(TD_SECM.rows, TD_SECM.sortK, TD_SECM.sortDir);
+      if(TD_SECM.sortK && TD_SECM.rows.length) TD_SECM.rows = tdSecSortRows(TD_SECM.rows, TD_SECM.sortK, TD_SECM.sortDir, tdSecRpsMap(TD_SECM.rpsLocal));
       TD_SECM.loading = false;
       TD_SECM.why = TD_SECM.rows.length ? '' : '未取到成分股（板块码映射失败 / clist 与 F10 均不可用）——按实留白';
       tdSecMembersPaint();
-      tdSecMembersEnrich();   /* §359：分批补拉日K算完整列 */
+      /* §369：快照字段（价/涨幅/量比/换手率）只填空缺，走同一批 ulist 通道，零新增请求；
+         回填后重排一次（若正按这些列排序）再补日K，缺数仍留「—」 */
+      return tdSecSnapFill(TD_SECM.rows).then(function(fill){
+        TD_SECM.snapN = fill.filled;
+        if(TD_SECM.sortK && TD_SECM.rows.length) TD_SECM.rows = tdSecSortRows(TD_SECM.rows, TD_SECM.sortK, TD_SECM.sortDir, tdSecRpsMap(TD_SECM.rpsLocal));
+        tdSecMembersPaintBody();
+        tdSecMembersEnrich();   /* §359：分批补拉日K算完整列 */
+      });
     }).catch(function(){
       TD_SECM.loading = false; TD_SECM.why = '成分股拉取失败 —— 按实留白，不编造'; tdSecMembersPaint();
     });
@@ -51204,10 +51314,10 @@ function tdSecSortRows(rows, k, dir, rpsMap){
           else { TD_SECM.sortK = ''; TD_SECM.sortDir = 1; TD_SECM.tap = 0; }                  /* 第三击：恢复默认成交额降序 */
         } else {
           TD_SECM.sortK = sk; TD_SECM.tap = 1;
-          TD_SECM.sortDir = ({ code:1, name:1, sec:1, ind:1, def:1, stage:1 })[sk] ? 1 : -1;   /* 文本/枚举列升序；数值列降序（大在前） */
+          TD_SECM.sortDir = ({ code:1, name:1, sec:1, def:1, stage:1 })[sk] ? 1 : -1;   /* 文本/枚举列升序；数值列降序（大在前） */
         }
         var srows = TD_SECM.rows;
-        if(srows && srows.length) TD_SECM.rows = tdSecSortRows(srows, TD_SECM.sortK, TD_SECM.sortDir);
+        if(srows && srows.length) TD_SECM.rows = tdSecSortRows(srows, TD_SECM.sortK, TD_SECM.sortDir, tdSecRpsMap(TD_SECM.rpsLocal));
         tdSecMembersPaintBody();
         return;
       }
@@ -52574,7 +52684,7 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     tdParseTxt: tdParseTxt, tdDecodeTxt: tdDecodeTxt, tdResolveToks: tdResolveToks, tdApplyResolved: tdApplyResolved,
     tdMa5Slope: tdMa5Slope,   /* §274 */
     tdMomOf: tdMomOf, momTierOf: momTierOf, momPkOf: momPkOf, MOM_VD: MOM_VD, MOM_VD_S: MOM_VD_S, momVdColor: momVdColor,   /* §294/§295 */
-    tdSuperTrendOf: tdSuperTrendOf, tdStHtml: tdStHtml,   /* §361 */
+    tdSuperTrendOf: tdSuperTrendOf, tdStHtml: tdStHtml, tdSecGain60: tdSecGain60, tdSecLocalRps: tdSecLocalRps, tdSecGate2Of: tdSecGate2Of, tdSecGate2Filter: tdSecGate2Filter, tdSecRpsMap: tdSecRpsMap,   /* §361；§373 第三闸已删 */
     tdSortPool: tdSortPool, tdDelBatchDo: tdDelBatchDo, TD_SORT: TD_SORT }; window.__RPS = RPS; } catch(eX){ }
   function tdBoot(){
     var b = td$$('tdRefresh'), rb = td$$('tdRpsBtn');

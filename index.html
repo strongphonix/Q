@@ -1813,7 +1813,7 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
      定位与 7.16 互补：7.16 四指标 v3 管情绪面（MA5/KDJ/VOL/冲高回吐），本卡管趋势防守面
      （MA5/10/20 分层 + 四类卖点 + 板块拐点一票否决联动）——两卡各管一半，不重复判定。 -->
 <section class="card" id="tdPanel">
-<h2 style="border-color:#fbbf24;color:#fbbf24">🛡️ 趋势主升 · 持仓防守面板<small>数据源 = <b>7.16 个人持仓（wb_hold_v1）+ 自选池（wb_watch_v1）</b>合并，同一份池不另建第二份（页内纪律）｜均线 = 腾讯 fqkline 前复权日K三通道（与 D12A/生命周期引擎同缓存 kCacheL，30 分钟 TTL）｜防守 = 5日线持股法三态（不破5日线=持有 / 连续两日低于5日线=减半 / 破10日线=清仓警报）+ MA20 生命线（连续两日收盘下破=有效破位）｜卖点 = 四类信号（放量滞涨 / 长上影 / 量价背离 / 高位巨量阴）｜板块拐点联动 = 个股东财二级行业（push2 f127）→ themeOf 主题键 → 7.5B 七阶段状态机（wb_secstage_v1），<b style="color:#6ee7b7">分歧/退潮 = ⛔ 无论盈亏无条件离场</b>｜<b style="color:#9fb4ff">与 7.16 各管一半：情绪面看 7.16，趋势防守看本卡</b>｜§269：<b>增删直改同一份池</b>——顶部输入框支持代码/名称/拼音（smartbox 解析），行尾 ✕ 两步确认删除（持仓动 wb_hold_v1、自选动 wb_watch_v1，两件事不连坐）｜§268：<b style="color:#fecaca">RPS 五档分级</b>（≥90 领头羊 / 85~90 强势 / 80~85 次强 / 65~80 观察 / &lt;65 弱势，悬停看动量逻辑）＋ 周线判定（日K聚合）＋ 平台突破（近20日横盘放量上破）＋ 板块资金逐日序列（f62 本地累积）＋ 融资余额（T+1，不可用如实「—」）｜§270：<b style="color:#fecaca">📥 txt 导入</b>（每行一只·6位代码/名称/拼音，一次≤30只，自动识别 UTF-8/GBK，走同一套解析双通道，直改同一份池）｜§272：<b style="color:#fecaca">行业列</b>（东财 f127 二级行业，联动 7.5B 主题键）＋ <b>表头点击排序</b>（升→降→恢复池序，空值恒排尾）＋ <b>☑ 批量删除</b>（两步确认，各删各的池）｜§294：<b style="color:#9fb4ff">动量T/P 列</b>（10日动量 ROC(10) T1~T6 档 + 20日动量分位 P1~P5 档，悬停看 30 格组合判定，只读展示）｜§356：<b style="color:#7dd3fc">量比 / 换手率</b>（腾讯 a[49] / a[38]，东财 f10 / f8 兜底，缺数留「—」）＋ <b style="color:#fca5a5">板块筛选</b>（默认全选今日有涨停股的板块；可输入板块名覆盖，只筛显示行）｜§357：<b style="color:#7dd3fc">板块成分股折叠清单</b>（点开才拉数，复用 7.12 三通道，不进防守表、不拉日K）｜§358：<b style="color:#fecaca">乖离率 BIAS5 / 生命周期阶段 / 四指标分维度（MA5/KDJ/VOL/回吐）</b>（补齐 7.12 面板有的股票信息，同源零新增请求）｜§377：<b style="color:#7dd3fc">🎯 候选池</b>（全市场活跃池＝成交额榜＋涨跌幅榜＋今日涨停池并集，距今8个交易日内至少一日涨幅&gt;7% 入池；展开只显三闸过闸股票，漏斗页脚披露；点开才扫描，不进防守判定、不发信号）</small></h2>
+<h2 style="border-color:#fbbf24;color:#fbbf24">🛡️ 趋势主升 · 持仓防守面板<small>数据源 = <b>7.16 个人持仓（wb_hold_v1）+ 自选池（wb_watch_v1）</b>合并，同一份池不另建第二份（页内纪律）｜均线 = 腾讯 fqkline 前复权日K三通道（与 D12A/生命周期引擎同缓存 kCacheL，30 分钟 TTL）｜防守 = 5日线持股法三态（不破5日线=持有 / 连续两日低于5日线=减半 / 破10日线=清仓警报）+ MA20 生命线（连续两日收盘下破=有效破位）｜卖点 = 四类信号（放量滞涨 / 长上影 / 量价背离 / 高位巨量阴）｜板块拐点联动 = 个股东财二级行业（push2 f127）→ themeOf 主题键 → 7.5B 七阶段状态机（wb_secstage_v1），<b style="color:#6ee7b7">分歧/退潮 = ⛔ 无论盈亏无条件离场</b>｜<b style="color:#9fb4ff">与 7.16 各管一半：情绪面看 7.16，趋势防守看本卡</b>｜§269：<b>增删直改同一份池</b>——顶部输入框支持代码/名称/拼音（smartbox 解析），行尾 ✕ 两步确认删除（持仓动 wb_hold_v1、自选动 wb_watch_v1，两件事不连坐）｜§268：<b style="color:#fecaca">RPS 五档分级</b>（≥90 领头羊 / 85~90 强势 / 80~85 次强 / 65~80 观察 / &lt;65 弱势，悬停看动量逻辑）＋ 周线判定（日K聚合）＋ 平台突破（近20日横盘放量上破）＋ 板块资金逐日序列（f62 本地累积）＋ 融资余额（T+1，不可用如实「—」）｜§270：<b style="color:#fecaca">📥 txt 导入</b>（每行一只·6位代码/名称/拼音，一次≤30只，自动识别 UTF-8/GBK，走同一套解析双通道，直改同一份池）｜§272：<b style="color:#fecaca">行业列</b>（东财 f127 二级行业，联动 7.5B 主题键）＋ <b>表头点击排序</b>（升→降→恢复池序，空值恒排尾）＋ <b>☑ 批量删除</b>（两步确认，各删各的池）｜§294：<b style="color:#9fb4ff">动量T/P 列</b>（10日动量 ROC(10) T1~T6 档 + 20日动量分位 P1~P5 档，悬停看 30 格组合判定，只读展示）｜§356：<b style="color:#7dd3fc">量比 / 换手率</b>（腾讯 a[49] / a[38]，东财 f10 / f8 兜底，缺数留「—」）＋ <b style="color:#fca5a5">板块筛选</b>（默认全选今日有涨停股的板块；可输入板块名覆盖，只筛显示行）｜§357：<b style="color:#7dd3fc">板块成分股折叠清单</b>（点开才拉数，复用 7.12 三通道，不进防守表、不拉日K）｜§358：<b style="color:#fecaca">乖离率 BIAS5 / 生命周期阶段 / 四指标分维度（MA5/KDJ/VOL/回吐）</b>（补齐 7.12 面板有的股票信息，同源零新增请求）｜§377：<b style="color:#7dd3fc">🎯 候选池</b>（全市场活跃池＝成交额榜＋涨跌幅榜＋今日涨停池并集，距今8个交易日内至少一日涨幅&gt;7% 入池；展开只显四闸过闸股票（含 §382 成交额>10亿），漏斗页脚披露；点开才扫描，不进防守判定、不发信号）</small></h2>
 <div style="display:flex;gap:12px;align-items:center;padding:7px 14px;border-bottom:1px solid rgba(148,163,184,.14);font-size:12px;flex-wrap:wrap">
   <button class="btn" id="tdRefresh" type="button">⟳ 刷新防守判定</button>
   <button class="btn b2" id="tdRpsBtn" type="button" title="全市场按 60 日涨幅降序分页扫描（约 56 页 / 20~30 秒），本地算百分位；结果存 localStorage 每日一次。RPS250 用「年初至今涨幅」百分位近似（11 月约 210 交易日，相关性极高，非精确 250 日）。">⟳ 扫全市场 RPS（约 30 秒 · 每日一次）</button>
@@ -1835,7 +1835,7 @@ tr.tm-on td{background:rgba(96,165,250,.10)}
 <!-- ★ §357（2026-11-22）/ §359（2026-11-22）板块成分股折叠清单：输入板块名 → 点开才拉数；按防守面板同款完整列只读展示（点开补拉日K分批算），不进防守判定、不发信号 -->
 <div id="tdSecMembers"></div>
 <!-- ★ §377（2026-11-24）🎯 候选池：全市场活跃池（成交额榜+涨跌幅榜+今日涨停池并集）· 距今8个交易日内至少一日涨幅>7% 入池；
-     展开只显三闸过闸股票（SuperTrend 多头 + MA20≥MA60 + 换手>3%，na 放行），漏斗页脚披露；点开才扫描，不进防守判定、不发信号 -->
+     展开只显四闸过闸股票（SuperTrend 多头 + MA20≥MA60 + 换手>3% + §382 成交额>10亿，换手/成交额 na 放行），漏斗页脚披露；点开才扫描，不进防守判定、不发信号 -->
 <div id="tdPoolBox"></div>
 <div id="tdBody"><div class="loading">待刷新：读取持仓/自选池后拉日K判定…</div></div>
 </section>
@@ -50892,7 +50892,7 @@ function tdSecSnapFill(rows, quoteFn){
   var all = Array.isArray(rows) ? rows : [], need = [], i;
   for(i = 0; i < all.length; i++){
     var r = all[i];
-    if(r && r.code && (r.price == null || r.pct == null || r.lb == null || r.turn == null)) need.push(r);
+    if(r && r.code && (r.price == null || r.pct == null || r.lb == null || r.turn == null || r.amt == null)) need.push(r);   /* §381 加成交额 */
   }
   if(!need.length) return Promise.resolve({ q: {}, filled: 0, need: 0 });
   var get = (typeof quoteFn === 'function') ? quoteFn
@@ -50908,13 +50908,16 @@ function tdSecSnapFill(rows, quoteFn){
       if(r.pct   == null && p3  != null){ r.pct   = p3;  hit = true; }
       if(r.turn  == null && p8  != null){ r.turn  = p8;  hit = true; }
       if(r.lb    == null && p10 != null){ r.lb    = p10; hit = true; }
+      var p6 = tdSecNum(x.f6);   /* §381 成交额（东财 f6 = 元）：两清单 r.amt 同尺 = 亿元 */
+      if(r.amt   == null && p6  != null){ r.amt   = p6 / 1e8; hit = true; }
       if(hit) filled++;
     });
     /* ★ §375 腾讯二次兜底：push2*.eastmoney.com 在部分网络环境整域 ERR_EMPTY_RESPONSE（环境时变，
        clist 与 ulist 同域同灭），东财回填后仍有换手缺数时走 loadTxQuotes（qt.gtimg.cn script 注入，
-       与 ⑦ 指数 / 持仓同通道）：f3=现价 / f32=涨跌% / f38=换手率%。只填空缺不覆盖真值；
+       与 ⑦ 指数 / 持仓同通道）：f3=现价 / f32=涨跌% / f38=换手率% / §381 新增 a[37]=成交额(万元) 与 a[49]=量比
+      （qt.gtimg.cn 实测字段：茅台 a37=684234 万=68.42 亿 / a49=0.97，与东财 f6/f10 同义同尺）。只填空缺不覆盖真值；
        两通道都取不到才留 null 印「—」，不编 0。 */
-    var miss = need.filter(function(r){ return r && r.code && (r.turn == null || r.price == null || r.pct == null); });
+    var miss = need.filter(function(r){ return r && r.code && (r.turn == null || r.price == null || r.pct == null || r.lb == null || r.amt == null); });   /* §381 量比/成交额也走腾讯兜底 */
     if(miss.length && typeof loadTxQuotes === 'function' && typeof wtSym === 'function'){
       var tcodes = [];
       miss.forEach(function(r){ var s = wtSym(r.code); if(s && tcodes.indexOf(s) < 0) tcodes.push(s); });
@@ -50926,6 +50929,11 @@ function tdSecSnapFill(rows, quoteFn){
           if(r.turn  == null && t  != null){ r.turn  = t;  filled++; }
           if(r.price == null && p  != null){ r.price = p; }
           if(r.pct   == null && pc != null){ r.pct   = pc; }
+          /* §381：成交额（a[37] 万元 → 亿）与 量比（a[49]，东财挂时的量比唯一实时源） */
+          var a37 = (f.length > 37) ? parseFloat(f[37]) : NaN;
+          var q49 = (f.length > 49) ? parseFloat(f[49]) : NaN;
+          if(r.amt == null && isFinite(a37) && a37 > 0){ r.amt = a37 / 1e4; filled++; }
+          if(r.lb  == null && isFinite(q49) && q49 >= 0){ r.lb  = q49; filled++; }
         });
         return { q: q, filled: filled, need: need.length, tx: true };
       }).catch(function(){ return { q: q, filled: filled, need: need.length }; });
@@ -50949,6 +50957,23 @@ function tdSecMaxUpN(bars, n){
   }
   return best;
 }
+/* ★ §381 量比日K兜底纯函数（顶层全局，vm 单测可直调；零网络零 DOM）：
+   今量 / 前5日均量 —— bars 内自洽比值，腾讯「手」/新浪「股」量纲差在比值内抵消。
+   标准量比 = 每分钟均量比；收盘后两者相等，盘中该比值略低估 —— 仅作腾讯 a[49] 之后的末级兜底（页脚披露）。
+   bars 不足 6 根 / 任一根量非法或 ≤0 → null（缺失不冒充，不当 0）。 */
+function tdSecLbBars(bars){
+  if(!Array.isArray(bars) || bars.length < 6) return null;
+  var last = +bars[bars.length - 1].v;
+  if(!isFinite(last) || last <= 0) return null;
+  var s = 0, i;
+  for(i = bars.length - 6; i <= bars.length - 2; i++){
+    var v = +bars[i].v;
+    if(!isFinite(v) || v <= 0) return null;
+    s += v;
+  }
+  var avg = s / 5;
+  return (isFinite(avg) && avg > 0) ? last / avg : null;
+}
 /* ★ §360 成分股清单排序纯函数（顶层全局，vm 单测可直调；只取值 + 排序，零网络零 DOM）
    与 tdSortPool 主表同源口径：数值列缺数 null 恒排尾、文本列 localeCompare('zh')、空值之间按 code 稳定不抖动。
    rpsMap 第三参可选：真机不传走全局 RPS.stk；vm 单测显式传，保证纯函数可测。 */
@@ -50960,7 +50985,7 @@ function tdSecSortVal(r, k, rpsMap){
   switch(k){
     case 'code':  return r.code || '';
     case 'name':  return r.name || '';
-    case 'sec':   return r.sec || '';
+    case 'sec':   return r.sec || ((r.__tdx && r.__tdx.st && r.__tdx.st.ind) || '');   /* §381 池行行业排序兜底 */
     case 'price': return r.price;
     case 'pct':   return r.pct;
     case 'amt':   return r.amt;
@@ -51070,6 +51095,29 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     all.forEach(function(r){
       var g = tdSecActiveOf(r);
       /* §374：换手缺数（na）放行展示，不因环境缺数把第三闸变成全灭闸；页脚单独披露放行数 */
+      if(g.ok) pass.push(r); else if(g.na){ na++; pass.push(r); } else weak++;
+    });
+    return { all: all, pass: pass, weak: weak, na: na };
+  }
+  /* ★ §382 第四闸门（成交额闸，用户要求「这两部分再增加一个闸门，成交额大于10亿」）：
+     成分股清单与候选池共用一把尺。r.amt 在两处清单已统一为「亿元」：
+     tdSecMemberOf 原始 amt/f6（元）÷1e8 / 快照回填东财 f6÷1e8 / 腾讯 a37（万元）÷1e4，
+     与成交额列渲染 r.amt.toFixed(2)+'亿' 同源同尺 —— 故阈值 amtMin=10 即「>10亿」严格大于。
+     缺数/非法值计 na 并放行展示（与 §374 第三闸同哲学：不因环境缺数把闸变成全灭闸、不拿 0 误杀），
+     页脚单独披露放行数，渲染列缺数仍印「—」不当 0。 */
+  var TD_AMT_RULE = { amtMin: 10 };
+  function tdSecAmtOf(r){
+    var a = (r && r.amt != null) ? +r.amt : null;
+    if(a == null || !isFinite(a))
+      return { ok: false, na: true, why: '成交额取数不足' };
+    var ok = a > TD_AMT_RULE.amtMin;
+    return { ok: ok, na: false, why: ok ? '成交额>10亿' : '成交额≤10亿' };
+  }
+  function tdSecAmtFilter(rows){
+    var all = Array.isArray(rows) ? rows : [], pass = [], weak = 0, na = 0;
+    all.forEach(function(r){
+      var g = tdSecAmtOf(r);
+      /* §382：成交额缺数（na）放行展示，页脚单独披露放行数 */
       if(g.ok) pass.push(r); else if(g.na){ na++; pass.push(r); } else weak++;
     });
     return { all: all, pass: pass, weak: weak, na: na };
@@ -51252,7 +51300,8 @@ function tdSecSortRows(rows, k, dir, rpsMap){
       out.push('<tr>' +
         '<td class="mono">' + esc(r.code) + '</td>' +
         '<td><b data-wbbjump="' + esc(r.code) + '" style="cursor:pointer" title="点击打开生命周期工作台个股诊断 ' + esc(r.code) + '">' + esc(r.name || '—') + '</b></td>' +
-        '<td style="color:#8d99b8">' + esc(r.sec) + '</td>' +
+        '<td style="color:#8d99b8">' + esc(r.sec || (x.st && x.st.ind) || '') + '</td>' +   /* §381 池行行业兜底（板块列读 r.sec，tdStageOf 的 ind 只在 x.st 里） */
+        '<td>' + scHtml + '</td>' +   /* §382：板块阶段移到价格前面（用户要求，两清单同序） */
         '<td class="mono">' + (r.price != null ? r.price.toFixed(2) : '<span style="color:#64748b">—</span>') + '</td>' +
         '<td class="mono">' + pctTxt + '</td>' +
         (isPool ? g8Cell : '') +
@@ -51264,7 +51313,7 @@ function tdSecSortRows(rows, k, dir, rpsMap){
         '<td>' + momHtml + '</td><td>' + slHtml + '</td>' +
         '<td>' + fmtMa(j.ma5, j.dist5) + '</td><td>' + fmtMa(j.ma20, j.dist20) + '</td><td>' + fmtMa(j.ma60, j.dist60) + '</td>' +
         '<td><span class="td-def ' + (j.lvl || 'ln') + '">' + esc(j.lvlTxt || '—') + '</span></td>' +
-        '<td>' + s4kHtml + '</td><td>' + sigsHtml + '</td><td>' + volHtml + '</td><td>' + scHtml + '</td></tr>');
+        '<td>' + s4kHtml + '</td><td>' + sigsHtml + '</td><td>' + volHtml + '</td></tr>');
     });
     return out;
   }
@@ -51272,7 +51321,7 @@ function tdSecSortRows(rows, k, dir, rpsMap){
   function tdSecMembersHtml(){
     var names = tdSecCurNames(); if(!names.length) return '';
     return '<details id="tdSecMd"' + (TD_SECM.open ? ' open' : '') + '>' +
-      '<summary>📋 板块成分股清单（' + names.length + ' 个板块：' + esc(names.slice(0, 4).join('、')) + (names.length > 4 ? '…' : '') + '）— 仅 SuperTrend 多头 + MA20≥MA60 + 换手>3% · 点击展开才拉取</summary>' +
+      '<summary>📋 板块成分股清单（' + names.length + ' 个板块：' + esc(names.slice(0, 4).join('、')) + (names.length > 4 ? '…' : '') + '）— 仅 SuperTrend 多头 + MA20≥MA60 + 换手>3% + 成交额>10亿 · 点击展开才拉取</summary>' +
       '<div id="tdSecMdBody">' + tdSecMembersBody() + '</div></details>';
   }
   function tdSecMembersBody(){
@@ -51284,7 +51333,8 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     var flt1 = tdSecBullFilter(all);
     var flt2 = tdSecGate2Filter(flt1.bulls);
     var flt3 = tdSecActiveFilter(flt2.pass);
-    var flt = { all: all, bulls: flt1.bulls, pass: flt3.pass, bear: flt1.bear, na: flt1.na, weak: flt2.weak, na2: flt2.na, actWeak: flt3.weak, actNa: flt3.na };
+    var flt4 = tdSecAmtFilter(flt3.pass);   /* §382 第四闸：成交额>10亿（na 放行展示） */
+    var flt = { all: all, bulls: flt1.bulls, pass: flt4.pass, bear: flt1.bear, na: flt1.na, weak: flt2.weak, na2: flt2.na, actWeak: flt3.weak, actNa: flt3.na, amtWeak: flt4.weak, amtNa: flt4.na };
     var rows = flt.pass;
     /* §362：补齐进度按已处理的 __tdx 计（缺额票 catch 分支也会挂 __tdx）；
        不能按 stST 有效数计，否则日K取不到的票会让进度永远卡在「补齐中」 */
@@ -51292,8 +51342,8 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     all.forEach(function(r){ if(r && r.__tdx) doneN++; });
     var pend = all.length - doneN;
     if(!rows.length){
-      if(pend) return '<div class="td-sec-note">SuperTrend 方向 / MA20≥MA60 / 换手>3% 计算中 ' + doneN + '/' + all.length + '，仅显示三闸通过的成分股…</div>';
-      return '<div class="td-sec-note">该板块无「SuperTrend 多头 + MA20≥MA60 + 换手>3%」成分股（原始 ' + all.length + ' 只：ST空头 ' + flt.bear + ' / ST取数不足 ' + flt.na + ' / 均线未多头 ' + flt.weak + ' / 均线取数不足 ' + flt.na2 + ' / 换手≤3% ' + flt.actWeak + ' / 换手取数不足 ' + flt.actNa + '）——按实留白，不编造。</div>';
+      if(pend) return '<div class="td-sec-note">SuperTrend 方向 / MA20≥MA60 / 换手>3% / 成交额>10亿 计算中 ' + doneN + '/' + all.length + '，仅显示四闸通过的成分股…</div>';
+      return '<div class="td-sec-note">该板块无「SuperTrend 多头 + MA20≥MA60 + 换手>3% + 成交额>10亿」成分股（原始 ' + all.length + ' 只：ST空头 ' + flt.bear + ' / ST取数不足 ' + flt.na + ' / 均线未多头 ' + flt.weak + ' / 均线取数不足 ' + flt.na2 + ' / 换手≤3% ' + flt.actWeak + ' / 换手取数不足 ' + flt.actNa + ' / 成交额≤10亿 ' + flt.amtWeak + ' / 成交额取数不足 ' + flt.amtNa + '（放行展示））——按实留白，不编造。</div>';
     }
     /* §368：22 列全可点排序（量比后补回换手率；均线 MA5/MA20/MA60）；独立 class secmd-th + data-secmd-sort，不碰主表 .td-th / TD_SORT 委托 */
     function thSec(label, k){
@@ -51302,15 +51352,15 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     }
     var rpm = tdSecRpsMap(TD_SECM.rpsLocal);
     var h = '<div class="td-sec-mwrap"><table><thead><tr>' +
-      thSec('代码','code') + thSec('名称','name') + thSec('板块','sec') + thSec('价格','price') + thSec('涨幅','pct') + thSec('成交额','amt') + thSec('量比','lb') + thSec('换手率','turn') +
+      thSec('代码','code') + thSec('名称','name') + thSec('板块','sec') + thSec('板块阶段','stage') + thSec('价格','price') + thSec('涨幅','pct') + thSec('成交额','amt') + thSec('量比','lb') + thSec('换手率','turn') +
       thSec('RPS60','rps') + thSec('乖离率','b5') + thSec('生命周期','life') + thSec('SuperTrend','st') +
       thSec('动量T/P','mom') + thSec('MA5斜率','ma5sl') + thSec('MA5','ma5') + thSec('MA20','ma20') + thSec('MA60','ma60') + thSec('防守状态','def') + thSec('四指标','s4k') +
-      thSec('卖点信号','sig') + thSec('量能/周线/资金','vol') + thSec('板块阶段','stage') + '</tr></thead><tbody>';
+      thSec('卖点信号','sig') + thSec('量能/周线/资金','vol') + '</tr></thead><tbody>';
     h += tdSecRowHtmls(rows, rpm, false).join('');   /* §377 抽公共行渲染：与候选池同一把尺（原 51150~51216 循环原样迁移） */
-    var foot = '仅显示 <b style="color:#f0453a">SuperTrend 多头 + MA20≥MA60 + 换手>3%</b> <b>' + rows.length + '</b> 只 / 原始 ' + all.length + ' 只（ST多头 ' + flt1.bulls.length + ' 只 → 第二闸过滤：均线未多头 ' + flt.weak + ' / 均线取数不足 ' + flt.na2 + ' → 第三闸过滤：换手≤3% ' + flt.actWeak + ' / 换手取数不足 ' + flt.actNa + '（放行展示）；ST空头 ' + flt.bear + ' / ST取数不足 ' + flt.na + '；<b style="color:#fcd34d">与持仓/自选池无关</b>）（默认成交额降序；§360 点表头可按任意列排序：升▲ → 降▼ → 第三击恢复默认；全局按代码去重、空值恒排尾、缺数留「—」）· 来源：板块码成分股 + 行业名 + 今日涨停池，30 分钟缓存。' +
+    var foot = '仅显示 <b style="color:#f0453a">SuperTrend 多头 + MA20≥MA60 + 换手>3% + 成交额>10亿</b> <b>' + rows.length + '</b> 只 / 原始 ' + all.length + ' 只（ST多头 ' + flt1.bulls.length + ' 只 → 第二闸过滤：均线未多头 ' + flt.weak + ' / 均线取数不足 ' + flt.na2 + ' → 第三闸过滤：换手≤3% ' + flt.actWeak + ' / 换手取数不足 ' + flt.actNa + '（放行展示）→ §382 第四闸过滤：成交额≤10亿 ' + flt.amtWeak + ' / 成交额取数不足 ' + flt.amtNa + '（放行展示）；ST空头 ' + flt.bear + ' / ST取数不足 ' + flt.na + '；<b style="color:#fcd34d">与持仓/自选池无关</b>）（默认成交额降序；§360 点表头可按任意列排序：升▲ → 降▼ → 第三击恢复默认；全局按代码去重、空值恒排尾、缺数留「—」）· 来源：板块码成分股 + 行业名 + 今日涨停池，30 分钟缓存。' +
       '★ §359/§361/§367/§368：按防守面板同款列只读展示 —— 乖离率/生命周期/SuperTrend/动量/MA5斜率/MA5/MA20/MA60/防守状态/卖点信号 复用同一把尺，点开时补拉日K分批计算' +
       (pend ? '（<b style="color:#7dd3fc">读数补齐中 ' + doneN + '/' + all.length + '</b>）' : '（已补齐）') +
-      '；§371 第二闸只比 MA20≥MA60，MA5 短期回踩或缺数不再误伤；§374 第三闸只认换手率一个字段（>3% 严格大于，量比维度已删不回归），与 ST 方向闸、均线结构闸异维，缺数放行展示不编数；RPS60 全市场扫描优先，未到时用同批日K算板块内百分位（标「板·」，样本≥20，不冒充全市场）；价/涨幅/量比/换手率按 code 走同一批东财 ulist 只填空缺 ' + (TD_SECM.snapN || 0) + ' 只（F10 兜底无 f8 换手 —— 不覆盖已有真值）；取不到的列如实留「—」，不当 0；不进防守判定、不发信号、不进钉钉。';
+      '；§371 第二闸只比 MA20≥MA60，MA5 短期回踩或缺数不再误伤；§374 第三闸只认换手率一个字段（>3% 严格大于，量比维度已删不回归），与 ST 方向闸、均线结构闸异维，缺数放行展示不编数；§382 第四闸只认成交额一个字段（r.amt 亿元口径 >10 严格大于，与原始 f6÷1e8 / 东财回填 / 腾讯 a37÷1e4 同源同尺），缺数放行展示不编数；RPS60 全市场扫描优先，未到时用同批日K算板块内百分位（标「板·」，样本≥20，不冒充全市场）；价/涨幅/量比/换手率按 code 走同一批东财 ulist 只填空缺 ' + (TD_SECM.snapN || 0) + ' 只（F10 兜底无 f8 换手 —— 不覆盖已有真值；§381 成交额兜底=腾讯 a[37] 万→亿、量比兜底=腾讯 a[49]→日K今量/5日均量末级兜底，盘中略低估收盘后等价）；取不到的列如实留「—」，不当 0；不进防守判定、不发信号、不进钉钉。';
     return h + '</tbody></table></div><div class="td-sec-note">' + foot + '</div>';
   }
   /* §359：点开清单后分批补拉成分股日K + 复用防守面板同一把尺算完整列（klineBarsL 自带 30min 缓存 + 熔断） */
@@ -51336,6 +51386,7 @@ function tdSecSortRows(rows, k, dir, rpsMap){
           Promise.resolve(tdStageOf(r.code)).catch(function(){ return { ind: null, theme: null, stage: null }; })
         ]).then(function(arr){
           var bars = arr[0], st = arr[1] || {};
+          if(r.lb == null && bars) r.lb = tdSecLbBars(bars);   /* §381 量比末级兜底（腾讯 a49 之后的最后一级，缺失不冒充） */
           r.__tdx = tdSecTdxBuild(r, bars, st);   /* §377 抽公共构建：与候选池同一把尺（原 51246~51273 构建段原样迁移） */
         }).catch(function(){ r.__tdx = { st: {} }; });
       })).then(function(){
@@ -51457,7 +51508,7 @@ function tdSecSortRows(rows, k, dir, rpsMap){
      全市场行只补缺；全市场拉挂 → 纯六路回退（永不空手）。剔 ST/退市/北交所、上限 POOL_RULE.uniMax。
      交互：details 点开才扫描（与 §357 成分股清单同款 lazy）；分批拉日K（klineBarsL 30min 缓存 + 熔断），
      逐只算窗口内最大单日涨幅，>7% 入池并当场补算完整派生列（tdSecTdxBuild 与成分股清单同一把尺）；
-     展示只显过闸股票（用户定稿）：三闸 = SuperTrend 多头 + MA20≥MA60 + 换手>3%（na 放行），
+     展示只显过闸股票（用户定稿）：四闸 = SuperTrend 多头 + MA20≥MA60 + 换手>3%（na 放行）+ §382 成交额>10亿（na 放行），
      被过滤的票不渲染、只在页脚计数（完整漏斗披露）。
      不进防守判定、不发信号、不进钉钉；同宇宙同交易日内存缓存，页面刷新后需重扫（页脚 🔁 重扫）。 */
   var POOL_RULE = { uniMax: 6500, upMin: 7, winN: 8, batch: 6, gapMs: 30 };   /* §379：宇宙=整个A股（hs_a 全清单 ~5900 只，cap 6500 不截断；§378 的 1400 活跃池降级为回退路） */
@@ -51539,7 +51590,8 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     var f1 = tdSecBullFilter(rows || []);
     var f2 = tdSecGate2Filter(f1.bulls);
     var f3 = tdSecActiveFilter(f2.pass);
-    return { f1: f1, f2: f2, f3: f3, pass: f3.pass };
+    var f4 = tdSecAmtFilter(f3.pass);   /* §382 第四闸：成交额>10亿（na 放行展示），与成分股清单同一把尺 */
+    return { f1: f1, f2: f2, f3: f3, f4: f4, pass: f4.pass };
   }
   function tdPoolHtml(){
     var s = '🎯 候选池（整个A股 · 距今8个交易日内至少一日涨幅>7%）';
@@ -51558,24 +51610,25 @@ function tdSecSortRows(rows, k, dir, rpsMap){
       ? tdSecSortRows(g.pass, TD_POOLM.sortK, TD_POOLM.sortDir, tdSecRpsMap(null))
       : tdSecSortRows(g.pass, '', 1);
     if(!shown.length){
-      return '<div class="td-sec-note">池内无「SuperTrend 多头 + MA20≥MA60 + 换手>3%」过闸股票（入池 ' + rows.length + ' 只：ST空头 ' + g.f1.bear + ' / ST取数不足 ' + g.f1.na + ' / 均线未多头 ' + g.f2.weak + ' / 均线取数不足 ' + g.f2.na + ' / 换手≤3% ' + g.f3.weak + ' / 换手取数不足放行 ' + g.f3.na + '）——按实留白，不编造。</div>';
+      return '<div class="td-sec-note">池内无「SuperTrend 多头 + MA20≥MA60 + 换手>3% + 成交额>10亿」过闸股票（入池 ' + rows.length + ' 只：ST空头 ' + g.f1.bear + ' / ST取数不足 ' + g.f1.na + ' / 均线未多头 ' + g.f2.weak + ' / 均线取数不足 ' + g.f2.na + ' / 换手≤3% ' + g.f3.weak + ' / 换手取数不足放行 ' + g.f3.na + ' / 成交额≤10亿 ' + g.f4.weak + ' / 成交额取数不足放行 ' + g.f4.na + '）——按实留白，不编造。</div>';
     }
     function thP(label, k){
       var on = TD_POOLM.sortK === k;
       return '<th class="secmd-th' + (on ? ' on' : '') + '" data-poolmd-sort="' + k + '" title="点击排序：升 → 降 → 第三击恢复默认「8日最大」降序；空值恒排尾">' + label + (on ? (TD_POOLM.sortDir > 0 ? ' ▲' : ' ▼') : '') + '</th>';
     }
     var h = '<div class="td-sec-mwrap"><table><thead><tr>' +
-      thP('代码','code') + thP('名称','name') + thP('板块','sec') + thP('价格','price') + thP('涨幅','pct') + thP('8日最大','gain8') + thP('成交额','amt') + thP('量比','lb') + thP('换手率','turn') +
+      thP('代码','code') + thP('名称','name') + thP('板块','sec') + thP('板块阶段','stage') + thP('价格','price') + thP('涨幅','pct') + thP('8日最大','gain8') + thP('成交额','amt') + thP('量比','lb') + thP('换手率','turn') +
       thP('RPS60','rps') + thP('乖离率','b5') + thP('生命周期','life') + thP('SuperTrend','st') +
       thP('动量T/P','mom') + thP('MA5斜率','ma5sl') + thP('MA5','ma5') + thP('MA20','ma20') + thP('MA60','ma60') + thP('防守状态','def') + thP('四指标','s4k') +
-      thP('卖点信号','sig') + thP('量能/周线/资金','vol') + thP('板块阶段','stage') + '</tr></thead><tbody>';
+      thP('卖点信号','sig') + thP('量能/周线/资金','vol') + '</tr></thead><tbody>';
     h += tdSecRowHtmls(shown, tdSecRpsMap(null), true).join('');
     var foot = '漏斗：宇宙 ' + TD_POOLM.uniN + ' 只 → 缺日K/停牌 ' + TD_POOLM.failN + ' 只 → 入池（8日内最大单日涨幅>7%）<b>' + rows.length + '</b> 只' +
       ' → ① SuperTrend 多头 ' + g.f1.bulls.length + '（空头 ' + g.f1.bear + ' / ST取数不足 ' + g.f1.na + '）' +
       ' → ② MA20≥MA60 ' + g.f2.pass.length + '（未多头 ' + g.f2.weak + ' / 取数不足 ' + g.f2.na + '）' +
-      ' → ③ 换手>3% 过闸 <b style="color:#f0453a">' + g.pass.length + '</b>（≤3% ' + g.f3.weak + ' / 缺数放行 ' + g.f3.na + '）——只显过闸（用户定稿），被过滤的不渲染只计数' +
+      ' → ③ 换手>3% ' + g.f3.pass.length + '（≤3% ' + g.f3.weak + ' / 缺数放行 ' + g.f3.na + '）' +
+      ' → ④ 成交额>10亿 过闸 <b style="color:#f0453a">' + g.pass.length + '</b>（≤10亿 ' + g.f4.weak + ' / 缺数放行 ' + g.f4.na + '）——只显过闸（用户定稿），被过滤的不渲染只计数；§382 两清单（成分股/候选池）同一把尺' +
       ' · 8日最大 = 距今8个交易日窗口内最大单日涨幅（括注为出现在几个交易日前；次新股不足8根按现有根数算）' +
-      ' · 快照回填 ' + (TD_POOLM.snapN || 0) + ' 只（wlQuoteEM 东财 + 腾讯 loadTxQuotes 二次兜底，只填空缺不覆盖真值）' +
+      ' · 快照回填 ' + (TD_POOLM.snapN || 0) + ' 只（wlQuoteEM 东财 + 腾讯 loadTxQuotes 二次兜底，只填空缺不覆盖真值；§381 成交额兜底=腾讯成交额(万)、量比兜底=腾讯量比→日K今量/5日均量末级兜底）' +
       ' · RPS60 全市场口径（未扫描时留「—」）；缺数一律留「—」不当 0' +
       ' · 默认「8日最大」降序，点表头 升▲→降▼→第三击恢复成交额降序；文本列升序、数值列降序' +
       ' · 同宇宙同交易日内存缓存，页面刷新后需重扫 <span id="tdPoolRescan" style="cursor:pointer;color:#7dd3fc">🔁 重扫</span>' +
@@ -51585,7 +51638,7 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     return h + '</tbody></table></div><div class="td-sec-note">' + foot + '</div>';
   }
   /* §378 重构：宇宙收集异步化（tdPoolUniverseAsync）；tdStageOf 从「每宇宙行」移到「仅过闸行」——
-     宇宙 1400 级时逐行 F10/datacenter 会成请求风暴；三闸（ST/均线/换手）不依赖 st，只影响展示列。 */
+     宇宙 1400 级时逐行 F10/datacenter 会成请求风暴；四闸（ST/均线/换手/§382 成交额）不依赖 st，只影响展示列。 */
   function tdPoolScan(){
     if(TD_POOLM.scanning) return;
     if(TD_POOLM.rows && TD_POOLM.done){ tdPoolPaintBody(); return; }   /* 同日已扫过：直接重绘（防 toggle 循环，与 §357 同款） */
@@ -51610,6 +51663,8 @@ function tdSecSortRows(rows, k, dir, rpsMap){
           TD_POOLM.prog = '已入池 ' + TD_POOLM.rows.length + ' / 宇宙 ' + total;
           tdSecSnapFill(TD_POOLM.rows).then(function(fill){
             TD_POOLM.snapN = (fill && fill.filled) || 0;
+            /* §381 量比末级兜底：腾讯 a49 没接住的行用扫描留底日K算 今量/5日均量（用完即清防占内存） */
+            TD_POOLM.rows.forEach(function(r){ if(r.lb == null && r.__bars) r.lb = tdSecLbBars(r.__bars); r.__bars = null; });
             tdPoolPaint();   /* 整体重绘：summary 的池/过闸计数随扫描结果刷新（重建 open 态 details 触发的 toggle 由同日缓存闸直接 return，防循环） */
             if(typeof lifeQueue === 'function') lifeQueue();
             tdPoolStageFill();   /* §378：板块阶段/行业只补过闸行（原每宇宙行，1400 级宇宙下会成 F10 风暴） */
@@ -51624,6 +51679,7 @@ function tdSecSortRows(rows, k, dir, rpsMap){
             r.gain8 = mu ? mu.max : null;
             r.gain8Ago = mu ? mu.ago : null;
             if(!(r.gain8 != null && r.gain8 > POOL_RULE.upMin)) return;   /* 未入池：不浪费派生计算（缺失≠入池，>7% 严格大于） */
+            r.__bars = bars;   /* §381 量比日K兜底留底：腾讯 a49 兜底完成后再用（盘中日K比值略低估，收盘后等价） */
             r.__tdx = tdSecTdxBuild(r, bars, { ind: r.sec || null, theme: null, stage: null });   /* §378：st 先用榜单行业，阶段由 tdPoolStageFill 补齐 */
             TD_POOLM.rows.push(r);
           }).catch(function(){ r.gain8 = null; });
@@ -53054,7 +53110,7 @@ function tdSecSortRows(rows, k, dir, rpsMap){
     tdParseTxt: tdParseTxt, tdDecodeTxt: tdDecodeTxt, tdResolveToks: tdResolveToks, tdApplyResolved: tdApplyResolved,
     tdMa5Slope: tdMa5Slope,   /* §274 */
     tdMomOf: tdMomOf, momTierOf: momTierOf, momPkOf: momPkOf, MOM_VD: MOM_VD, MOM_VD_S: MOM_VD_S, momVdColor: momVdColor,   /* §294/§295 */
-    tdSuperTrendOf: tdSuperTrendOf, tdStHtml: tdStHtml, tdSecGain60: tdSecGain60, tdSecLocalRps: tdSecLocalRps, tdSecGate2Of: tdSecGate2Of, tdSecGate2Filter: tdSecGate2Filter, tdSecActiveOf: tdSecActiveOf, tdSecActiveFilter: tdSecActiveFilter, tdSecRpsMap: tdSecRpsMap,   /* §361 + §374 */
+    tdSuperTrendOf: tdSuperTrendOf, tdStHtml: tdStHtml, tdSecGain60: tdSecGain60, tdSecLocalRps: tdSecLocalRps, tdSecGate2Of: tdSecGate2Of, tdSecGate2Filter: tdSecGate2Filter, tdSecActiveOf: tdSecActiveOf, tdSecActiveFilter: tdSecActiveFilter, tdSecAmtOf: tdSecAmtOf, tdSecAmtFilter: tdSecAmtFilter, tdSecRpsMap: tdSecRpsMap,   /* §361 + §374 + §382 */
     tdSortPool: tdSortPool, tdDelBatchDo: tdDelBatchDo, TD_SORT: TD_SORT }; window.__RPS = RPS; } catch(eX){ }
   function tdBoot(){
     var b = td$$('tdRefresh'), rb = td$$('tdRpsBtn');

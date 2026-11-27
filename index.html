@@ -2724,20 +2724,51 @@ var idxChart = null, emoChart = null;
 
 /* ================= 数据获取 ================= */
 function cleanPool(a){ return (a || []).filter(function(x){ return x && x.c && !/ST|退/i.test(String(x.n || '')); }); }
-function poolUrl(api, date, sort){ return 'https://push2ex.eastmoney.com/' + api + '?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=200&sort=' + (sort || 'fbt:asc') + '&date=' + date; }
+/* ★ 2026-11-27 §384（用户报障「涨停 200 家 · 偏强 数据不对」）：pagesize 200 → 1000 + Pageindex 参数化。
+   根因：2026-11-27 实测全市场涨停 417 家（东财响应 data.tc=417），原 pagesize=200 只取到第 0 页 200 行，
+   「涨停 200 家」是截断值（真值 417 落「火热」档），且全站下游（情绪九维涨停家数 23% / 晋级率分母 /
+   板块涨停家数 / 连板高度 / §383 昨日龙头 / 历史泵 / 竞价昨日池）全被同一截断污染。
+   pagesize=1000 已真机实测放行（单页回全量 417 行）；Pageindex 翻页保留作 >1000 的护栏。 */
+function poolUrl(api, date, sort, page, pz){ return 'https://push2ex.eastmoney.com/' + api + '?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=' + (page || 0) + '&pagesize=' + (pz || 1000) + '&sort=' + (sort || 'fbt:asc') + '&date=' + date; }
 /* 注意：跌停池没有 fbt 字段（用 lbt 跌停封牢时间），sort=fbt:asc 会返回空 pool，必须改用 lbt:asc；
    另加保险：若主排序返回空 pool 但 tc>0，用 fund:asc 兜底重试 */
 function fetchPool(api, date, sort){
   var s1 = sort || 'fbt:asc';
-  return jsonp(poolUrl(api, date, s1), 'cb').then(function(r){
-    var pool = (r && r.data && r.data.pool) || [];
-    var tc = (r && r.data && r.data.tc) || 0;
-    /* 口径自检：只记录"当日"涨停池（api 相同、date=D.date 的那次；pdate 那次不覆盖） */
-    if(api === 'getTopicZTPool' && date === D.date) D.ztRaw = { tc: tc, raw: pool.length, date: date };
-    if(pool.length === 0 && tc > 0 && s1 !== 'fund:asc'){
-      return jsonp(poolUrl(api, date, 'fund:asc'), 'cb').then(function(r2){ return (r2 && r2.data && r2.data.pool) || []; });
+  function pull(page){
+    return jsonp(poolUrl(api, date, s1, page), 'cb').then(function(r){
+      var d = (r && r.data) || {};
+      return { tc: (d && d.tc) || 0, pool: (d && d.pool) || [] };
+    });
+  }
+  return pull(0).then(function(f0){
+    var tc = f0.tc, acc = f0.pool.slice();
+    /* 口径自检：只记录"当日"涨停池（api 相同、date=D.date 的那次；pdate 那次不覆盖）。
+       §384 起这里同时承担截断哨兵：raw 应等于 cleanPool 前的全量行数，tc > raw 即翻页未取全。 */
+    if(api === 'getTopicZTPool' && date === D.date) D.ztRaw = { tc: tc, raw: acc.length, date: date };
+    /* 空池但 tc>0：主排序不兼容 → fund:asc 兜底重试（原语义保留，兜底后同样走翻页取全） */
+    if(!acc.length && tc > 0 && s1 !== 'fund:asc'){
+      return pull(0).then(function(fb){ tc = fb.tc; acc = fb.pool.slice();
+        if(api === 'getTopicZTPool' && date === D.date) D.ztRaw = { tc: tc, raw: acc.length, date: date };
+        return pageAll();
+      });
     }
-    return pool;
+    return pageAll();
+    /* 翻页取全：tc 只做停止条件（绝不拿它冒充池行）；空页即停（防 tc 虚高死循环）；8 页护栏。
+       cleanPool 会剔除 ST/退 → 最终 D.*.length 允许 < tc，那是剔除口径不是截断。 */
+    function pageAll(){
+      var guard = 0;
+      function step(){
+        if(!(tc > acc.length) || guard >= 8) return Promise.resolve(acc);
+        guard++;
+        return pull(guard).then(function(nx){
+          if(!nx.pool.length) return acc;
+          acc = acc.concat(nx.pool);
+          if(api === 'getTopicZTPool' && date === D.date) D.ztRaw = { tc: tc, raw: acc.length, date: date };
+          return step();
+        });
+      }
+      return step();
+    }
   });
 }
 function clistUrl(po, pz, fid, fs, fields){
@@ -39834,6 +39865,250 @@ function wtLadderRowHtml() {
     '所以 11 点后拿同一区间判会偏乐观 —— 请以 10:00 / 10:30 当时的读数为准，并按你定的规矩在 10:30、11:00 二次复核。') +
     '"><span class="bl">梯队晋级·实时</span>' + chips.join('') + '</div>';
 }
+/* ★ 2026-11-27 §383（用户指令：「一、大盘与量能 梯队晋级·实时 前面增加一条，昨日龙头表现，
+   按照行业列出昨日2家涨停以上板块龙头股的涨幅情况，如何判断板块龙头，请搜索全网，交叉验证」）。
+   龙头判定 = 五源全网交叉验证（ima 龙头战法 / 约投顾 / 财云财经 / 雪球 / 淘股吧）后的**可量化子集**，
+   且与本台既有龙头尺**完全同源、零第二套算法**（排序串与 §307 板块详情卡 gs.sort 一字不差）：
+     ① 连板身位：板块内最高连板者优先（五源共识：最高板 ≠ 龙头的反例是独立票无跟风，
+        而本行只收「昨日涨停 ≥2 家」的板块，孤板独狼已被板块家数闸天然排除）；
+     ② 启动顺序：连板并列时最先封板者先龙（首封时间 fbt 升序，五源共识第一权重）；
+     ③ 封板质量代理：再并列取封单额大者（fund 降序；封成比 / 封单÷流通等细项进 title 披露，不参与排序）。
+   六维共识中的「带动性 / 分歧抗跌 / 题材正宗度」在昨日涨停池无现成字段 → 不量化、不猜、不编，
+   仅在 title 如实披露「判定只用前三维可量化项」。
+   行业归并走 prevZtBySector()（secIndOf 同一把尺），涨幅走 D.prevQ（昨日池成员今日行情，零额外请求）：
+   缺行情印「—」绝不印 0；今日状态三档 = 晋级（今涨停池）/ 炸板（今炸板池）/ 断板，
+   与 ladderTopBoardStat 同一套口径。 */
+var PLD_MIN_SEC = 2;    /* 用户口径「昨日 2 家涨停以上板块」= ≥2 家（与 M5F_RULE.newSecZt 新热点阈值同值同义） */
+var PLD_CHIP_MAX = 8;   /* 一行最多 8 个板块胶囊，超出折「+N 板块」，明细全在 title */
+function wtPrevLeaderStat() {
+  var prev = (typeof D !== 'undefined' && D && D.prev) ? D.prev : null;
+  if (!prev || !prev.length) return null;
+  var ztSet = {}, zbSet = {}, i, k;
+  var zt = (typeof D !== 'undefined' && D && D.zt) ? D.zt : null;
+  var zb = (typeof D !== 'undefined' && D && D.zb) ? D.zb : null;
+  for (i = 0; zt && i < zt.length; i++) { k = lbCodeOf(zt[i]); if (k) ztSet[k] = 1; }
+  for (i = 0; zb && i < zb.length; i++) { k = lbCodeOf(zb[i]); if (k) zbSet[k] = 1; }
+  var groups = null;
+  try { groups = prevZtBySector(); } catch (eG) { groups = null; }
+  if (!groups) return null;
+  var Q = (typeof D !== 'undefined' && D && D.prevQ) ? D.prevQ : {};
+  var out = [];
+  Object.keys(groups).forEach(function (ind) {
+    var rows = groups[ind];
+    if (!rows || rows.length < PLD_MIN_SEC) return;
+    /* 龙头尺：连板降序 → 首封时间升序 → 封单额降序（与板块详情卡一字不差，不许另写） */
+    var gs = rows.slice().sort(function (a, b) {
+      return (b.lbc || 1) - (a.lbc || 1) || (a.fbt || 999999) - (b.fbt || 999999) || (b.fund || 0) - (a.fund || 0);
+    });
+    var L = gs[0], c = lbCodeOf(L);
+    if (!c) return;
+    var q = Q[c] || null;
+    var pct = (q && q.pct != null && isFinite(q.pct)) ? q.pct : null;
+    out.push({
+      ind: ind, n: rows.length,
+      lbc: (L.lbc == null ? 1 : +L.lbc),
+      fbt: (L.fbt == null ? null : +L.fbt),
+      fund: (L.fund == null ? null : +L.fund),
+      nm: String(L.n || c), c: c, pct: pct,
+      st: ztSet[c] ? '晋级' : (zbSet[c] ? '炸板' : '断板'),
+      members: gs.map(function (x) {
+        var cc = lbCodeOf(x), qq = cc ? (Q[cc] || null) : null;
+        return { nm: String(x.n || cc || '—'), c: cc,
+          lbc: (x.lbc == null ? 1 : +x.lbc),
+          pct: (qq && qq.pct != null && isFinite(qq.pct)) ? qq.pct : null };
+      })
+    });
+  });
+  if (!out.length) return null;
+  /* 板块顺序：龙头连板高者优先 → 同高按板块涨停家数多者优先 → 再按龙头今日涨幅（缺数垫底）→ 名字稳定序 */
+  out.sort(function (a, b) {
+    if (b.lbc !== a.lbc) return b.lbc - a.lbc;
+    if (b.n !== a.n) return b.n - a.n;
+    var pa = (a.pct == null) ? -9999 : a.pct, pb = (b.pct == null) ? -9999 : b.pct;
+    if (pb !== pa) return pb - pa;
+    return a.ind < b.ind ? -1 : (a.ind > b.ind ? 1 : 0);
+  });
+  return { secs: out, prevN: prev.length };
+}
+function wtPrevLeaderRowHtml() {
+  var st = null;
+  try { st = wtPrevLeaderStat(); } catch (e) { st = null; }
+  if (!st) {
+    return '<div class="wt-lrow" id="wtPrevLeaderRow"><span class="bl na">' +
+      '昨日龙头表现 未取到（昨日涨停池 / 行业分组缺 · 按实留白）</span></div>';
+  }
+  var chips = [], tips = [];
+  var pctTxt = function (p) { return (p == null) ? '—' : ((p >= 0 ? '+' : '') + p.toFixed(1) + '%'); };
+  /* 着色沿用本行族语义：晋级 / 红盘 = 红（hot）· 微跌 = 黄（mid）· 深跌 ≤-3% = 绿（cold）· 缺数 = 灰 */
+  var clsOf = function (s) {
+    if (s.st === '晋级' || (s.pct != null && s.pct > 0)) return 'hot';
+    if (s.pct == null) return '';
+    return s.pct > -3 ? 'mid' : 'cold';
+  };
+  var show = st.secs.slice(0, PLD_CHIP_MAX), rest = st.secs.slice(PLD_CHIP_MAX);
+  show.forEach(function (s) {
+    var tip = '【' + s.ind + '】昨日涨停 ' + s.n + ' 家 → 龙头：' + s.nm + '（' + s.c + '）\n' +
+      '龙头判定（同本台既有尺，零第二套算法）：昨日板块内连板最高（' + s.lbc + ' 板）' +
+      (s.fbt != null ? '、首封 ' + fmtFbt(s.fbt) : '') +
+      (s.fund != null ? '、封单 ' + (s.fund / 1e8).toFixed(1) + ' 亿' : '') + '\n' +
+      '今日：' + pctTxt(s.pct) + ' · ' + s.st + '\n' +
+      '板块成员（按龙头尺排序）：\n' +
+      s.members.map(function (m) { return '· ' + m.nm + '（' + m.c + '）' + m.lbc + '板 → ' + pctTxt(m.pct); }).join('\n') +
+      '\n口径：仅列昨日涨停 ≥' + PLD_MIN_SEC + ' 家的板块；龙头 = 连板降序 → 首封时间升序 → 封单额降序；' +
+      '带动性 / 分歧抗跌 / 题材正宗度无现成字段不量化（全网交叉验证后取可量化子集）';
+    chips.push('<span class="lt ' + clsOf(s) + '" title="' + esc(tip) + '">' +
+      '<span class="ln">' + esc(s.ind) + '·' + s.n + '家</span>' +
+      '<b>' + esc(s.nm) + '</b>' +
+      '<span class="lv">' + pctTxt(s.pct) + '</span>' +
+      '<span class="ns">' + s.lbc + '板·' + s.st + '</span></span>');
+    tips.push(tip);
+  });
+  if (rest.length) {
+    chips.push('<span class="lt" title="' + esc(rest.map(function (s) {
+      return s.ind + '：龙头 ' + s.nm + ' 今日 ' + pctTxt(s.pct) + '（' + s.lbc + '板·' + s.st + '，昨日 ' + s.n + ' 家涨停）';
+    }).join('\n')) + '">+' + rest.length + ' 板块</span>');
+    tips.push('另有 ' + rest.length + ' 个板块（一行放不下，明细在此）：\n' +
+      rest.map(function (s) { return '· ' + s.ind + '：' + s.nm + ' ' + pctTxt(s.pct) + '（' + s.lbc + '板·' + s.st + '）'; }).join('\n'));
+  }
+  var head = '【口径】昨日龙头表现 = 昨日涨停 ≥' + PLD_MIN_SEC + ' 家的板块（行业归并与全站 secIndOf 同一把尺），' +
+    '取各板块龙头（连板最高 → 首封最早 → 封单最大）列其今日涨幅与状态。\n' +
+    '【龙头判定 · 全网交叉验证】五源共识维度 = 启动顺序 + 连板身位 + 封板质量 + 换手健康 + 带动性 + 分歧抗跌；' +
+    '本行只量化前三项（昨日池现成字段），后三项无字段不猜、不编。\n' +
+    '【数据源】昨日涨停池 + 今日行情快照，零额外请求；涨幅缺行情印「—」；' +
+    '状态 = 晋级（今涨停池）/ 炸板（今炸板池）/ 断板。\n' +
+    '昨日全池 ' + st.prevN + ' 家 → 满足 ≥' + PLD_MIN_SEC + ' 家的板块 ' + st.secs.length + ' 个';
+  return '<div class="wt-lrow" id="wtPrevLeaderRow" title="' + esc(head + '\n\n' + tips.join('\n\n')) + '">' +
+    '<span class="bl">昨日龙头表现</span>' + chips.join('') + '</div>';
+}
+/* ★ 2026-11-27 §383b（用户追加指令：「昨日龙头表现 后增加 今日集合竞价涨停的行业 股票」）。
+   口径 = 今日涨停池里**首次封板时间 fbt ≤ 09:25:00**（集合竞价即封死的一字板，与 M5F_RULE.yzFbt
+   「一字板：09:25:00 即封」、L12458 一字板家数统计同一把尺，零第二套算法）；
+   行业归并走 secIndOf（F10 优先 → themeKey 兜底 → '其他' 垫底），与昨日龙头表现同一套行业尺。
+   数据源 = 今日涨停池现成字段，零额外请求；今日池未就绪（空池）→ null 留白（未就绪 ≠ 0）；
+   池已就绪但竞价一字 0 家 → 0 是有效读数（竞价顶一字的情绪信号），如实印 0。 */
+function wtAucZtStat() {
+  var zt = (typeof D !== 'undefined' && D && D.zt) ? D.zt : null;
+  if (!zt || !zt.length) return null;
+  var am = {}, order = [], n = 0;
+  for (var i = 0; i < zt.length; i++) {
+    var x = zt[i];
+    if (x == null || x.fbt == null || !(+x.fbt <= M5F_RULE.yzFbt)) continue;
+    var k = '';
+    try { k = secIndOf(x.c, x.hybk) || ''; } catch (eS) { k = ''; }
+    if (!k) k = themeKey(x.hybk || '') || '';
+    if (!k) k = '其他';
+    if (!am[k]) { am[k] = []; order.push(k); }
+    am[k].push({ nm: String(x.n || x.c || '—'), c: lbCodeOf(x) || '', lbc: (x.lbc == null ? 1 : +x.lbc) });
+    n++;
+  }
+  /* 行业顺序：家数多者优先 → 名字稳定序（刷新不移位） */
+  order.sort(function (a, b) { return am[b].length - am[a].length || (a < b ? -1 : (a > b ? 1 : 0)); });
+  return { n: n, secs: order.map(function (k) { return { ind: k, members: am[k] }; }) };
+}
+function wtAucZtRowHtml() {
+  var st = null;
+  try { st = wtAucZtStat(); } catch (e) { st = null; }
+  if (!st) {
+    return '<div class="wt-lrow" id="wtAucZtRow"><span class="bl na">' +
+      '竞价涨停 未取到（今日涨停池未就绪 · 按实留白）</span></div>';
+  }
+  var chips = [], tips = [];
+  var head = '【口径】今日集合竞价涨停 = 首次封板时间 fbt ≤ 09:25:00（集合竞价即封死的一字板，' +
+    '与 M5F_RULE.yzFbt 一字板口径 / 一字板家数统计同一把尺，零第二套算法）。\n' +
+    '行业归并与全站 secIndOf 同一把尺；数据源 = 今日涨停池现成字段，零额外请求。\n' +
+    '今日竞价涨停共 ' + st.n + ' 家 · ' + st.secs.length + ' 个行业' +
+    (st.n === 0 ? '\n今日开盘无一字板：竞价情绪谨慎（0 是有效读数，不是缺数）' : '');
+  chips.push('<span class="lt ' + (st.n > 0 ? 'hot' : '') + '" title="' + esc(head) + '">' +
+    '<span class="ln">竞价涨停</span><b>' + st.n + '</b><span class="ns">' + st.secs.length + ' 行业</span></span>');
+  tips.push(head);
+  var show = st.secs.slice(0, PLD_CHIP_MAX), rest = st.secs.slice(PLD_CHIP_MAX);
+  show.forEach(function (s) {
+    var tip = '【' + s.ind + '】今日集合竞价涨停（一字板）' + s.members.length + ' 家：\n' +
+      s.members.map(function (m) { return '· ' + m.nm + '（' + m.c + '）' + (m.lbc > 1 ? m.lbc + ' 连板' : '首板'); }).join('\n');
+    chips.push('<span class="lt" title="' + esc(tip) + '">' +
+      '<span class="ln">' + esc(s.ind) + '</span>' +
+      '<b>' + esc(s.members.map(function (m) { return m.nm; }).join(' ')) + '</b>' +
+      '<span class="ns">' + s.members.length + '家</span></span>');
+    tips.push(tip);
+  });
+  if (rest.length) {
+    chips.push('<span class="lt" title="' + esc(rest.map(function (s) {
+      return s.ind + '（' + s.members.length + ' 家）：' + s.members.map(function (m) { return m.nm; }).join(' ');
+    }).join('\n')) + '">+' + rest.length + ' 行业</span>');
+    tips.push('另有 ' + rest.length + ' 个行业（一行放不下，明细在此）：\n' +
+      rest.map(function (s) { return '· ' + s.ind + '：' + s.members.map(function (m) { return m.nm; }).join(' '); }).join('\n'));
+  }
+  return '<div class="wt-lrow" id="wtAucZtRow" title="' + esc(tips.join('\n\n')) + '">' +
+    '<span class="bl">竞价涨停·行业</span>' + chips.join('') + '</div>';
+}
+/* ★ 2026-11-27 §385（用户追加指令：「竞价涨停·行业 后面增加 竞价跌停 行业」）——
+   与 §383b 竞价涨停·行业 完全镜像的一行，只换三处：数据源 D.zt→D.dt、字段 fbt→lbt、
+   涨停胶囊 hot→跌停胶囊 cold。
+   口径 = 今日跌停池里**封牢时间 lbt ≤ 09:25:00**（集合竞价定格即封死跌停）。
+   ⚠ 口径差异如实披露：跌停池**没有 fbt 字段**（sort=fbt:asc 返回空 pool，见 poolUrl 注释），
+   只能用 lbt（跌停封牢时间）；阈值仍复用 M5F_RULE.yzFbt(92500) 同一把尺——零第二套常量。
+   与 🩸 风险卡 dtYz（lbt ≤ 93000，含开盘瞬间砸到的）**不是同一个数**：本行严格 ≤09:25:00
+   竞价定格，开盘后秒砸跌停的不算竞价跌停。两处 title 都写清，避免互相打脸。
+   数据源 = 今日跌停池现成字段，零额外请求；池未就绪 → null 留白（未就绪 ≠ 0）；
+   池就绪但竞价跌停 0 家 → 0 是有效读数（无隔夜恐慌），如实印 0。
+   行业归并 secIndOf → themeKey → '其他'，与竞价涨停行同一套行业尺；
+   连续跌停天数（days 字段，cleanPool 保留）>1 时在胶囊里标注「N天」。 */
+function wtAucDtStat() {
+  var dt = (typeof D !== 'undefined' && D && D.dt) ? D.dt : null;
+  if (!dt || !dt.length) return null;
+  var am = {}, order = [], n = 0;
+  for (var i = 0; i < dt.length; i++) {
+    var x = dt[i];
+    if (x == null || x.lbt == null || !(+x.lbt <= M5F_RULE.yzFbt)) continue;
+    var k = '';
+    try { k = secIndOf(x.c, x.hybk) || ''; } catch (eS) { k = ''; }
+    if (!k) k = themeKey(x.hybk || '') || '';
+    if (!k) k = '其他';
+    if (!am[k]) { am[k] = []; order.push(k); }
+    am[k].push({ nm: String(x.n || x.c || '—'), c: lbCodeOf(x) || '', days: (x.days == null ? 1 : +x.days) });
+    n++;
+  }
+  /* 行业顺序：家数多者优先 → 名字稳定序（与竞价涨停行同款，刷新不移位） */
+  order.sort(function (a, b) { return am[b].length - am[a].length || (a < b ? -1 : (a > b ? 1 : 0)); });
+  return { n: n, secs: order.map(function (k) { return { ind: k, members: am[k] }; }) };
+}
+function wtAucDtRowHtml() {
+  var st = null;
+  try { st = wtAucDtStat(); } catch (e) { st = null; }
+  if (!st) {
+    return '<div class="wt-lrow" id="wtAucDtRow"><span class="bl na">' +
+      '竞价跌停 未取到（今日跌停池未就绪 · 按实留白）</span></div>';
+  }
+  var chips = [], tips = [];
+  var head = '【口径】今日集合竞价跌停 = 封牢时间 lbt ≤ 09:25:00（竞价定格即封死跌停）。\n' +
+    '⚠ 跌停池没有 fbt 字段，只能用 lbt；阈值复用 M5F_RULE.yzFbt(92500) 同一把尺。\n' +
+    '与 🩸 风险卡 dtYz（lbt≤93000 含开盘瞬间）口径不同：本行严格竞价定格，开盘后秒砸跌停不算。\n' +
+    '行业归并与全站 secIndOf 同一把尺；数据源 = 今日跌停池现成字段，零额外请求。\n' +
+    '今日竞价跌停共 ' + st.n + ' 家 · ' + st.secs.length + ' 个行业' +
+    (st.n === 0 ? '\n今日开盘竞价无一字跌停：无隔夜恐慌（0 是有效读数，不是缺数）' : '');
+  chips.push('<span class="lt ' + (st.n > 0 ? 'cold' : '') + '" title="' + esc(head) + '">' +
+    '<span class="ln">竞价跌停</span><b>' + st.n + '</b><span class="ns">' + st.secs.length + ' 行业</span></span>');
+  tips.push(head);
+  var show = st.secs.slice(0, PLD_CHIP_MAX), rest = st.secs.slice(PLD_CHIP_MAX);
+  show.forEach(function (s) {
+    var tip = '【' + s.ind + '】今日集合竞价跌停（竞价定格封死）' + s.members.length + ' 家：\n' +
+      s.members.map(function (m) { return '· ' + m.nm + '（' + m.c + '）' + (m.days > 1 ? m.days + ' 天连续跌停' : '首日跌停'); }).join('\n');
+    chips.push('<span class="lt" title="' + esc(tip) + '">' +
+      '<span class="ln">' + esc(s.ind) + '</span>' +
+      '<b>' + esc(s.members.map(function (m) { return m.nm; }).join(' ')) + '</b>' +
+      '<span class="ns">' + s.members.length + '家</span></span>');
+    tips.push(tip);
+  });
+  if (rest.length) {
+    chips.push('<span class="lt" title="' + esc(rest.map(function (s) {
+      return s.ind + '（' + s.members.length + ' 家）：' + s.members.map(function (m) { return m.nm; }).join(' ');
+    }).join('\n')) + '">+' + rest.length + ' 行业</span>');
+    tips.push('另有 ' + rest.length + ' 个行业（一行放不下，明细在此）：\n' +
+      rest.map(function (s) { return '· ' + s.ind + '：' + s.members.map(function (m) { return m.nm; }).join(' '); }).join('\n'));
+  }
+  return '<div class="wt-lrow" id="wtAucDtRow" title="' + esc(tips.join('\n\n')) + '">' +
+    '<span class="bl">竞价跌停·行业</span>' + chips.join('') + '</div>';
+}
 /* ★ 2026-10-26 §214（用户原话：「一、大盘与量能，实时金价(AU9999)，增加实时涨停 家数 / 跌停 家 /
    炸板率/大面家数/核按钮家数」）—— 盘面强度五读数。
    ⚠ 金价（AU9999）**不是**这一行的一部分：它早在 2026-10-23 就作为 IDX_EXT 第 5 张 KPI 卡进了
@@ -41174,6 +41449,15 @@ function wtBreadthHtml() {
     wtMoneyStyleRowHtml() +
     /* ★ 2026-11-05 §264c：复盘五问 · 实时（五枚胶囊只上判定结果，方法与条件句全在各自 title） */
     wtFiveQRowHtml() +
+    /* ★ 2026-11-27 §383：昨日龙头表现（用户定点位置 = 梯队晋级·实时 之前；
+       先看昨日龙头的承接（钱还认不认昨天的头），再看梯队晋级率（接力强不强）） */
+    wtPrevLeaderRowHtml() +
+    /* ★ 2026-11-27 §383b：竞价涨停·行业（用户追加「昨日龙头表现 后增加 今日集合竞价涨停的行业 股票」；
+       昨日龙头的承接 + 今日竞价顶一字的进攻方向，两行连读 = 跨日情绪一句话） */
+    wtAucZtRowHtml() +
+    /* ★ 2026-11-27 §385：竞价跌停·行业（用户追加「竞价涨停·行业 后面增加 竞价跌停 行业」；
+       进攻方向（竞价顶一字）+ 防守方向（竞价封死跌停）一行看全，镜像 §383b 只换数据源与字段） */
+    wtAucDtRowHtml() +
     wtLadderRowHtml() +
     /* ★ 2026-10-26 §215：强势异动 >3 家的行业板块（两个口径：9:35 首根 / 当日累计） */
     wtAnomSecRowHtml() +
